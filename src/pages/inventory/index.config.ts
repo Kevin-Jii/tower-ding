@@ -1,0 +1,5 @@
+export default {
+  navigationBarTitleText: '库存',
+  enablePullDownRefresh: true
+}
+

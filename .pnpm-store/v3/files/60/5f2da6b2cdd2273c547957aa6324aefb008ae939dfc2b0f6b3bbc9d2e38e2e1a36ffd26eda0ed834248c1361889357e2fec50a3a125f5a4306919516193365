@@ -1,0 +1,681 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var helper = require('@tarojs/helper');
+var shared = require('@tarojs/shared');
+var template = require('@tarojs/shared/dist/template');
+var tslib = require('tslib');
+var lodash = require('lodash');
+var runnerUtils = require('@tarojs/runner-utils');
+
+function apiLoader (str) {
+    return `import {
+  setGlobalDataPlugin,
+  useAddToFavorites,
+  useDidHide,
+  useDidShow,
+  useError,
+  useLaunch,
+  useLoad,
+  useOptionMenuClick,
+  useKeyboardHeight,
+  usePageNotFound,
+  usePageScroll,
+  usePullDownRefresh,
+  usePullIntercept,
+  useReachBottom,
+  useReady,
+  useResize,
+  useRouter,
+  useSaveExitState,
+  useShareAppMessage,
+  useShareTimeline,
+  useTabItemTap,
+  useTitleClick,
+  useUnhandledRejection,
+  useUnload
+} from '@tarojs/plugin-framework-vue3/dist/runtime'
+${str}
+
+taro.setGlobalDataPlugin = setGlobalDataPlugin
+taro.useAddToFavorites = useAddToFavorites
+taro.useDidHide = useDidHide
+taro.useDidShow = useDidShow
+taro.useError = useError
+taro.useLaunch = useLaunch
+taro.setGlobalDataPlugin = setGlobalDataPlugin
+taro.useLoad = useLoad
+taro.useOptionMenuClick = useOptionMenuClick
+taro.useKeyboardHeight = useKeyboardHeight
+taro.usePageNotFound = usePageNotFound
+taro.usePageScroll = usePageScroll
+taro.usePullDownRefresh = usePullDownRefresh
+taro.usePullIntercept = usePullIntercept
+taro.useReachBottom = useReachBottom
+taro.useReady = useReady
+taro.useResize = useResize
+taro.useRouter = useRouter
+taro.useSaveExitState = useSaveExitState
+taro.useShareAppMessage = useShareAppMessage
+taro.useShareTimeline = useShareTimeline
+taro.useTabItemTap = useTabItemTap
+taro.useTitleClick = useTitleClick
+taro.useUnhandledRejection = useUnhandledRejection
+taro.useUnload = useUnload
+
+export {
+  setGlobalDataPlugin,
+  useAddToFavorites,
+  useDidHide,
+  useDidShow,
+  useError,
+  useLaunch,
+  useLoad,
+  useOptionMenuClick,
+  useKeyboardHeight,
+  usePageNotFound,
+  usePageScroll,
+  usePullDownRefresh,
+  usePullIntercept,
+  useReachBottom,
+  useReady,
+  useResize,
+  useRouter,
+  useSaveExitState,
+  useShareAppMessage,
+  useShareTimeline,
+  useTabItemTap,
+  useTitleClick,
+  useUnhandledRejection,
+  useUnload
+}
+`;
+}
+
+function getLoaderMeta() {
+    return {
+        importFrameworkStatement: `
+import { h, createApp } from 'vue'
+`,
+        mockAppStatement: `
+const App = createApp({})
+`,
+        frameworkArgs: 'h, config',
+        creator: 'createVue3App',
+        creatorLocation: '@tarojs/plugin-framework-vue3/dist/runtime',
+        importFrameworkName: 'h',
+        isNeedRawLoader: true,
+        extraImportForWeb: '',
+        execBeforeCreateWebApp: '',
+    };
+}
+
+const CUSTOM_WRAPPER = 'custom-wrapper';
+function getVueLoaderPath() {
+    try {
+        return require.resolve('vue-loader', {
+            paths: [process.cwd()]
+        });
+    }
+    catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(helper.chalk.yellow('找不到 vue-loader，请先安装。'));
+        process.exit(1);
+    }
+}
+function getMiniVueLoaderOptions(ctx, componentConfig, config) {
+    var _a, _b, _c;
+    var _d;
+    const compilerOptions = ((_a = config.vueLoaderOption) === null || _a === void 0 ? void 0 : _a.compilerOptions) || ((_b = config.mini) === null || _b === void 0 ? void 0 : _b.compilerOptions) || {};
+    // loader
+    const vueLoaderOption = Object.assign(Object.assign({ optimizeSSR: false, transformAssetUrls: {
+            video: ['src', 'poster'],
+            'live-player': 'src',
+            audio: 'src',
+            source: 'src',
+            image: 'src',
+            'cover-image': 'src'
+        } }, ((_c = config.vueLoaderOption) !== null && _c !== void 0 ? _c : {})), { compilerOptions });
+    (_d = vueLoaderOption.compilerOptions).nodeTransforms || (_d.nodeTransforms = []);
+    vueLoaderOption.compilerOptions.nodeTransforms.unshift((node) => {
+        if (node.type === 1 /* ELEMENT */) {
+            node = node;
+            const nodeName = node.tag;
+            nodeName && ctx.applyPlugins({
+                name: 'onParseCreateElement',
+                opts: {
+                    nodeName,
+                    componentConfig: componentConfig
+                }
+            });
+            if (template.capitalize(template.toCamelCase(nodeName)) in template.internalComponents) {
+                // change only ElementTypes.COMPONENT to ElementTypes.ELEMENT
+                // and leave ElementTypes.SLOT untouched
+                if (node.tagType === 1 /* COMPONENT */) {
+                    node.tagType = 0; /* ELEMENT */
+                }
+                // v-html
+                const props = node.props;
+                if (props.find(prop => prop.type === 7 && prop.name === 'html')) {
+                    ['input', 'textarea', 'video', 'audio'].forEach(item => componentConfig.includes.add(item));
+                }
+                componentConfig.includes.add(nodeName);
+            }
+            if (nodeName === CUSTOM_WRAPPER) {
+                node.tagType = 0; /* ELEMENT */
+                componentConfig.thirdPartyComponents.set(CUSTOM_WRAPPER, new Set());
+            }
+            const usingComponent = componentConfig.thirdPartyComponents.get(nodeName);
+            if (usingComponent != null) {
+                node.props.forEach(prop => {
+                    var _a;
+                    if (prop.type === 6 /* ATTRIBUTE */) {
+                        usingComponent.add(prop.name);
+                    }
+                    else if (prop.type === 7 /* DIRECTIVE */) {
+                        prop = prop;
+                        if (((_a = prop.arg) === null || _a === void 0 ? void 0 : _a.type) === 4 /* SimpleExpression */) {
+                            let value = prop.arg.content;
+                            if (prop.name === 'on') {
+                                value = `on${value}`;
+                            }
+                            usingComponent.add(value);
+                        }
+                    }
+                });
+            }
+        }
+    });
+    return vueLoaderOption;
+}
+function getHarmonyVueLoaderOptions(ctx, componentConfig, config) {
+    var _a, _b, _c;
+    var _d;
+    const compilerOptions = ((_a = config.vueLoaderOption) === null || _a === void 0 ? void 0 : _a.compilerOptions) || ((_b = config.harmony) === null || _b === void 0 ? void 0 : _b.compilerOptions) || {};
+    // loader
+    const vueLoaderOption = Object.assign(Object.assign({ optimizeSSR: false, transformAssetUrls: {
+            video: ['src', 'poster'],
+            'live-player': 'src',
+            audio: 'src',
+            source: 'src',
+            image: 'src',
+            'cover-image': 'src'
+        } }, ((_c = config.vueLoaderOption) !== null && _c !== void 0 ? _c : {})), { compilerOptions });
+    (_d = vueLoaderOption.compilerOptions).nodeTransforms || (_d.nodeTransforms = []);
+    vueLoaderOption.compilerOptions.nodeTransforms.unshift((node) => {
+        if (node.type === 1 /* ELEMENT */) {
+            node = node;
+            const nodeName = node.tag;
+            nodeName && ctx.applyPlugins({
+                name: 'onParseCreateElement',
+                opts: {
+                    nodeName,
+                    componentConfig: componentConfig
+                }
+            });
+            if (template.capitalize(template.toCamelCase(nodeName)) in template.internalComponents) {
+                // change only ElementTypes.COMPONENT to ElementTypes.ELEMENT
+                // and leave ElementTypes.SLOT untouched
+                if (node.tagType === 1 /* COMPONENT */) {
+                    node.tagType = 0; /* ELEMENT */
+                }
+                // v-html
+                const props = node.props;
+                if (props.find(prop => prop.type === 7 && prop.name === 'html')) {
+                    ['input', 'textarea', 'video', 'audio'].forEach(item => componentConfig.includes.add(item));
+                }
+                componentConfig.includes.add(nodeName);
+            }
+            if (nodeName === CUSTOM_WRAPPER) {
+                node.tagType = 0; /* ELEMENT */
+                componentConfig.thirdPartyComponents.set(CUSTOM_WRAPPER, new Set());
+            }
+            const usingComponent = componentConfig.thirdPartyComponents.get(nodeName);
+            if (usingComponent != null) {
+                node.props.forEach(prop => {
+                    var _a;
+                    if (prop.type === 6 /* ATTRIBUTE */) {
+                        usingComponent.add(prop.name);
+                    }
+                    else if (prop.type === 7 /* DIRECTIVE */) {
+                        prop = prop;
+                        if (((_a = prop.arg) === null || _a === void 0 ? void 0 : _a.type) === 4 /* SimpleExpression */) {
+                            let value = prop.arg.content;
+                            if (prop.name === 'on') {
+                                value = `on${value}`;
+                            }
+                            usingComponent.add(value);
+                        }
+                    }
+                });
+            }
+        }
+    });
+    return vueLoaderOption;
+}
+function getH5VueLoaderOptions(config) {
+    var _a, _b;
+    const compilerOptions = ((_a = config.vueLoaderOption) === null || _a === void 0 ? void 0 : _a.compilerOptions) || {};
+    // loader
+    return Object.assign(Object.assign({ transformAssetUrls: {
+            video: ['src', 'poster'],
+            'live-player': 'src',
+            audio: 'src',
+            source: 'src',
+            image: 'src',
+            'cover-image': 'src',
+            'taro-video': ['src', 'poster'],
+            'taro-live-player': 'src',
+            'taro-audio': 'src',
+            'taro-source': 'src',
+            'taro-image': 'src',
+            'taro-cover-image': 'src',
+        } }, ((_b = config.vueLoaderOption) !== null && _b !== void 0 ? _b : {})), { compilerOptions: Object.assign(Object.assign({}, compilerOptions), { 
+            // https://github.com/vuejs/vue-next/blob/master/packages/compiler-core/src/options.ts
+            nodeTransforms: [
+                (node) => {
+                    if (node.type === 1 /* ELEMENT */) {
+                        node = node;
+                        const nodeName = node.tag;
+                        if (runnerUtils.DEFAULT_Components.has(nodeName)) {
+                            node.tag = `taro-${nodeName}`;
+                            node.tagType = 1; /* 0: ELEMENT, 1: COMPONENT */
+                        }
+                    }
+                },
+            ] }) });
+}
+
+function h5VitePlugin(ctx, config) {
+    return [
+        // @TODO: 确认 webpack.h5 的 customStyle 逻辑是否需要迁移
+        injectLoaderMeta$2(ctx),
+        setTaroApi(),
+        require('@vitejs/plugin-vue').default({
+            template: getH5VueLoaderOptions(config)
+        })
+    ];
+}
+function injectLoaderMeta$2(ctx) {
+    function customizer(object = '', sources = '') {
+        if ([object, sources].every(e => typeof e === 'string'))
+            return object + sources;
+    }
+    const { runnerUtils } = ctx;
+    const { getViteH5CompilerContext } = runnerUtils;
+    return {
+        name: 'taro-vue3:loader-meta',
+        buildStart() {
+            return tslib.__awaiter(this, void 0, void 0, function* () {
+                const viteCompilerContext = yield getViteH5CompilerContext(this);
+                if (viteCompilerContext) {
+                    viteCompilerContext.loaderMeta = lodash.mergeWith(getLoaderMeta(), viteCompilerContext.loaderMeta, customizer);
+                }
+            });
+        }
+    };
+}
+function setTaroApi() {
+    // dev 环境通过 esbuild 来做； pro 环境通过 rollup load 钩子来做；因为生产环境不会走 optimizeDeps
+    return {
+        name: 'taro-vue3:process-import-taro',
+        enforce: 'pre',
+        config: () => ({
+            optimizeDeps: {
+                esbuildOptions: {
+                    plugins: [
+                        {
+                            name: 'taro:vue3-api',
+                            setup(build) {
+                                build.onLoad({ filter: helper.REG_TARO_H5_RUNTIME_API }, (args) => tslib.__awaiter(this, void 0, void 0, function* () {
+                                    const input = yield helper.fs.readFile(args.path, 'utf8');
+                                    return {
+                                        contents: apiLoader(input + '\n' + 'const taro = Taro__default\n')
+                                    };
+                                }));
+                            },
+                        }
+                    ]
+                }
+            },
+        }),
+        load(id) {
+            return tslib.__awaiter(this, void 0, void 0, function* () {
+                if (process.env.NODE_ENV === 'production' && helper.REG_TARO_H5_RUNTIME_API.test(id)) {
+                    try {
+                        const input = yield helper.fs.readFile(id, 'utf8');
+                        return apiLoader(input + '\n' + 'const taro = Taro__default\n');
+                    }
+                    catch (_) {
+                        return null;
+                    }
+                }
+            });
+        }
+    };
+}
+
+function harmonyVitePlugin(ctx, componentConfig, config) {
+    return [
+        injectLoaderMeta$1(ctx),
+        harmonyConfig(),
+        require('@vitejs/plugin-vue').default({
+            template: getHarmonyVueLoaderOptions(ctx, componentConfig, config)
+        })
+    ];
+}
+function injectLoaderMeta$1(ctx) {
+    return {
+        name: 'taro-vue3:loader-meta',
+        buildStart() {
+            const { runnerUtils } = ctx;
+            const { getViteHarmonyCompilerContext } = runnerUtils;
+            const viteCompilerContext = getViteHarmonyCompilerContext(this);
+            if (viteCompilerContext) {
+                viteCompilerContext.loaderMeta || (viteCompilerContext.loaderMeta = {});
+                Object.assign(viteCompilerContext.loaderMeta, getLoaderMeta());
+            }
+        }
+    };
+}
+function harmonyConfig() {
+    return {
+        name: 'taro-vue3:harmony-config',
+        config: () => ({
+            define: {
+                ENABLE_ADJACENT_HTML: true,
+                ENABLE_CLONE_NODE: true,
+                ENABLE_TEMPLATE_CONTENT: true,
+                ENABLE_MUTATION_OBSERVER: true,
+            }
+        })
+    };
+}
+
+function miniVitePlugin(ctx, componentConfig, config) {
+    return [
+        injectLoaderMeta(ctx),
+        miniConfig(),
+        require('@vitejs/plugin-vue').default({
+            template: getMiniVueLoaderOptions(ctx, componentConfig, config)
+        })
+    ];
+}
+function injectLoaderMeta(ctx) {
+    return {
+        name: 'taro-vue3:loader-meta',
+        buildStart() {
+            const { runnerUtils } = ctx;
+            const { getViteMiniCompilerContext } = runnerUtils;
+            const viteCompilerContext = getViteMiniCompilerContext(this);
+            if (viteCompilerContext) {
+                viteCompilerContext.loaderMeta || (viteCompilerContext.loaderMeta = {});
+                Object.assign(viteCompilerContext.loaderMeta, getLoaderMeta());
+            }
+        }
+    };
+}
+function miniConfig() {
+    return {
+        name: 'taro-vue3:mini-config',
+        config: () => ({
+            define: {
+                ENABLE_ADJACENT_HTML: true,
+                ENABLE_CLONE_NODE: true,
+                ENABLE_TEMPLATE_CONTENT: true,
+                ENABLE_MUTATION_OBSERVER: true,
+            }
+        })
+    };
+}
+
+function modifyH5WebpackChain(ctx, chain, config) {
+    var _a;
+    // vue3 tsx 使用原生组件
+    setVueLoader$2(chain, config);
+    setLoader$2(chain);
+    setTaroApiLoader(chain);
+    const { isBuildNativeComp = false } = ((_a = ctx.runOpts) === null || _a === void 0 ? void 0 : _a.options) || {};
+    const externals = {};
+    if (isBuildNativeComp) {
+        // Note: 该模式不支持 prebundle 优化，不必再处理
+        externals.vue = {
+            commonjs: 'vue',
+            commonjs2: 'vue',
+            amd: 'vue',
+            root: 'Vue'
+        };
+        chain.merge({
+            externalsType: 'umd'
+        });
+    }
+    chain.merge({ externals });
+}
+function setVueLoader$2(chain, config) {
+    const vueLoaderPath = getVueLoaderPath();
+    // plugin
+    const { VueLoaderPlugin } = require(vueLoaderPath);
+    chain.plugin('vueLoaderPlugin').use(VueLoaderPlugin);
+    // loader
+    const vueLoaderOption = getH5VueLoaderOptions(config);
+    chain.module.rule('vue').test(helper.REG_VUE).use('vueLoader').loader(vueLoaderPath).options(vueLoaderOption);
+}
+function setLoader$2(chain) {
+    function customizer(object = '', sources = '') {
+        if ([object, sources].every((e) => typeof e === 'string'))
+            return object + sources;
+    }
+    chain.plugin('mainPlugin').tap((args) => {
+        args[0].loaderMeta = lodash.mergeWith(getLoaderMeta(), args[0].loaderMeta, customizer);
+        return args;
+    });
+}
+function setTaroApiLoader(chain) {
+    chain.merge({
+        module: {
+            rule: {
+                'process-import-taro-h5': {
+                    test: helper.REG_TARO_H5,
+                    loader: require.resolve('./api-loader'),
+                },
+            },
+        },
+    });
+}
+
+function modifyHarmonyWebpackChain(ctx, chain, data, config) {
+    setVueLoader$1(ctx, chain, data, config);
+    setLoader$1(chain);
+    setDefinePlugin$2(chain);
+}
+function setVueLoader$1(ctx, chain, data, config) {
+    const vueLoaderPath = getVueLoaderPath();
+    // plugin
+    const { VueLoaderPlugin } = require(vueLoaderPath);
+    chain
+        .plugin('vueLoaderPlugin')
+        .use(VueLoaderPlugin);
+    // loader
+    const vueLoaderOption = getHarmonyVueLoaderOptions(ctx, data.componentConfig, config);
+    chain.module
+        .rule('vue')
+        .test(helper.REG_VUE)
+        .use('vueLoader')
+        .loader(vueLoaderPath)
+        .options(vueLoaderOption);
+}
+function setLoader$1(chain) {
+    chain.plugin('mainPlugin')
+        .tap(args => {
+        var _a;
+        (_a = args[0]).loaderMeta || (_a.loaderMeta = {});
+        Object.assign(args[0].loaderMeta, getLoaderMeta());
+        return args;
+    });
+}
+function setDefinePlugin$2(chain) {
+    chain
+        .plugin('definePlugin')
+        .tap(args => {
+        args[0].ENABLE_ADJACENT_HTML = true;
+        args[0].ENABLE_CLONE_NODE = true;
+        args[0].ENABLE_TEMPLATE_CONTENT = true;
+        args[0].ENABLE_MUTATION_OBSERVER = true;
+        return args;
+    });
+}
+
+function modifyMiniWebpackChain(ctx, chain, data, config) {
+    setVueLoader(ctx, chain, data, config);
+    setLoader(chain);
+    setDefinePlugin$1(chain);
+}
+function setVueLoader(ctx, chain, data, config) {
+    const vueLoaderPath = getVueLoaderPath();
+    // plugin
+    const { VueLoaderPlugin } = require(vueLoaderPath);
+    chain
+        .plugin('vueLoaderPlugin')
+        .use(VueLoaderPlugin);
+    // loader
+    const vueLoaderOption = getMiniVueLoaderOptions(ctx, data.componentConfig, config);
+    chain.module
+        .rule('vue')
+        .test(helper.REG_VUE)
+        .use('vueLoader')
+        .loader(vueLoaderPath)
+        .options(vueLoaderOption);
+}
+function setLoader(chain) {
+    chain.plugin('miniPlugin')
+        .tap(args => {
+        var _a;
+        (_a = args[0]).loaderMeta || (_a.loaderMeta = {});
+        Object.assign(args[0].loaderMeta, getLoaderMeta());
+        return args;
+    });
+}
+function setDefinePlugin$1(chain) {
+    chain
+        .plugin('definePlugin')
+        .tap(args => {
+        args[0].ENABLE_ADJACENT_HTML = true;
+        args[0].ENABLE_CLONE_NODE = true;
+        args[0].ENABLE_TEMPLATE_CONTENT = true;
+        args[0].ENABLE_MUTATION_OBSERVER = true;
+        return args;
+    });
+}
+
+var index = (ctx, config = {}) => {
+    const { framework } = ctx.initialConfig;
+    if (framework !== 'vue3')
+        return;
+    ctx.modifyWebpackChain(({ chain, data }) => {
+        // 通用
+        if (process.env.NODE_ENV !== 'production') {
+            setAlias(chain);
+        }
+        setDefinePlugin(chain);
+        if (process.env.TARO_PLATFORM === 'web') {
+            // H5
+            modifyH5WebpackChain(ctx, chain, config);
+        }
+        else if (process.env.TARO_PLATFORM === 'harmony' || process.env.TARO_ENV === 'harmony') {
+            // 鸿蒙
+            modifyHarmonyWebpackChain(ctx, chain, data, config);
+        }
+        else {
+            // 小程序
+            modifyMiniWebpackChain(ctx, chain, data, config);
+        }
+    });
+    ctx.modifyViteConfig(({ viteConfig, data }) => {
+        viteConfig.plugins.push(viteCommonPlugin());
+        viteConfig.plugins.push(require('@vitejs/plugin-vue-jsx').default());
+        if (process.env.TARO_PLATFORM === 'web') {
+            // H5
+            viteConfig.plugins.push(h5VitePlugin(ctx, config));
+        }
+        else if (process.env.TARO_PLATFORM === 'harmony' || process.env.TARO_ENV === 'harmony') {
+            // 鸿蒙
+            viteConfig.plugins.push(harmonyVitePlugin(ctx, data === null || data === void 0 ? void 0 : data.componentConfig, config));
+        }
+        else {
+            // 小程序
+            viteConfig.plugins.push(miniVitePlugin(ctx, data === null || data === void 0 ? void 0 : data.componentConfig, config));
+        }
+    });
+    ctx.modifyRunnerOpts(({ opts }) => {
+        opts.frameworkExts = helper.VUE_EXT;
+        if (!(opts === null || opts === void 0 ? void 0 : opts.compiler))
+            return;
+        if (shared.isString(opts.compiler)) {
+            opts.compiler = {
+                type: opts.compiler,
+            };
+        }
+        const { compiler } = opts;
+        if (compiler.type === 'webpack5') {
+            // 提供给 webpack5 依赖预编译收集器的第三方依赖
+            const deps = ['vue', '@tarojs/plugin-framework-vue3/dist/runtime'];
+            compiler.prebundle || (compiler.prebundle = {});
+            const prebundleOptions = compiler.prebundle;
+            prebundleOptions.include || (prebundleOptions.include = []);
+            prebundleOptions.include = prebundleOptions.include.concat(deps);
+            const taroVue3Plugin = {
+                name: 'taroVue3Plugin',
+                setup(build) {
+                    build.onLoad({ filter: helper.REG_TARO_H5 }, ({ path }) => {
+                        const content = helper.fs.readFileSync(path).toString();
+                        return {
+                            contents: require('./api-loader')(content),
+                        };
+                    });
+                },
+            };
+            prebundleOptions.esbuild || (prebundleOptions.esbuild = {});
+            const esbuildConfig = prebundleOptions.esbuild;
+            esbuildConfig.plugins || (esbuildConfig.plugins = []);
+            esbuildConfig.plugins.push(taroVue3Plugin);
+        }
+    });
+    ctx.onParseCreateElement(({ nodeName, componentConfig }) => {
+        if (template.capitalize(template.toCamelCase(nodeName)) in template.internalComponents) {
+            componentConfig.includes.add(nodeName);
+        }
+    });
+};
+function setAlias(chain) {
+    // 避免 npm link 时，taro composition apis 使用的 vue 和项目使用的 vue 实例不一致。
+    chain.resolve.alias.set('vue', require.resolve('vue'));
+}
+function setDefinePlugin(chain) {
+    chain.plugin('definePlugin').tap((args) => {
+        const config = args[0];
+        config.__VUE_OPTIONS_API__ = JSON.stringify(true);
+        config.__VUE_PROD_DEVTOOLS__ = JSON.stringify(false);
+        return args;
+    });
+}
+function viteCommonPlugin() {
+    return {
+        name: 'taro-vue3:common',
+        config: () => ({
+            define: {
+                __VUE_OPTIONS_API__: JSON.stringify(true),
+                __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+            },
+            resolve: {
+                dedupe: ['vue'],
+            },
+            build: {
+                sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
+            },
+        }),
+    };
+}
+
+exports.default = index;
+//# sourceMappingURL=index.js.map

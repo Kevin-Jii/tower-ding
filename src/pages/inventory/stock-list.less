@@ -1,0 +1,188 @@
+.banner {
+  margin-top: 18px;
+  border-radius: 28px;
+  padding: 24px 22px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.banner--warn {
+  background: linear-gradient(125deg, #fff6ec 0%, #ffefe4 38%, #fffdfb 100%);
+  border: 1px solid rgba(235, 180, 140, 0.55);
+  box-shadow: 0 16px 40px rgba(200, 110, 70, 0.12);
+}
+
+.bannerIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffb347 0%, #ff8c42 100%);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(255, 140, 66, 0.35);
+}
+
+.bannerTitle {
+  font-size: 30px;
+  font-weight: 800;
+  color: #5c3d2a;
+}
+
+.bannerSub {
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1.45;
+  color: #8a6a52;
+}
+
+.summary {
+  margin-top: 18px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 22px 12px;
+}
+
+.sumItem {
+  flex: 1;
+  text-align: center;
+}
+
+.sumLabel {
+  font-size: 22px;
+  color: #7a8392;
+}
+
+.sumVal {
+  margin-top: 8px;
+  font-size: 40px;
+  font-weight: 900;
+  color: #111418;
+}
+
+.sumVal--warn {
+  color: #c46241;
+}
+
+.sumDivider {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, #e4e9f0 20%, #e4e9f0 80%, transparent);
+  margin: 4px 0;
+}
+
+.stockScroll {
+  margin-top: 14px;
+  max-height: 56vh;
+  min-height: 320px;
+}
+
+.stockScrollInner {
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.stockRow {
+  margin-bottom: 14px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(83, 96, 122, 0.07);
+  border: 1px solid rgba(232, 236, 243, 0.95);
+}
+
+.stockRow--warn {
+  background: linear-gradient(118deg, #fffbf6 0%, #fff4ea 45%, #fffcfa 100%);
+  border: 1px solid rgba(235, 175, 135, 0.5);
+  box-shadow:
+    0 16px 42px rgba(210, 120, 80, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.stockRowInner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 22px 22px 22px 18px;
+  gap: 14px;
+}
+
+.stockAccent {
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 6px;
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(180deg, #ffb86c 0%, #f07850 55%, #e85d4a 100%);
+  box-shadow: 2px 0 12px rgba(240, 100, 70, 0.35);
+}
+
+.stockMain {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+.stockName {
+  font-size: 30px;
+  font-weight: 800;
+  color: #111418;
+  line-height: 1.25;
+}
+
+.stockMeta {
+  margin-top: 8px;
+  font-size: 22px;
+  color: #7a8392;
+}
+
+.stockRight {
+  flex-shrink: 0;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.pillWarn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #a84a2c;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(232, 160, 130, 0.55);
+}
+
+.stockQty {
+  font-size: 34px;
+  font-weight: 900;
+  color: #111418;
+  letter-spacing: -0.5px;
+}
+
+.stockQty--warn {
+  color: #b84528;
+}
+
+.stockUnit {
+  margin-left: 6px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #7a8392;
+}
+
+.hint {
+  margin-top: 14px;
+  text-align: center;
+  color: #7a8392;
+  font-size: 26px;
+  padding: 36px 20px;
+}

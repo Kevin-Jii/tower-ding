@@ -1,0 +1,294 @@
+.search {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.supplierEntry {
+  margin-top: 18px;
+}
+
+.supplierEntryRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.supplierEntryIconWrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #eef4ff 0%, #f5f7fa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.supplierEntryIcon {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.supplierEntryMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.supplierEntryTitle {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.supplierEntrySub {
+  margin-top: 8px;
+  color: #7a8392;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.supplierEntryArrow {
+  font-size: 40px;
+  color: #b4bcc8;
+  flex-shrink: 0;
+}
+
+.statsGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.statLabel {
+  color: #6e7785;
+  font-size: 22px;
+}
+
+.statValue {
+  margin-top: 8px;
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.statValue--in {
+  color: #2d7a4e;
+}
+
+.statValue--out {
+  color: #c46241;
+}
+
+.stat--tap {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat--tap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 32px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 0 rgba(17, 20, 24, 0);
+  transition: box-shadow 0.2s ease;
+}
+
+.stat--tap:active::after {
+  box-shadow: inset 0 0 0 3px rgba(17, 20, 24, 0.06);
+}
+
+.statHint {
+  margin-top: 10px;
+  font-size: 22px;
+  color: #8b93a0;
+  font-weight: 600;
+}
+
+.alertLink {
+  margin-top: 14px;
+  font-size: 24px;
+  color: #9ecbff;
+}
+
+.empty {
+  text-align: center;
+  color: #7a8392;
+  font-size: 26px;
+  padding: 40px 20px;
+}
+
+.tabs {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+}
+
+.alert {
+  margin-top: 18px;
+}
+
+.alertRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.alertMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.alertIconWrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alertIcon {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.alertLabel {
+  color: #bfc9d7;
+  font-size: 24px;
+}
+
+.alertBig {
+  margin-top: 12px;
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.alertSub {
+  margin-top: 12px;
+  color: #d7dde6;
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+.list {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.row {
+  background: #ffffff;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.rowTitle {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.qtyBox {
+  text-align: right;
+}
+
+.qty {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.qty--low {
+  color: #d06c4a;
+}
+
+.qty--ok {
+  color: #111418;
+}
+
+.rowSub {
+  margin-top: 10px;
+  color: #7a8392;
+  font-size: 22px;
+}
+
+.safe {
+  margin-top: 8px;
+  color: #a0a7b3;
+  font-size: 20px;
+}
+
+.rowFoot {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rowMeta {
+  color: #7a8392;
+  font-size: 22px;
+}
+
+.badge {
+  min-width: 96px;
+  height: 50px;
+  padding: 0 18px;
+  border-radius: 25px;
+  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.badge--low {
+  background: #ffe7de;
+  color: #c46241;
+}
+
+.badge--ok {
+  background: #e8f4ea;
+  color: #4e8a59;
+}
+
+.suggest {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.suggestTitle {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.suggestSub {
+  margin-top: 10px;
+  color: #7a8392;
+  font-size: 22px;
+  line-height: 1.45;
+}
+
+.suggestBtn {
+  min-width: 176px;
+  height: 64px;
+  padding: 0 20px;
+  border-radius: 32px;
+  background: #111418;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}

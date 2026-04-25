@@ -1,0 +1,43 @@
+import Taro from '@tarojs/taro'
+
+const DEFAULT_BASE_URL = 'http://localhost:10024/api/v1'
+
+export type ApiResponse<T> = {
+  code: number
+  message?: string
+  error?: string
+  data: T
+}
+
+function getBaseUrl() {
+  return (process.env.TARO_APP_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '')
+}
+
+export async function request<T>(
+  path: string,
+  options: Omit<Taro.request.Option, 'url'> & { authToken?: string } = {}
+): Promise<T> {
+  const url = `${getBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`
+  const { authToken, header, ...rest } = options
+
+  const res = await Taro.request<ApiResponse<T>>({
+    url,
+    header: {
+      'content-type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(header || {})
+    },
+    ...rest
+  })
+
+  const body = res.data
+  if (!body) throw new Error('接口返回为空')
+
+  if (body.code !== 0 && body.code !== 200) {
+    const msg = body.message || body.error || `请求失败(${body.code})`
+    throw new Error(msg)
+  }
+
+  return body.data as T
+}
+
