@@ -191,9 +191,10 @@ async function loadRows() {
   if (!auth.token) return
   loading.value = true
   try {
+    const storeId = auth.storeId || 999
     await loadUnitOptions(auth.token)
     rows.value = await listStoreSupplierProducts(auth.token, {
-      store_id: auth.storeId || undefined
+      store_id: storeId
     })
     rows.value.forEach((p) => {
       ensureDraft(p.id)

@@ -21,6 +21,13 @@
         <view class="label">密码</view>
         <input class="input" password placeholder="请输入登录密码" :value="password" @input="onPwdInput" />
 
+        <view class="rememberRow" @tap="rememberPwd = !rememberPwd">
+          <view :class="['rememberCheck', rememberPwd ? 'rememberCheck--on' : '']">
+            <text v-if="rememberPwd">✓</text>
+          </view>
+          <view class="rememberText">记住密码</view>
+        </view>
+
         <view class="btn full" @tap="onSubmit">{{ loading ? '登录中...' : '登录' }}</view>
       </view>
     </view>
@@ -28,22 +35,38 @@
 </template>
 
 <script setup lang="ts">
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 
 import './index.less'
 
+const LOGIN_FORM_KEY = 'tower.login.form'
+
 const auth = useAuthStore()
 const phone = ref('')
 const password = ref('')
 const loading = ref(false)
+const rememberPwd = ref(false)
 
 function onPhoneInput(e: any) {
   phone.value = String(e?.detail?.value || '')
 }
 function onPwdInput(e: any) {
   password.value = String(e?.detail?.value || '')
+}
+
+function hydrateRememberForm() {
+  try {
+    const saved = Taro.getStorageSync(LOGIN_FORM_KEY) as { phone?: string; password?: string } | undefined
+    if (saved?.phone && saved?.password) {
+      phone.value = String(saved.phone)
+      password.value = String(saved.password)
+      rememberPwd.value = true
+    }
+  } catch {
+    // ignore
+  }
 }
 
 async function onSubmit() {
@@ -61,6 +84,14 @@ async function onSubmit() {
   Taro.showLoading({ title: '登录中' })
   try {
     await auth.login(phone.value.trim(), password.value)
+    if (rememberPwd.value) {
+      Taro.setStorageSync(LOGIN_FORM_KEY, {
+        phone: phone.value.trim(),
+        password: password.value
+      })
+    } else {
+      Taro.removeStorageSync(LOGIN_FORM_KEY)
+    }
     Taro.hideLoading()
     Taro.switchTab({ url: '/pages/home/index' })
   } catch (err: any) {
@@ -70,4 +101,8 @@ async function onSubmit() {
     loading.value = false
   }
 }
+
+useDidShow(() => {
+  hydrateRememberForm()
+})
 </script>

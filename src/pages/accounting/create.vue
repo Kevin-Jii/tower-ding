@@ -2,7 +2,7 @@
   <view class="page">
     <view class="container">
       <view class="card metaCard">
-        <view class="metaHint">销售渠道来自字典：sales_channel</view>
+        <view class="metaHint">销售渠道（字典名称）</view>
         <view v-if="channelDictLoading" class="dictHint">正在加载渠道选项…</view>
         <view v-else-if="!channelOptions.length" class="dictHint dictHint--warn">未配置「销售渠道」字典，无法提交，请联系管理员</view>
         <template v-else>
@@ -47,6 +47,12 @@
                 >
                   {{ u.label }}
                 </view>
+              </view>
+              <view
+                v-if="lineUnitOptions(line).length < 2"
+                class="lrVal lrVal--hint"
+              >
+                暂无大规格可选，请先到「库存 → 商品单位与价格配置」启用大规格
               </view>
               <view class="lrVal lrVal--hint">单价与小计由后端自动计算</view>
             </view>
@@ -208,18 +214,38 @@ function lineUnitOptions(line) {
   return unitOptionsMap.value[pid] || []
 }
 
+function buildUnitOptions(specs) {
+  const enabled = specs
+    .filter((s) => s?.is_enabled !== false)
+    .map((s) => {
+      const label = String(s?.unit_name || s?.unit_code || '').trim()
+      const factor = Number(s?.factor_to_base || 1)
+      return {
+        label: factor > 1 ? `${label} x${factor}` : label,
+        value: label,
+        spec: label,
+        factor
+      }
+    })
+    .filter((o) => o.value)
+
+  const dedup = []
+  const seen = new Set()
+  enabled
+    .sort((a, b) => a.factor - b.factor)
+    .forEach((o) => {
+      if (seen.has(o.value)) return
+      seen.add(o.value)
+      dedup.push({ label: o.label, value: o.value, spec: o.spec })
+    })
+  return dedup
+}
+
 async function loadUnitOptionsForProduct(productId, fallbackUnit) {
   if (!auth.token || !productId) return
   try {
     const specs = await listProductUnitSpecs(auth.token, productId)
-    const opts = specs
-      .filter((s) => s?.is_enabled !== false)
-      .map((s) => ({
-        label: String(s?.unit_name || s?.unit_code || '').trim(),
-        value: String(s?.unit_name || s?.unit_code || '').trim(),
-        spec: String(s?.unit_name || s?.unit_code || '').trim()
-      }))
-      .filter((o) => o.value)
+    const opts = buildUnitOptions(specs)
     if (opts.length) {
       unitOptionsMap.value[productId] = opts
       for (const line of lines.value) {
@@ -288,8 +314,8 @@ function pickProduct(p) {
   row.product_id = pid
   row.product_name = p.product_name || `商品 #${pid}`
   const fallback = String(p.unit || '').trim() || '件'
-  if (!row.unit) row.unit = fallback
-  if (!row.spec) row.spec = row.unit
+  row.unit = fallback
+  row.spec = fallback
   row.price = undefined
   row.amount = undefined
   void loadUnitOptionsForProduct(pid, fallback)

@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro'
 
-const DEFAULT_BASE_URL = 'http://localhost:10024/api/v1'
+const DEFAULT_BASE_URL = 'http://47.120.27.64:5713/api/v1'
 
 export type ApiResponse<T> = {
   code: number

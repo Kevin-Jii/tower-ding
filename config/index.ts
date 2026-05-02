@@ -4,7 +4,7 @@ import devConfig from './dev'
 import prodConfig from './prod'
 
 /** 与 `src/services/http.ts` 默认一致；构建时写入 `process.env.TARO_APP_*` 的 define，避免小程序运行时访问真实 `process` */
-const DEFAULT_API_BASE = 'http://localhost:10024/api/v1'
+const DEFAULT_API_BASE = 'http://47.120.27.64:5713/api/v1'
 
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<'vite'>(async (merge) => {
@@ -22,7 +22,7 @@ export default defineConfig<'vite'>(async (merge) => {
     outputRoot: 'dist',
     plugins: [],
     env: {
-      TARO_APP_API_BASE_URL: JSON.stringify(DEFAULT_API_BASE)
+      TARO_APP_API_BASE_URL: JSON.stringify(process.env.TARO_APP_API_BASE_URL || DEFAULT_API_BASE)
     },
     defineConstants: {},
     copy: {

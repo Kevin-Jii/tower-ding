@@ -28,7 +28,7 @@
         </view>
         <view class="kv">
           <view class="k">渠道</view>
-          <view class="v">{{ detail?.channel || '-' }}</view>
+          <view class="v">{{ channelLabel(detail?.channel) }}</view>
         </view>
         <view class="kv">
           <view class="k">订单号</view>
@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, ref } from 'vue'
-import { getStoreAccountDetail, type StoreAccount } from '../../services/api'
+import { getStoreAccountDetail, listDictDataByTypeCode, type DictData, type StoreAccount } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import './detail.less'
 
@@ -94,6 +94,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const id = Number(router.params?.id || 0)
 const detail = ref<StoreAccount | null>(null)
+const channelDict = ref<Record<string, string>>({})
 
 const operatorName = computed(() => {
   const operator = detail.value?.operator
@@ -116,6 +117,32 @@ function formatDate(v?: string) {
   return String(v).slice(0, 10)
 }
 
+function mapDict(rows: DictData[]) {
+  const map: Record<string, string> = {}
+  rows.forEach((r) => {
+    const value = String(r?.value || '').trim()
+    if (!value) return
+    map[value] = String(r?.label || r?.value || '').trim() || value
+  })
+  return map
+}
+
+function channelLabel(channel?: string) {
+  const code = String(channel || '').trim()
+  if (!code) return '-'
+  return channelDict.value[code] || code
+}
+
+async function loadChannelDict() {
+  if (!auth.token) return
+  try {
+    const rows = await listDictDataByTypeCode(auth.token, 'sales_channel')
+    channelDict.value = mapDict(rows)
+  } catch {
+    channelDict.value = {}
+  }
+}
+
 async function refresh() {
   if (!auth.token || !id) return
   try {
@@ -125,5 +152,7 @@ async function refresh() {
   }
 }
 
-useDidShow(() => refresh())
+useDidShow(() => {
+  void Promise.all([refresh(), loadChannelDict()])
+})
 </script>

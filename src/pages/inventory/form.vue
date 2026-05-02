@@ -34,32 +34,34 @@
       <scroll-view v-else scroll-y class="productScroll" :show-scrollbar="true">
         <view class="productScrollInner">
           <view v-for="p in products" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
-          <view class="productRowMain" @tap="toggleSelect(p.id)">
-            <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
-              <text v-if="isSelected(p.id)" class="checkMark">✓</text>
+            <view class="productRowTop">
+              <view class="productRowMain" @tap="toggleSelect(p.id)">
+                <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
+                  <text v-if="isSelected(p.id)" class="checkMark">✓</text>
+                </view>
+                <view class="productText">
+                  <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
+                  <view class="productSub">{{ productMeta(p) }}</view>
+                  <view class="productSub">¥{{ formatMoney(displayPrice(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
+                </view>
+              </view>
+              <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
+                <view class="stepBtn" @tap="decQty(p.id)">−</view>
+                <view class="stepVal">{{ formatQty(selection[p.id]?.quantity) }} {{ selectedUnitLabel(p.id) }}</view>
+                <view class="stepBtn" @tap="incQty(p.id)">+</view>
+              </view>
             </view>
-            <view class="productText">
-              <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
-              <view class="productSub">{{ productMeta(p) }}</view>
-              <view class="productSub">¥{{ formatMoney(displayPrice(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
+            <view v-if="isSelected(p.id)" class="unitPills">
+              <view
+                v-for="u in selectedUnitOptions(p.id)"
+                :key="u.value"
+                :class="['unitPill', selection[p.id]?.unit === u.value ? 'unitPill--on' : '']"
+                @tap="selectUnit(p.id, u)"
+              >
+                {{ u.label }}
+              </view>
             </view>
           </view>
-          <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
-            <view class="stepBtn" @tap="decQty(p.id)">−</view>
-            <view class="stepVal">{{ formatQty(selection[p.id]?.quantity) }} {{ selectedUnitLabel(p.id) }}</view>
-            <view class="stepBtn" @tap="incQty(p.id)">+</view>
-          </view>
-          <view v-if="isSelected(p.id)" class="unitPills">
-            <view
-              v-for="u in selectedUnitOptions(p.id)"
-              :key="u"
-              :class="['unitPill', selectedUnitLabel(p.id) === u ? 'unitPill--on' : '']"
-              @tap="selectUnit(p.id, u)"
-            >
-              {{ u }}
-            </view>
-          </view>
-        </view>
         </view>
       </scroll-view>
 
@@ -112,7 +114,12 @@ function toggleSelect(id) {
   } else {
     const p = products.value.find((x) => x.id === id)
     const fallback = String(p?.unit || '').trim() || '件'
-    selection[id] = { quantity: 1, unit: fallback, unitOptions: [fallback] }
+    selection[id] = {
+      quantity: 1,
+      unit: fallback,
+      unitLabel: fallback,
+      unitOptions: [{ label: fallback, value: fallback }]
+    }
     void loadUnitOptionsForProduct(id, fallback)
   }
 }
@@ -143,17 +150,18 @@ function formatQty(n) {
 }
 
 function selectedUnitLabel(id) {
-  return selection[id]?.unit || '件'
+  return selection[id]?.unitLabel || selection[id]?.unit || '件'
 }
 
 function selectedUnitOptions(id) {
   return selection[id]?.unitOptions || []
 }
 
-function selectUnit(id, unit) {
+function selectUnit(id, option) {
   const row = selection[id]
   if (!row) return
-  row.unit = unit
+  row.unit = String(option?.value || '').trim()
+  row.unitLabel = String(option?.label || option?.value || '').trim()
 }
 
 function formatMoney(v) {
@@ -186,8 +194,18 @@ function mapReasonOptions(rows) {
 function mapSpecUnits(specs) {
   return specs
     .filter((s) => s?.is_enabled !== false)
-    .map((s) => String(s.unit_name || s.unit_code || '').trim())
-    .filter((u) => u)
+    .map((s) => {
+      const unitCode = String(s?.unit_code || '').trim()
+      const unitName = String(s?.unit_name || unitCode || '').trim()
+      const factor = Number(s?.factor_to_base || 1)
+      return {
+        label: factor > 1 ? `${unitName} x${factor}` : unitName,
+        value: unitCode || unitName,
+        factor
+      }
+    })
+    .filter((u) => u.value)
+    .sort((a, b) => a.factor - b.factor)
 }
 
 async function loadUnitOptionsForProduct(productId, fallbackUnit) {
@@ -197,13 +215,22 @@ async function loadUnitOptionsForProduct(productId, fallbackUnit) {
     const units = mapSpecUnits(specs)
     if (units.length) {
       selection[productId].unitOptions = units
-      if (!units.includes(selection[productId].unit)) selection[productId].unit = units[0]
+      const exists = units.some((u) => u.value === selection[productId].unit)
+      if (!exists) {
+        selection[productId].unit = units[0].value
+        selection[productId].unitLabel = units[0].label
+      } else {
+        const selected = units.find((u) => u.value === selection[productId].unit)
+        selection[productId].unitLabel = selected?.label || selection[productId].unit
+      }
       return
     }
   } catch {
     // ignore and use fallback
   }
-  selection[productId].unitOptions = [fallbackUnit]
+  selection[productId].unitOptions = [{ label: fallbackUnit, value: fallbackUnit }]
+  selection[productId].unit = fallbackUnit
+  selection[productId].unitLabel = fallbackUnit
 }
 
 async function loadReasonDict() {
@@ -229,8 +256,9 @@ async function loadAllProducts() {
   if (!auth.token) return
   loading.value = true
   try {
+    const storeId = auth.storeId || 999
     products.value = await listStoreSupplierProducts(auth.token, {
-      store_id: auth.storeId || undefined
+      store_id: storeId
     })
   } catch (err) {
     Taro.showToast({ title: err?.message || '加载商品失败', icon: 'none' })

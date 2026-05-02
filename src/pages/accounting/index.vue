@@ -36,7 +36,7 @@
           <view class="rowTop">
             <view>
               <view class="rowTitle">{{ item.account_no || `记账 #${item.id}` }}</view>
-              <view class="rowSub">{{ item.channel || '—' }} · {{ formatDay(item.account_date || item.created_at) }}
+              <view class="rowSub">{{ channelLabel(item.channel) }} · {{ formatDay(item.account_date || item.created_at) }}
               </view>
             </view>
             <view class="amount amount--in">¥ {{ formatMoney(item.net_income_amount ?? item.total_amount) }}</view>
@@ -55,7 +55,13 @@
 <script setup lang="ts">
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { computed, ref } from 'vue'
-import { getStoreAccountStats, listStoreAccounts, type StoreAccount } from '../../services/api'
+import {
+  getStoreAccountStats,
+  listDictDataByTypeCode,
+  listStoreAccounts,
+  type DictData,
+  type StoreAccount
+} from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import './index.less'
 
@@ -63,6 +69,7 @@ const auth = useAuthStore()
 const list = ref<StoreAccount[]>([])
 const stats = ref<{ total_amount?: number; count?: number } | null>(null)
 const range = ref<'month' | 'week' | 'all'>('month')
+const channelDict = ref<Record<string, string>>({})
 
 const queryRange = computed(() => {
   if (range.value === 'all') return {}
@@ -105,6 +112,32 @@ function formatDay(v?: string) {
   return String(v).slice(0, 10)
 }
 
+function mapDict(rows: DictData[]) {
+  const map: Record<string, string> = {}
+  rows.forEach((r) => {
+    const value = String(r?.value || '').trim()
+    if (!value) return
+    map[value] = String(r?.label || r?.value || '').trim() || value
+  })
+  return map
+}
+
+function channelLabel(channel?: string) {
+  const code = String(channel || '').trim()
+  if (!code) return '—'
+  return channelDict.value[code] || code
+}
+
+async function loadChannelDict() {
+  if (!auth.token) return
+  try {
+    const rows = await listDictDataByTypeCode(auth.token, 'sales_channel')
+    channelDict.value = mapDict(rows)
+  } catch {
+    channelDict.value = {}
+  }
+}
+
 async function refresh() {
   if (!auth.token) return
   const q = queryRange.value
@@ -139,6 +172,9 @@ function goCreate() {
 }
 
 useDidShow(() => refresh())
+useDidShow(() => {
+  void loadChannelDict()
+})
 
 usePullDownRefresh(async () => {
   await refresh()
