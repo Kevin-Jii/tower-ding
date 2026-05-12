@@ -15,8 +15,13 @@ declare namespace NodeJS {
   interface ProcessEnv {
     /** NODE 内置环境变量, 会影响到最终构建生成产物 */
     NODE_ENV: 'development' | 'production',
-    /** 当前构建的平台 */
-    TARO_ENV: 'weapp'
+    /** 当前构建的平台：weapp | h5 | rn 等 */
+    TARO_ENV?: string
+    /**
+     * 可选，强制覆盖请求头 `X-Client-Source`（如 App 独立流水线与 TARO_ENV 不一致时）
+     * @example ios-app、android-app、web
+     */
+    TARO_APP_CLIENT_SOURCE?: string
     /**
      * 当前构建的小程序 appid
      * @description 若不同环境有不同的小程序，可通过在 env 文件中配置环境变量`TARO_APP_ID`来方便快速切换 appid， 而不必手动去修改 dist/project.config.json 文件

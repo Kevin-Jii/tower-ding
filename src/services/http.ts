@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro'
+import { CLIENT_SOURCE_HEADER, getClientSource } from './client-source'
 
 const DEFAULT_BASE_URL = 'http://47.120.27.64:5713/api/v1'
 
@@ -24,6 +25,7 @@ export async function request<T>(
     url,
     header: {
       'content-type': 'application/json',
+      [CLIENT_SOURCE_HEADER]: getClientSource(),
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(header || {})
     },
