@@ -5,6 +5,8 @@ export type DashboardStats = Record<string, any>
 export type BusinessCategoryAmount = {
   category_id?: number
   category_name?: string
+  in_amount?: number
+  out_amount?: number
   inbound_amount?: number
   outbound_amount?: number
   net_amount?: number
@@ -60,30 +62,28 @@ type PaginatedList<T> = {
   page_num?: number
 }
 
-export type PurchaseOrder = {
+export type UserProfile = {
   id: number
-  order_no?: string
-  supplier_name?: string
-  supplier_id?: number
-  status?: number | string
-  total_amount?: number
-  remark?: string
-  order_date?: string
-  created_by?: number
+  phone?: string
+  nickname?: string
+  username?: string
+  store_id?: number
+  store?: {
+    id: number
+    name?: string
+    store_code?: string
+    address?: string
+    administrative_unit?: string
+    phone?: string
+    business_hours?: string
+    contact_person?: string
+    status?: number
+  }
+  role_id?: number
+  role?: { id?: number; name?: string; code?: string }
+  status?: number
   created_at?: string
   updated_at?: string
-  store?: { id?: number; name?: string }
-  creator?: { id?: number; nickname?: string; username?: string; phone?: string }
-  items?: Array<{
-    id: number
-    supplier_id?: number
-    quantity?: number
-    unit_price?: number
-    amount?: number
-    remark?: string
-    supplier?: { id?: number; supplier_name?: string }
-    product?: { id?: number; name?: string; unit?: string; price?: number }
-  }>
 }
 
 /** 与 tower-go model.InventoryWithProduct 一致 */
@@ -165,6 +165,8 @@ export type StoreAccount = {
   total_amount?: number
   other_expense_amount?: number
   net_income_amount?: number
+  payment_status?: number
+  member_id?: number
   order_no?: string
   account_no?: string
   item_count?: number
@@ -173,6 +175,7 @@ export type StoreAccount = {
   remark?: string
   account_date?: string
   store?: { id?: number; name?: string }
+  member?: Member
   operator?: { id?: number; nickname?: string; username?: string; phone?: string }
   items?: Array<{
     id: number
@@ -190,6 +193,7 @@ export type StoreAccount = {
 
 export type CreateStoreAccountItemReq = {
   product_id: number
+  product_name?: string
   spec?: string
   quantity: number
   unit?: string
@@ -199,6 +203,8 @@ export type CreateStoreAccountItemReq = {
 }
 
 export type CreateStoreAccountReq = {
+  member_id?: number
+  payment_status?: number
   channel: string
   order_no?: string
   tag_code?: string
@@ -207,6 +213,29 @@ export type CreateStoreAccountReq = {
   account_date?: string
   other_expense_amount?: number
   items: CreateStoreAccountItemReq[]
+}
+
+export type UpdateStoreAccountReq = {
+  member_id?: number | null
+  payment_status?: number
+  channel?: string
+  order_no?: string
+  tag_code?: string
+  tag_name?: string
+  remark?: string
+  account_date?: string
+  other_expense_amount?: number
+}
+
+export type Member = {
+  id: number
+  store_id?: number
+  uid?: string
+  name?: string
+  phone?: string
+  balance?: string | number
+  points?: number
+  level?: number
 }
 
 export type CreateInventoryOrderItemReq = {
@@ -224,22 +253,6 @@ export type CreateInventoryOrderReq = {
   items: CreateInventoryOrderItemReq[]
 }
 
-export type SupplierGroupedItems = {
-  supplier_id: number
-  supplier_name?: string
-  sub_total?: number
-  items?: Array<{
-    id: number
-    product_id?: number
-    product_name?: string
-    unit?: string
-    quantity?: number
-    unit_price?: number
-    amount?: number
-    remark?: string
-  }>
-}
-
 function unwrapList<T>(payload: T[] | PaginatedList<T> | Record<string, any> | null | undefined): T[] {
   if (Array.isArray(payload)) return payload
   if (Array.isArray((payload as PaginatedList<T>)?.list)) return (payload as PaginatedList<T>).list || []
@@ -252,6 +265,10 @@ export function getDashboardStats(authToken: string, params: { period?: string; 
   return request<DashboardStats>('/statistics/dashboard', { method: 'GET', data: params, authToken })
 }
 
+export function getUserProfile(authToken: string) {
+  return request<UserProfile>('/users/profile', { method: 'GET', authToken })
+}
+
 export function getBusinessOverview(
   authToken: string,
   params: { start_date: string; end_date: string; store_id?: number }
@@ -261,7 +278,7 @@ export function getBusinessOverview(
 
 export function getHomeCharts(
   authToken: string,
-  params: { start_date: string; end_date: string; granularity: 'day' | 'week' | 'month'; store_id?: number }
+  params: { start_date: string; end_date: string; granularity: 'day' | 'month'; store_id?: number }
 ) {
   return request<HomeCharts>('/statistics/home-charts', { method: 'GET', data: params, authToken })
 }
@@ -440,45 +457,6 @@ export function listSuppliers(
   }).then(unwrapList)
 }
 
-export function listPurchaseOrders(
-  authToken: string,
-  params: { store_id?: number; supplier_id?: number; status?: number; date?: string; page?: number; page_size?: number }
-) {
-  return request<PurchaseOrder[] | PaginatedList<PurchaseOrder>>('/purchase-orders', {
-    method: 'GET',
-    data: params,
-    authToken
-  }).then(unwrapList)
-}
-
-export function getPurchaseOrderDetail(authToken: string, id: number) {
-  return request<PurchaseOrder>(`/purchase-orders/${id}`, { method: 'GET', authToken })
-}
-
-export function getPurchaseOrderSupplierGroups(authToken: string, id: number) {
-  return request<SupplierGroupedItems[]>(`/purchase-orders/${id}/by-supplier`, { method: 'GET', authToken })
-}
-
-export function getPurchaseOrderActions(authToken: string, id: number) {
-  return request<string[]>(`/purchase-orders/${id}/actions`, { method: 'GET', authToken })
-}
-
-export function confirmPurchaseOrder(authToken: string, id: number) {
-  return request<null>(`/purchase-orders/${id}/confirm`, { method: 'POST', authToken })
-}
-
-export function completePurchaseOrder(authToken: string, id: number) {
-  return request<null>(`/purchase-orders/${id}/complete`, { method: 'POST', authToken })
-}
-
-export function cancelPurchaseOrder(authToken: string, id: number, reason?: string) {
-  return request<null>(`/purchase-orders/${id}/cancel`, {
-    method: 'POST',
-    data: reason ? { reason } : {},
-    authToken
-  })
-}
-
 export function listStoreAccounts(
   authToken: string,
   params: { store_id?: number; channel?: string; order_no?: string; start_date?: string; end_date?: string; page?: number; page_size?: number }
@@ -494,6 +472,10 @@ export function getStoreAccountDetail(authToken: string, id: number) {
   return request<StoreAccount>(`/store-accounts/${id}`, { method: 'GET', authToken })
 }
 
+export function updateStoreAccount(authToken: string, id: number, body: UpdateStoreAccountReq) {
+  return request<null>(`/store-accounts/${id}`, { method: 'PUT', data: body, authToken })
+}
+
 export function getStoreAccountStats(
   authToken: string,
   params: { store_id?: number; start_date?: string; end_date?: string }
@@ -507,6 +489,17 @@ export function getStoreAccountStats(
 
 export function createStoreAccount(authToken: string, body: CreateStoreAccountReq) {
   return request<StoreAccount>('/store-accounts', { method: 'POST', data: body, authToken })
+}
+
+export function listMembers(
+  authToken: string,
+  params: { keyword?: string; page?: number; page_size?: number } = {}
+) {
+  return request<Member[] | PaginatedList<Member>>('/members', {
+    method: 'GET',
+    data: { page: 1, page_size: 50, ...params },
+    authToken
+  }).then(unwrapList)
 }
 
 /** tower-go model.DictData；门店端用于下拉/标签选择 */

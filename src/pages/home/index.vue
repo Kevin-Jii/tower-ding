@@ -73,8 +73,8 @@
         <view v-for="(c, idx) in categoriesTop" :key="`${c.category_id || idx}`" class="categoryRow">
           <view class="categoryName">{{ c.category_name || `品类 #${c.category_id || idx + 1}` }}</view>
           <view class="categoryVals">
-            <text>入 ¥{{ formatMoney(c.inbound_amount) }}</text>
-            <text>出 ¥{{ formatMoney(c.outbound_amount) }}</text>
+            <text>入 ¥{{ formatMoney(categoryInAmount(c)) }}</text>
+            <text>出 ¥{{ formatMoney(categoryOutAmount(c)) }}</text>
             <text>净 ¥{{ formatMoney(c.net_amount) }}</text>
           </view>
         </view>
@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 import { getBusinessOverview, getHomeCharts, type BusinessOverview, type HomeCharts } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
@@ -139,7 +139,8 @@ const queryRange = computed(() => {
 })
 
 const dateRangeText = computed(() => `${queryRange.value.start_date} ~ ${queryRange.value.end_date}`)
-const granularity = computed<'day' | 'week' | 'month'>(() => (range.value === 'today' ? 'day' : range.value))
+/** 后端 home-charts 仅支持 day / month；近 7 天按自然日聚合 */
+const granularity = computed<'day' | 'month'>(() => (range.value === 'month' ? 'month' : 'day'))
 
 const lineX = computed(() => (charts.value?.line || []).map((i) => i.date || ''))
 const lineSales = computed(() => (charts.value?.line || []).map((i) => Number(i.amount || 0)))
@@ -152,6 +153,14 @@ const radarHasData = computed(() => (charts.value?.radar || []).length > 0)
 function formatMoney(v: any) {
   const n = Number(v || 0)
   return Number.isFinite(n) ? n.toFixed(2) : '--'
+}
+
+function categoryInAmount(row: any) {
+  return row?.inbound_amount ?? row?.in_amount
+}
+
+function categoryOutAmount(row: any) {
+  return row?.outbound_amount ?? row?.out_amount
 }
 
 function setRange(v: 'today' | 'week' | 'month') {
@@ -332,7 +341,10 @@ function drawRadarChart() {
 }
 
 async function refresh() {
-  if (!auth.token) return
+  if (!auth.token) {
+    Taro.redirectTo({ url: '/pages/login/index' })
+    return
+  }
   try {
     const [ov, ch] = await Promise.all([
       getBusinessOverview(auth.token, {
@@ -352,10 +364,16 @@ async function refresh() {
     void renderCharts()
   } catch (err: any) {
     Taro.showToast({ title: err?.message || '加载失败', icon: 'none' })
+  } finally {
+    Taro.stopPullDownRefresh()
   }
 }
 
 useDidShow(() => {
+  void refresh()
+})
+
+usePullDownRefresh(() => {
   void refresh()
 })
 </script>

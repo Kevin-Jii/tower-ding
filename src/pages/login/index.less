@@ -1,6 +1,19 @@
 .login {
   background: linear-gradient(180deg, #f7faff 0%, #f2f4f8 55%, #eceef3 100%);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.loginBody {
+  flex: 1;
+  min-height: 0;
+}
+
+.loginFooter {
+  flex-shrink: 0;
+  padding: 12px 24px calc(28px + env(safe-area-inset-bottom));
 }
 
 .brand {
@@ -72,6 +85,76 @@
 input {
   width: 100%;
 }
+
+.pwdWrap {
+  display: flex;
+  align-items: center;
+  height: 92px;
+  background: #f6f7fa;
+  border-radius: 28px;
+  padding-right: 6px;
+  box-sizing: border-box;
+}
+
+.pwdWrap .pwdInput {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 92px;
+  background: transparent;
+}
+
+.pwdEye {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eyeDraw {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eyeDrawOutline {
+  width: 34px;
+  height: 22px;
+  border: 2.5px solid #6a7585;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.eyeDrawPupil {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  background: #6a7585;
+  border-radius: 50%;
+}
+
+.eyeDrawSlash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 2.5px;
+  margin-left: -19px;
+  margin-top: -1.25px;
+  background: #6a7585;
+  border-radius: 1px;
+  transform: rotate(-38deg);
+}
+
 .full {
   margin-top: 22px;
   margin-top: 30px;
@@ -107,6 +190,41 @@ input {
 .rememberText {
   font-size: 24px;
   color: #5d6777;
+}
+
+.agreeRow {
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.agreeCheckWrap {
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.agreeText {
+  flex: 1;
+  min-width: 0;
+  font-size: 24px;
+  line-height: 1.65;
+  color: #5d6777;
+}
+
+.agreePlain {
+  font-size: 24px;
+  color: #5d6777;
+}
+
+.agreeLink {
+  display: inline-block;
+  color: #2f66d0;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.65;
+  padding: 6px 0;
+  vertical-align: baseline;
 }
 
 .overview-grid {

@@ -1,34 +1,68 @@
 <template>
   <view class="page login">
-    <view class="container">
-      <view class="headline">掌上工作台</view>
-      <view class="subtitle">采购、库存、记账、门店协同</view>
+    <view class="loginBody">
+      <view class="container">
+        <view class="headline">掌上工作台</view>
+        <view class="subtitle">库存、记账、门店协同</view>
 
-      <view class="card form">
-        <view class="formTop">
-          <view class="brandMark">
-            <view class="brandCore" />
+        <view class="card form">
+          <view class="formTop">
+            <view class="brandMark">
+              <view class="brandCore" />
+            </view>
+            <view>
+              <view class="formTitle">门店登录</view>
+              <view class="formSub">使用手机号和密码进入门店后台</view>
+            </view>
           </view>
-          <view>
-            <view class="formTitle">门店登录</view>
-            <view class="formSub">使用手机号和密码进入门店后台</view>
+
+          <view class="label">手机号</view>
+          <input class="input" type="number" maxlength="11" placeholder="请输入手机号" :value="phone" @input="onPhoneInput" />
+
+          <view class="label">密码</view>
+          <view class="pwdWrap">
+            <input
+              class="input pwdInput"
+              :password="maskPassword"
+              placeholder="请输入登录密码"
+              :value="password"
+              @input="onPwdInput"
+            />
+            <view class="pwdEye" @tap.stop="maskPassword = !maskPassword">
+              <view class="eyeDraw">
+                <view class="eyeDrawOutline" />
+                <view class="eyeDrawPupil" />
+                <view v-if="!maskPassword" class="eyeDrawSlash" />
+              </view>
+            </view>
+          </view>
+
+          <view class="rememberRow" @tap="rememberPwd = !rememberPwd">
+            <view :class="['rememberCheck', rememberPwd ? 'rememberCheck--on' : '']">
+              <text v-if="rememberPwd">✓</text>
+            </view>
+            <view class="rememberText">记住密码</view>
+          </view>
+
+          <view class="btn full" @tap="onSubmit">{{ loading ? '登录中...' : '登录' }}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="loginFooter">
+      <view class="agreeRow">
+        <view class="agreeCheckWrap" @tap.stop="agreedTerms = !agreedTerms">
+          <view :class="['rememberCheck', agreedTerms ? 'rememberCheck--on' : '']">
+            <text v-if="agreedTerms">✓</text>
           </view>
         </view>
-
-        <view class="label">手机号</view>
-        <input class="input" type="number" maxlength="11" placeholder="请输入手机号" :value="phone" @input="onPhoneInput" />
-
-        <view class="label">密码</view>
-        <input class="input" password placeholder="请输入登录密码" :value="password" @input="onPwdInput" />
-
-        <view class="rememberRow" @tap="rememberPwd = !rememberPwd">
-          <view :class="['rememberCheck', rememberPwd ? 'rememberCheck--on' : '']">
-            <text v-if="rememberPwd">✓</text>
-          </view>
-          <view class="rememberText">记住密码</view>
+        <view class="agreeText">
+          <text class="agreePlain">我已阅读并同意</text>
+          <view class="agreeLink" @tap="onOpenUserAgreement">《用户服务协议》</view>
+          <text class="agreePlain">与</text>
+          <view class="agreeLink" @tap="onOpenPrivacyPolicy">《隐私政策》</view>
+          <text class="agreePlain">，并授权在登录过程中处理我的手机号等必要信息。</text>
         </view>
-
-        <view class="btn full" @tap="onSubmit">{{ loading ? '登录中...' : '登录' }}</view>
       </view>
     </view>
   </view>
@@ -42,12 +76,18 @@ import { useAuthStore } from '../../stores/auth'
 import './index.less'
 
 const LOGIN_FORM_KEY = 'tower.login.form'
+/** 与协议正文「更新日期」或条款变更保持一致时，已同意用户可自动勾选 */
+const POLICY_VERSION = '2026-05-10'
+const POLICY_ACCEPT_KEY = 'tower.login.policyAcceptedVersion'
 
 const auth = useAuthStore()
 const phone = ref('')
 const password = ref('')
 const loading = ref(false)
 const rememberPwd = ref(false)
+const agreedTerms = ref(false)
+/** true 为密文（小眼睛点一下可短暂查看明文） */
+const maskPassword = ref(true)
 
 function onPhoneInput(e: any) {
   phone.value = String(e?.detail?.value || '')
@@ -69,8 +109,35 @@ function hydrateRememberForm() {
   }
 }
 
+function hydratePolicyAccept() {
+  try {
+    const v = Taro.getStorageSync(POLICY_ACCEPT_KEY) as string | undefined
+    if (v && v === POLICY_VERSION) {
+      agreedTerms.value = true
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function onOpenUserAgreement() {
+  Taro.navigateTo({ url: '/pages/login/user-agreement' }).catch(() => {
+    Taro.showToast({ title: '打开失败，请重试', icon: 'none' })
+  })
+}
+
+function onOpenPrivacyPolicy() {
+  Taro.navigateTo({ url: '/pages/login/privacy-policy' }).catch(() => {
+    Taro.showToast({ title: '打开失败，请重试', icon: 'none' })
+  })
+}
+
 async function onSubmit() {
   if (loading.value) return
+  if (!agreedTerms.value) {
+    Taro.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
+    return
+  }
   if (phone.value.trim().length !== 11) {
     Taro.showToast({ title: '请输入 11 位手机号', icon: 'none' })
     return
@@ -84,6 +151,7 @@ async function onSubmit() {
   Taro.showLoading({ title: '登录中' })
   try {
     await auth.login(phone.value.trim(), password.value)
+    Taro.setStorageSync(POLICY_ACCEPT_KEY, POLICY_VERSION)
     if (rememberPwd.value) {
       Taro.setStorageSync(LOGIN_FORM_KEY, {
         phone: phone.value.trim(),
@@ -104,5 +172,6 @@ async function onSubmit() {
 
 useDidShow(() => {
   hydrateRememberForm()
+  hydratePolicyAccept()
 })
 </script>

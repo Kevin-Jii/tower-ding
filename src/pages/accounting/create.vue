@@ -27,13 +27,33 @@
             <view class="lineTitle">第 {{ idx + 1 }} 行</view>
             <view v-if="lines.length > 1" class="lineRemove" @tap="removeLine(idx)">删除</view>
           </view>
-          <view class="pickRow" @tap="openPicker(idx)">
+          <view class="lineMode">
+            <view :class="['modePill', !line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, false)">库存商品</view>
+            <view :class="['modePill', line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, true)">自定义内容</view>
+          </view>
+          <view v-if="!line.is_custom" class="pickRow" @tap="openPicker(idx)">
             <view v-if="line.product_id" class="pickMain">
               <view class="pickName">{{ line.product_name }}</view>
               <view class="pickSub">ID {{ line.product_id }}</view>
             </view>
             <view v-else class="pickPlaceholder">点击选择商品</view>
             <view class="pickArrow">›</view>
+          </view>
+          <view v-else class="customBox">
+            <view class="fieldLabel">记账内容</view>
+            <input class="input compactInput" :value="line.product_name" placeholder="如：临时服务费 / 手工收入" @input="onCustomNameInput(idx, $event)" />
+            <view class="row2">
+              <view class="col">
+                <view class="fieldLabel mt">单位</view>
+                <input class="input compactInput" :value="line.unit" placeholder="次/份/项" @input="onCustomUnitInput(idx, $event)" />
+              </view>
+              <view class="col">
+                <view class="fieldLabel mt">单价</view>
+                <input class="input compactInput" type="digit" :value="line.price || ''" placeholder="0.00" @input="onCustomPriceInput(idx, $event)" />
+              </view>
+            </view>
+            <view class="fieldLabel mt">备注</view>
+            <input class="input compactInput" :value="line.remark || ''" placeholder="选填" @input="onLineRemarkInput(idx, $event)" />
           </view>
           <view v-if="line.product_id" class="lineReadRow">
             <view class="lrItem lrItem--wide">
@@ -120,7 +140,11 @@ const channelDictLoading = ref(false)
 const channel = ref('')
 const accountDate = ref(todayStr())
 const otherExpenseAmount = ref(0)
-const lines = ref([{ product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, product_name: '' }])
+function newLine() {
+  return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, product_name: '', remark: '', is_custom: false }
+}
+
+const lines = ref([newLine()])
 const submitting = ref(false)
 
 const pickerOpen = ref(false)
@@ -177,7 +201,7 @@ function todayStr() {
 }
 
 function addLine() {
-  lines.value.push({ product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, product_name: '' })
+  lines.value.push(newLine())
 }
 
 function removeLine(i) {
@@ -199,6 +223,45 @@ function onChannelChange(e) {
   const idx = Number(e?.detail?.value ?? -1)
   if (!Number.isInteger(idx) || idx < 0 || idx >= channelOptions.value.length) return
   channel.value = channelOptions.value[idx]?.value || ''
+}
+
+function setLineMode(i, isCustom) {
+  const line = lines.value[i]
+  if (!line) return
+  line.is_custom = Boolean(isCustom)
+  line.product_id = 0
+  line.product_name = ''
+  line.unit = ''
+  line.spec = ''
+  line.price = 0
+  line.amount = 0
+  line.remark = ''
+}
+
+function onCustomNameInput(i, e) {
+  const line = lines.value[i]
+  if (!line) return
+  line.product_name = String(e?.detail?.value || '')
+}
+
+function onCustomUnitInput(i, e) {
+  const line = lines.value[i]
+  if (!line) return
+  line.unit = String(e?.detail?.value || '')
+  line.spec = line.unit
+}
+
+function onCustomPriceInput(i, e) {
+  const line = lines.value[i]
+  if (!line) return
+  const n = Number(String(e?.detail?.value || '').replace(/[^\d.]/g, ''))
+  line.price = Number.isFinite(n) && n >= 0 ? n : 0
+}
+
+function onLineRemarkInput(i, e) {
+  const line = lines.value[i]
+  if (!line) return
+  line.remark = String(e?.detail?.value || '')
 }
 
 function setLineUnit(i, unit, spec) {
@@ -331,6 +394,35 @@ async function submit() {
   const items = []
   let hasMissingUnit = false
   for (const line of lines.value) {
+    if (line.is_custom) {
+      const name = String(line.product_name || '').trim()
+      const unit = String(line.unit || '').trim()
+      const qty = Number(line.quantity)
+      const price = Number(line.price || 0)
+      if (!name && !unit && !price) continue
+      if (!name) {
+        Taro.showToast({ title: '请填写自定义记账内容', icon: 'none' })
+        return
+      }
+      if (!unit) {
+        Taro.showToast({ title: `请填写「${name}」单位`, icon: 'none' })
+        return
+      }
+      if (!(qty > 0) || !(price > 0)) {
+        Taro.showToast({ title: `请填写「${name}」数量和单价`, icon: 'none' })
+        return
+      }
+      items.push({
+        product_id: 0,
+        product_name: name,
+        quantity: qty,
+        unit,
+        price,
+        amount: Math.round(qty * price * 100) / 100,
+        remark: line.remark || undefined
+      })
+      continue
+    }
     if (!line.product_id) continue
     const qty = Number(line.quantity)
     if (!(qty > 0)) continue

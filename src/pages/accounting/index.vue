@@ -139,7 +139,10 @@ async function loadChannelDict() {
 }
 
 async function refresh() {
-  if (!auth.token) return
+  if (!auth.token) {
+    Taro.redirectTo({ url: '/pages/login/index' })
+    return
+  }
   const q = queryRange.value
   try {
     const [accounts, accountStats] = await Promise.all([

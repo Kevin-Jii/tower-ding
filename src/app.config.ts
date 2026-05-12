@@ -1,8 +1,9 @@
 export default {
   pages: [
     'pages/login/index',
+    'pages/login/user-agreement',
+    'pages/login/privacy-policy',
     'pages/home/index',
-    'pages/purchase/index',
     'pages/inventory/index',
     'pages/inventory/orders',
     'pages/inventory/order-detail',
@@ -13,7 +14,6 @@ export default {
     'pages/accounting/index',
     'pages/accounting/create',
     'pages/mine/index',
-    'pages/purchase/detail',
     'pages/accounting/detail'
   ],
   window: {
@@ -31,10 +31,6 @@ export default {
       {
         pagePath: 'pages/home/index',
         text: '首页'
-      },
-      {
-        pagePath: 'pages/purchase/index',
-        text: '采购'
       },
       {
         pagePath: 'pages/inventory/index',

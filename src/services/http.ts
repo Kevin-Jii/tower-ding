@@ -30,8 +30,20 @@ export async function request<T>(
     ...rest
   })
 
+  if (res.statusCode === 401) {
+    Taro.removeStorageSync('tower.auth')
+    Taro.redirectTo({ url: '/pages/login/index' })
+    throw new Error('登录已过期，请重新登录')
+  }
+
   const body = res.data
   if (!body) throw new Error('接口返回为空')
+
+  if (body.code === 401) {
+    Taro.removeStorageSync('tower.auth')
+    Taro.redirectTo({ url: '/pages/login/index' })
+    throw new Error(body.message || body.error || '登录已过期，请重新登录')
+  }
 
   if (body.code !== 0 && body.code !== 200) {
     const msg = body.message || body.error || `请求失败(${body.code})`
@@ -40,4 +52,3 @@ export async function request<T>(
 
   return body.data as T
 }
-

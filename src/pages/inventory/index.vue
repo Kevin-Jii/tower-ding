@@ -133,7 +133,10 @@ function formatInt(v: any) {
 }
 
 async function refresh() {
-  if (!auth.token) return
+  if (!auth.token) {
+    Taro.redirectTo({ url: '/pages/login/index' })
+    return
+  }
   try {
     const [s, rows, b] = await Promise.all([
       getInventoryStats(auth.token, { store_id: auth.storeId || undefined }),

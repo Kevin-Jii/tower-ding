@@ -1,14 +1,14 @@
 import { defineStore } from 'pinia'
 import Taro from '@tarojs/taro'
+import { getUserProfile, type UserProfile } from '../services/api'
 import { request } from '../services/http'
 
-type User = {
+type User = UserProfile & {
   id: number
   phone?: string
   nickname?: string
   username?: string
   store_id?: number
-  store?: { id: number; name?: string }
 }
 
 type LoginResponse = {
@@ -49,6 +49,13 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.token
       this.user = data.user_info
       Taro.setStorageSync(STORAGE_KEY, { token: this.token, user: this.user })
+    },
+    async refreshProfile() {
+      if (!this.token) return null
+      const user = await getUserProfile(this.token)
+      this.user = user
+      Taro.setStorageSync(STORAGE_KEY, { token: this.token, user: this.user })
+      return user
     },
     logout() {
       this.token = ''
