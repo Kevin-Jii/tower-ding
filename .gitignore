@@ -5,3 +5,8 @@ deploy_versions/
 node_modules/
 .DS_Store
 .swc
+
+# 本地环境变量（勿提交）
+.env
+.env.local
+.env.*.local
