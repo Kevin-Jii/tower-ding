@@ -2,9 +2,14 @@
   <view class="page">
     <view class="container">
       <view class="card hero">
-        <view class="heroLabel">筛选范围内合计</view>
-        <view class="heroMoney">¥ {{ formatMoney(stats?.total_amount) }}</view>
-        <view class="heroSub">共 {{ stats?.count ?? 0 }} 笔 · 本页展示 {{ list.length }} 条</view>
+        <view class="heroTop">
+          <view>
+            <view class="heroLabel">筛选范围内合计</view>
+            <view class="heroMoney">¥ {{ formatMoney(stats?.total_amount) }}</view>
+          </view>
+          <view class="heroBadge">{{ stats?.count ?? 0 }} 笔</view>
+        </view>
+        <view class="heroSub">本页展示 {{ list.length }} 条记录</view>
         <view class="rangeRow">
           <view :class="['rangePill', range === 'month' ? 'rangePill--on' : '']" @tap="setRange('month')">本月</view>
           <view :class="['rangePill', range === 'week' ? 'rangePill--on' : '']" @tap="setRange('week')">近 7 天</view>
@@ -34,7 +39,7 @@
         <view v-if="!list.length" class="empty card">暂无记账数据</view>
         <view v-for="item in list" :key="item.id" class="row card" @tap="openDetail(item.id)">
           <view class="rowTop">
-            <view>
+            <view class="rowMain">
               <view class="rowTitle">{{ item.account_no || `记账 #${item.id}` }}</view>
               <view class="rowSub">{{ channelLabel(item.channel) }} · {{ formatDay(item.account_date || item.created_at) }}
               </view>

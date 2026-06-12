@@ -16,7 +16,7 @@ declare namespace NodeJS {
     /** NODE 内置环境变量, 会影响到最终构建生成产物 */
     NODE_ENV: 'development' | 'production',
     /** 当前构建的平台：weapp | h5 | rn 等 */
-    TARO_ENV?: string
+    TARO_ENV?: 'weapp' | 'h5' | 'rn' | string
     /**
      * 可选，强制覆盖请求头 `X-Client-Source`（如 App 独立流水线与 TARO_ENV 不一致时）
      * @example ios-app、android-app、web

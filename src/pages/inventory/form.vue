@@ -1,11 +1,26 @@
 <template>
-  <view class="page">
-    <view class="container">
-      <view class="card">
+  <view class="page formPage">
+    <view class="container formContainer">
+      <view class="formTopbar">
+        <view>
+          <view class="eyebrow">库存单据</view>
+          <view class="title">登记出入库</view>
+        </view>
+        <view class="selectedBadge">已选 {{ selectedCount }}</view>
+      </view>
+
+      <view class="card formCard">
+        <view class="cardTitle">单据信息</view>
         <view class="fieldLabel">类型</view>
         <view class="seg">
-          <view :class="['segItem', type === 1 ? 'segItem--on' : '']" @tap="type = 1">入库</view>
-          <view :class="['segItem', type === 2 ? 'segItem--on' : '']" @tap="type = 2">出库</view>
+          <view :class="['segItem', type === 1 ? 'segItem--on segItem--in' : '']" @tap="type = 1">
+            <text class="segMark">+</text>
+            入库
+          </view>
+          <view :class="['segItem', type === 2 ? 'segItem--on segItem--out' : '']" @tap="type = 2">
+            <text class="segMark">-</text>
+            出库
+          </view>
         </view>
         <view class="fieldLabel mt">原因</view>
         <view v-if="reasonDictLoading" class="reasonHint">正在加载原因选项…</view>
@@ -19,7 +34,7 @@
           </view>
         </view>
         <view class="fieldLabel mt">整单备注</view>
-        <textarea class="textarea" :value="remark" placeholder="选填" @input="onRemark" />
+        <textarea class="textarea" :value="remark" placeholder="选填，例如盘点修正、日常销售出库" @input="onRemark" />
       </view>
 
       <view class="section-head">
@@ -29,7 +44,7 @@
 
       <view v-if="loading" class="card hintCard">正在加载商品…</view>
       <view v-else-if="!products.length" class="card hintCard">
-        暂无商品，请先在「库存 → 供应商绑定」中绑定供应商并维护商品。
+        暂无可登记商品，请先在后台维护商品后再创建出入库单。
       </view>
       <scroll-view v-else scroll-y class="productScroll" :show-scrollbar="true">
         <view class="productScrollInner">
@@ -52,6 +67,7 @@
               </view>
             </view>
             <view v-if="isSelected(p.id)" class="unitPills">
+              <view class="unitLabel">单位</view>
               <view
                 v-for="u in selectedUnitOptions(p.id)"
                 :key="u.value"
@@ -65,8 +81,13 @@
         </view>
       </scroll-view>
 
-      <view class="btnRow">
-        <view :class="['btn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中…' : '提交单据' }}
+      <view class="bottomSpacer" />
+      <view class="submitBar">
+        <view class="submitMeta">
+          <view class="submitCount">{{ selectedCount }} 项商品</view>
+          <view class="submitHint">{{ type === 1 ? '入库数量将增加库存' : '出库数量将扣减库存' }}</view>
+        </view>
+        <view :class="['btn submitBtn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中…' : '提交单据' }}
         </view>
       </view>
     </view>

@@ -1,8 +1,10 @@
 .login {
-  background: linear-gradient(180deg, #f7faff 0%, #f2f4f8 55%, #eceef3 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(236, 242, 255, 0.95) 0%, rgba(246, 247, 249, 0.78) 52%),
+    #f6f7f9;
   box-sizing: border-box;
 }
 
@@ -16,72 +18,71 @@
   padding: 12px 24px calc(28px + env(safe-area-inset-bottom));
 }
 
-.brand {
-  margin-top: 36px;
-  margin-top: 16px;
-  color: #6e7785;
-  font-size: 30px;
-}
-
 .headline {
-  margin-top: 10px;
-  font-size: 64px;
-  font-size: 72px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  letter-spacing: -1px;
+  margin-top: 18px;
+  color: #17202a;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 0;
   line-height: 1.1;
 }
 
 .subtitle {
-  margin-top: 20px;
-  margin-top: 22px;
-  font-size: 28px;
-  color: #7a8392;
+  margin-top: 14px;
+  font-size: 26px;
+  color: #687385;
   line-height: 1.5;
 }
+
 .form {
-  margin-top: 42px;
-  padding: 28px;
-  padding: 36px 32px;
+  margin-top: 34px;
+  padding: 32px;
 }
 
 .formTop {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .brandMark {
-  width: 92px;
-  height: 92px;
-  border-radius: 28px;
-  background: #111418;
+  width: 86px;
+  height: 86px;
+  border-radius: 8px;
+  background: #17202a;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .brandCore {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #f5f7fa;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .formTitle {
-  font-size: 40px;
-  font-weight: 800;
+  color: #17202a;
+  font-size: 38px;
+  font-weight: 900;
+}
+
+.formSub {
+  margin-top: 6px;
+  color: #687385;
+  font-size: 23px;
 }
 
 .label {
-  margin-top: 22px;
+  margin-top: 26px;
   margin-bottom: 10px;
-  margin-top: 28px;
-  margin-bottom: 12px;
-  color: #626d7d;
+  color: #596579;
   font-size: 24px;
+  font-weight: 700;
 }
+
 input {
   width: 100%;
 }
@@ -89,9 +90,10 @@ input {
 .pwdWrap {
   display: flex;
   align-items: center;
-  height: 92px;
-  background: #f6f7fa;
-  border-radius: 28px;
+  height: 88px;
+  background: #f7f9fc;
+  border: 1px solid #dce2eb;
+  border-radius: 8px;
   padding-right: 6px;
   box-sizing: border-box;
 }
@@ -100,8 +102,9 @@ input {
   flex: 1;
   width: 0;
   min-width: 0;
-  height: 92px;
+  height: 86px;
   background: transparent;
+  border: none;
 }
 
 .pwdEye {
@@ -125,7 +128,7 @@ input {
 .eyeDrawOutline {
   width: 34px;
   height: 22px;
-  border: 2.5px solid #6a7585;
+  border: 2px solid #687385;
   border-radius: 50%;
   box-sizing: border-box;
 }
@@ -138,7 +141,7 @@ input {
   height: 10px;
   margin-left: -5px;
   margin-top: -5px;
-  background: #6a7585;
+  background: #687385;
   border-radius: 50%;
 }
 
@@ -147,18 +150,17 @@ input {
   left: 50%;
   top: 50%;
   width: 38px;
-  height: 2.5px;
+  height: 2px;
   margin-left: -19px;
-  margin-top: -1.25px;
-  background: #6a7585;
+  margin-top: -1px;
+  background: #687385;
   border-radius: 1px;
   transform: rotate(-38deg);
 }
 
 .full {
-  margin-top: 22px;
   margin-top: 30px;
-  width: 92%;
+  width: 100%;
 }
 
 .rememberRow {
@@ -171,29 +173,29 @@ input {
 .rememberCheck {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #c7d0de;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 900;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .rememberCheck--on {
-  border-color: #2f66d0;
-  background: #2f66d0;
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 .rememberText {
   font-size: 24px;
-  color: #5d6777;
+  color: #596579;
 }
 
 .agreeRow {
-  margin-top: 0;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -201,60 +203,28 @@ input {
 
 .agreeCheckWrap {
   flex-shrink: 0;
-  padding-top: 4px;
+  padding-top: 6px;
 }
 
 .agreeText {
   flex: 1;
   min-width: 0;
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1.65;
-  color: #5d6777;
+  color: #596579;
 }
 
 .agreePlain {
-  font-size: 24px;
-  color: #5d6777;
+  font-size: 23px;
+  color: #596579;
 }
 
 .agreeLink {
   display: inline-block;
-  color: #2f66d0;
-  font-weight: 600;
-  font-size: 24px;
-  line-height: 1.65;
-  padding: 6px 0;
-  vertical-align: baseline;
-}
-
-.overview-grid {
-  margin-top: 30px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.overview-card {
-  min-height: 168px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: none;
-}
-
-.overview-label {
-  font-size: 24px;
-  color: #101216;
-  font-weight: 600;
-}
-
-.overview-value {
-  margin-top: 26px;
-  font-size: 54px;
-  line-height: 1;
+  color: #2563eb;
   font-weight: 800;
-}
-
-.overview-sub {
-  margin-top: 14px;
-  color: #7a8392;
-  font-size: 22px;
+  font-size: 23px;
+  line-height: 1.65;
+  padding: 4px 0;
+  vertical-align: baseline;
 }

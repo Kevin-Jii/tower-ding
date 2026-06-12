@@ -5,12 +5,17 @@
       <view class="title">经营统计</view>
 
       <view class="hero card card-dark">
-        <view class="heroLabel">净利润</view>
-        <view class="heroTitle">¥ {{ formatMoney(overview?.net_profit_amount) }}</view>
-        <view class="heroSub">
-          毛利润 ¥{{ formatMoney(overview?.gross_profit_amount) }} · 出库成本 ¥{{ formatMoney(overview?.outbound_amount) }}
+        <view class="heroTop">
+          <view>
+            <view class="heroLabel">净利润</view>
+            <view class="heroTitle">¥ {{ formatMoney(overview?.net_profit_amount) }}</view>
+          </view>
+          <view class="heroTag">{{ dateRangeText }}</view>
         </view>
-        <view class="heroTag">{{ dateRangeText }}</view>
+        <view class="heroSub">
+          <text>毛利润 ¥{{ formatMoney(overview?.gross_profit_amount) }}</text>
+          <text>出库成本 ¥{{ formatMoney(overview?.outbound_amount) }}</text>
+        </view>
       </view>
 
       <view class="rangeRow">
@@ -43,26 +48,28 @@
       </view>
 
       <view class="focus card">
-        <view class="focusTitle">经营统计</view>
-        <view class="focusItem">
-          <view class="focusDot focusDot--dark" />
-          <view>
+        <view class="focusTitle">单据概览</view>
+        <view class="focusGrid">
+          <view class="focusItem">
+            <view class="focusDot focusDot--dark" />
+            <view>
             <view class="focusItemTitle">销售单数</view>
             <view class="focusItemSub">{{ overview?.sales_order_count ?? 0 }} 单</view>
+            </view>
           </view>
-        </view>
-        <view class="focusItem">
-          <view class="focusDot focusDot--warn" />
-          <view>
+          <view class="focusItem">
+            <view class="focusDot focusDot--warn" />
+            <view>
             <view class="focusItemTitle">入库单数</view>
             <view class="focusItemSub">{{ overview?.inventory_in_count ?? 0 }} 单</view>
+            </view>
           </view>
-        </view>
-        <view class="focusItem">
-          <view class="focusDot focusDot--blue" />
-          <view>
+          <view class="focusItem">
+            <view class="focusDot focusDot--blue" />
+            <view>
             <view class="focusItemTitle">出库单数</view>
             <view class="focusItemSub">{{ overview?.inventory_out_count ?? 0 }} 单</view>
+            </view>
           </view>
         </view>
       </view>

@@ -2,59 +2,85 @@
   margin-top: 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%),
+    #fff;
 }
 
 .avatar {
-  width: 108px;
-  height: 108px;
-  border-radius: 54px;
-  background: linear-gradient(135deg, #111418 0%, #303746 100%);
+  width: 104px;
+  height: 104px;
+  border-radius: 8px;
+  background: #17202a;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 900;
+  flex-shrink: 0;
 }
 
 .profileMeta {
   flex: 1;
+  min-width: 0;
 }
 
 .profileName {
-  font-size: 34px;
-  font-weight: 700;
+  color: #17202a;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.28;
+  word-break: break-all;
 }
 
 .profileStore {
-  margin-top: 10px;
-  color: #7a8392;
+  margin-top: 8px;
+  color: #687385;
   font-size: 24px;
+  line-height: 1.35;
 }
 
-.infoCard {
-  margin-top: 18px;
+.statusBadge {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #eef2f7;
+  color: #687385;
+  font-size: 22px;
+  font-weight: 900;
 }
 
+.statusBadge--on {
+  background: #e8f8f1;
+  color: #047857;
+}
+
+.infoCard,
 .storeCard {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
-.storeCardTitle {
-  font-size: 28px;
-  font-weight: 700;
+.panelTitle {
   margin-bottom: 8px;
+  color: #17202a;
+  font-size: 30px;
+  font-weight: 900;
 }
 
-.storeCard .v {
+.storeCard .v,
+.infoCard .v {
+  max-width: 430px;
   text-align: right;
-  line-height: 1.4;
+  line-height: 1.45;
+  word-break: break-all;
 }
 
 .danger {
-  margin: 22px 0;
-  width: 90%;
-
-  background: #111418;
+  margin: 22px 0 0;
+  width: 100%;
+  background: #fff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }

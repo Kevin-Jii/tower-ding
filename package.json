@@ -12,7 +12,14 @@
   "scripts": {
     "postinstall": "node scripts/patch-taro-vite-runner.js",
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "npm run build:weapp -- --watch"
+    "dev:weapp": "npm run build:weapp -- --watch",
+    "build:h5": "taro build --type h5",
+    "dev:h5": "npm run build:h5 -- --watch",
+    "build:android": "taro build --type h5 --mode android && cap sync android",
+    "dev:android": "npm run dev:h5 -- --mode android",
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync",
+    "cap:open:android": "cap open android"
   },
   "browserslist": [
     "defaults and fully supports es6-module",
@@ -28,10 +35,12 @@
     "@tarojs/components": "4.1.11",
     "@tarojs/helper": "4.1.11",
     "@tarojs/plugin-framework-vue3": "4.1.11",
+    "@tarojs/plugin-platform-h5": "4.1.11",
     "@tarojs/plugin-platform-weapp": "4.1.11",
     "@tarojs/runtime": "4.1.11",
     "@tarojs/shared": "4.1.11",
     "@tarojs/taro": "4.1.11",
+    "@capacitor/core": "^7.6.5",
     "echarts": "5.6.0",
     "pinia": "^2.0.10",
     "resolve": "^1.22.12",
@@ -40,6 +49,8 @@
   "devDependencies": {
     "@babel/core": "^7.8.0",
     "@babel/plugin-proposal-class-properties": "7.14.5",
+    "@capacitor/android": "^7.6.5",
+    "@capacitor/cli": "^7.6.5",
     "@tarojs/cli": "4.1.11",
     "@tarojs/vite-runner": "4.1.11",
     "@types/node": "^18.19.99",

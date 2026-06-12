@@ -9,6 +9,7 @@ export const CLIENT_SOURCE_HEADER = 'X-Client-Source'
  * - weapp：微信小程序
  * - web：H5 / 浏览器内嵌等
  * - app：React Native 等独立 App 构建（Taro `rn`）
+ * - android-app：Capacitor Android 打包（通过 `.env.android` 或 `TARO_APP_CLIENT_SOURCE` 注入）
  * 其他小程序平台（支付宝等）在命中对应 TARO_ENV 时透传平台名，便于区分。
  */
 export function getClientSource(): string {

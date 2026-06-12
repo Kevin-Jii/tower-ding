@@ -30,19 +30,27 @@ export default {
     list: [
       {
         pagePath: 'pages/home/index',
-        text: '首页'
+        text: '首页',
+        iconPath: 'assets/tabbar/home.png',
+        selectedIconPath: 'assets/tabbar/home-active.png'
       },
       {
         pagePath: 'pages/inventory/index',
-        text: '库存'
+        text: '库存',
+        iconPath: 'assets/tabbar/inventory.png',
+        selectedIconPath: 'assets/tabbar/inventory-active.png'
       },
       {
         pagePath: 'pages/accounting/index',
-        text: '记账'
+        text: '记账',
+        iconPath: 'assets/tabbar/accounting.png',
+        selectedIconPath: 'assets/tabbar/accounting-active.png'
       },
       {
         pagePath: 'pages/mine/index',
-        text: '我的'
+        text: '我的',
+        iconPath: 'assets/tabbar/mine.png',
+        selectedIconPath: 'assets/tabbar/mine-active.png'
       }
     ]
   }

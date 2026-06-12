@@ -8,9 +8,11 @@
           </view>
           <view class="profileStore">{{ auth.user?.store?.name || `门店 #${auth.user?.store_id || '-'}` }}</view>
         </view>
+        <view :class="['statusBadge', auth.token ? 'statusBadge--on' : '']">{{ auth.token ? '在线' : '离线' }}</view>
       </view>
 
       <view class="card infoCard">
+        <view class="panelTitle">账号信息</view>
         <view class="kv">
           <view class="k">用户</view>
           <view class="v">{{ auth.user?.nickname || auth.user?.username || auth.user?.phone || '-' }}</view>
@@ -34,7 +36,7 @@
       </view>
 
       <view class="card storeCard">
-        <view class="storeCardTitle">门店信息</view>
+        <view class="panelTitle">门店信息</view>
         <view class="kv">
           <view class="k">门店编号</view>
           <view class="v">{{ storeCode }}</view>
