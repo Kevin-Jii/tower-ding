@@ -26,10 +26,6 @@
           <view class="v">{{ auth.user?.phone || '-' }}</view>
         </view>
         <view class="kv">
-          <view class="k">登录状态</view>
-          <view class="v">{{ auth.token ? '已登录' : '未登录' }}</view>
-        </view>
-        <view class="kv">
           <view class="k">角色</view>
           <view class="v">{{ auth.user?.role?.name || auth.user?.role?.code || '-' }}</view>
         </view>

@@ -1,18 +1,27 @@
 <template>
   <view class="page login">
+    <view class="erpBackdrop">
+      <view class="dashPanel dashPanel--top">
+        <view class="dashPanelTitle" />
+        <view class="dashRow">
+          <view class="dashBar dashBar--blue" />
+          <view class="dashBar dashBar--green" />
+          <view class="dashBar" />
+        </view>
+      </view>
+      <view class="dashPanel dashPanel--side">
+        <view class="dashMetric" />
+        <view class="dashMetric dashMetric--wide" />
+      </view>
+    </view>
     <view class="loginBody">
-      <view class="container">
-        <view class="headline">掌上工作台</view>
-        <view class="subtitle">库存、记账、门店协同</view>
-
+      <view class="container loginContainer">
         <view class="card form">
-          <view class="formTop">
-            <view class="brandMark">
-              <view class="brandCore" />
-            </view>
+          <view class="loginBrand">
+            <image class="brandHeroLogo" src="../../assets/tabbar/home-active.png" mode="aspectFit" />
             <view>
-              <view class="formTitle">门店登录</view>
-              <view class="formSub">使用手机号和密码进入门店后台</view>
+              <view class="headline">Tower Ding</view>
+              <view class="subtitle">门店经营 ERP 工作台</view>
             </view>
           </view>
 
@@ -21,13 +30,8 @@
 
           <view class="label">密码</view>
           <view class="pwdWrap">
-            <input
-              class="input pwdInput"
-              :password="maskPassword"
-              placeholder="请输入登录密码"
-              :value="password"
-              @input="onPwdInput"
-            />
+            <input class="input pwdInput" :password="maskPassword" placeholder="请输入登录密码" :value="password"
+              @input="onPwdInput" />
             <view class="pwdEye" @tap.stop="maskPassword = !maskPassword">
               <view class="eyeDraw">
                 <view class="eyeDrawOutline" />
@@ -44,7 +48,8 @@
             <view class="rememberText">记住密码</view>
           </view>
 
-          <view class="btn full" @tap="onSubmit">{{ loading ? '登录中...' : '登录' }}</view>
+          <view :class="['btn', 'full', 'loginBtn', loading ? 'loginBtn--loading' : '']" @tap="onSubmit">{{ loading ?
+            '登录中...' : '登录' }}</view>
         </view>
       </view>
     </view>

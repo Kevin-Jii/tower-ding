@@ -9,34 +9,6 @@
         <view class="selectedBadge">已选 {{ selectedCount }}</view>
       </view>
 
-      <view class="card formCard">
-        <view class="cardTitle">单据信息</view>
-        <view class="fieldLabel">类型</view>
-        <view class="seg">
-          <view :class="['segItem', type === 1 ? 'segItem--on segItem--in' : '']" @tap="type = 1">
-            <text class="segMark">+</text>
-            入库
-          </view>
-          <view :class="['segItem', type === 2 ? 'segItem--on segItem--out' : '']" @tap="type = 2">
-            <text class="segMark">-</text>
-            出库
-          </view>
-        </view>
-        <view class="fieldLabel mt">原因</view>
-        <view v-if="reasonDictLoading" class="reasonHint">正在加载原因选项…</view>
-        <view v-else-if="!reasonOptions.length" class="reasonHint reasonHint--warn">
-          未配置「出入库原因」字典，请联系管理员维护 dict：inventory_reason
-        </view>
-        <view v-else class="chips">
-          <view v-for="o in reasonOptions" :key="o.value" :class="['chip', reason === o.value ? 'chip--on' : '']"
-            @tap="reason = o.value">
-            {{ o.label }}
-          </view>
-        </view>
-        <view class="fieldLabel mt">整单备注</view>
-        <textarea class="textarea" :value="remark" placeholder="选填，例如盘点修正、日常销售出库" @input="onRemark" />
-      </view>
-
       <view class="section-head">
         <view class="section-title">选择商品</view>
         <view class="section-meta">已选 {{ selectedCount }} 项 · 共 {{ products.length }} 个</view>
@@ -46,7 +18,7 @@
       <view v-else-if="!products.length" class="card hintCard">
         暂无可登记商品，请先在后台维护商品后再创建出入库单。
       </view>
-      <scroll-view v-else scroll-y class="productScroll" :show-scrollbar="true">
+      <view v-else class="productList">
         <view class="productScrollInner">
           <view v-for="p in products" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
             <view class="productRowTop">
@@ -79,15 +51,57 @@
             </view>
           </view>
         </view>
-      </scroll-view>
+      </view>
 
       <view class="bottomSpacer" />
       <view class="submitBar">
         <view class="submitMeta">
           <view class="submitCount">{{ selectedCount }} 项商品</view>
-          <view class="submitHint">{{ type === 1 ? '入库数量将增加库存' : '出库数量将扣减库存' }}</view>
+          <view class="submitHint">选择商品后填写单据信息并提交</view>
         </view>
-        <view :class="['btn submitBtn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中…' : '提交单据' }}
+        <view :class="['btn submitBtn', submitting ? 'btn--disabled' : '']" @tap="openSubmitSheet">{{ submitting ? '提交中…' : '提交单据' }}
+        </view>
+      </view>
+
+      <view v-if="submitSheetOpen" class="submitMask" @tap="closeSubmitSheet">
+        <view class="submitSheet" @tap.stop>
+          <view class="sheetHandle" />
+          <view class="sheetTitle">提交单据</view>
+          <view class="sheetSub">请补全单据信息，以下均为必填项</view>
+
+          <view class="sheetField">
+            <view class="fieldLabel">出入库类型</view>
+            <picker mode="selector" :range="typeOptions" range-key="label" :value="typeIndex" @change="onTypeChange">
+              <view class="pickerRow">
+                <text>{{ typeLabel }}</text>
+                <text class="pickerArrow">›</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="sheetField">
+            <view class="fieldLabel">原因</view>
+            <view v-if="reasonDictLoading" class="reasonHint">正在加载原因选项...</view>
+            <view v-else-if="!reasonOptions.length" class="reasonHint reasonHint--warn">
+              未配置出入库原因字典，请联系管理员维护
+            </view>
+            <picker v-else mode="selector" :range="reasonOptions" range-key="label" :value="reasonIndex" @change="onReasonChange">
+              <view class="pickerRow">
+                <text>{{ reasonLabel }}</text>
+                <text class="pickerArrow">›</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="sheetField">
+            <view class="fieldLabel">整单备注</view>
+            <textarea class="textarea" :value="remark" placeholder="必填，例如盘点修正、日常销售出库" @input="onRemark" />
+          </view>
+
+          <view class="sheetActions">
+            <view class="btn btn--ghost sheetBtn" @tap="closeSubmitSheet">取消</view>
+            <view :class="['btn', 'sheetBtn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中...' : '确认提交' }}</view>
+          </view>
         </view>
       </view>
     </view>
@@ -115,14 +129,52 @@ const reasonDictLoading = ref(false)
 const products = ref([])
 const loading = ref(false)
 const submitting = ref(false)
+const submitSheetOpen = ref(false)
+const typeOptions = [
+  { label: '入库', value: 1 },
+  { label: '出库', value: 2 }
+]
 
 /** 已选商品 id -> 数量与单位（步进器维护，最小为 1） */
 const selection = reactive({})
 
 const selectedCount = computed(() => Object.keys(selection).length)
+const typeIndex = computed(() => {
+  const i = typeOptions.findIndex((o) => o.value === type.value)
+  return i >= 0 ? i : 0
+})
+const typeLabel = computed(() => typeOptions[typeIndex.value]?.label || '请选择')
+const reasonIndex = computed(() => {
+  const i = reasonOptions.value.findIndex((o) => o.value === reason.value)
+  return i >= 0 ? i : 0
+})
+const reasonLabel = computed(() => reasonOptions.value[reasonIndex.value]?.label || '请选择原因')
 
 function onRemark(e) {
   remark.value = String(e?.detail?.value || '')
+}
+
+function onTypeChange(e) {
+  const idx = Number(e?.detail?.value || 0)
+  type.value = typeOptions[idx]?.value || 1
+}
+
+function onReasonChange(e) {
+  const idx = Number(e?.detail?.value || 0)
+  reason.value = reasonOptions.value[idx]?.value || ''
+}
+
+function openSubmitSheet() {
+  if (!selectedCount.value) {
+    Taro.showToast({ title: '请先选择商品', icon: 'none' })
+    return
+  }
+  submitSheetOpen.value = true
+}
+
+function closeSubmitSheet() {
+  if (submitting.value) return
+  submitSheetOpen.value = false
 }
 
 function isSelected(id) {
@@ -296,6 +348,10 @@ async function submit() {
     Taro.showToast({ title: '请选择原因', icon: 'none' })
     return
   }
+  if (!remark.value.trim()) {
+    Taro.showToast({ title: '请填写整单备注', icon: 'none' })
+    return
+  }
   const items = Object.entries(selection)
     .map(([pid, v]) => ({
       product_id: Number(pid),
@@ -313,7 +369,7 @@ async function submit() {
     const order = await createInventoryOrder(auth.token, {
       type: type.value,
       reason: r,
-      remark: remark.value.trim() || undefined,
+      remark: remark.value.trim(),
       items
     })
     Taro.showToast({ title: '已提交', icon: 'success' })

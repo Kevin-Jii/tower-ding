@@ -1,71 +1,192 @@
 .login {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(236, 242, 255, 0.95) 0%, rgba(246, 247, 249, 0.78) 52%),
-    #f6f7f9;
+    linear-gradient(180deg, #eef5ff 0%, #f6f7f9 46%, #f8fafc 100%);
   box-sizing: border-box;
 }
 
-.loginBody {
-  flex: 1;
-  min-height: 0;
+.erpBackdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.16) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(28deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0) 36%);
 }
 
-.loginFooter {
-  flex-shrink: 0;
-  padding: 12px 24px calc(28px + env(safe-area-inset-bottom));
+.erpBackdrop::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 360px;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.dashPanel {
+  position: absolute;
+  border: 1px solid rgba(191, 219, 254, 0.68);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 16px 44px rgba(37, 99, 235, 0.08);
+  box-sizing: border-box;
+}
+
+.dashPanel--top {
+  left: 28px;
+  right: 28px;
+  top: 96px;
+  height: 150px;
+  padding: 22px;
+}
+
+.dashPanel--side {
+  right: 30px;
+  top: 268px;
+  width: 190px;
+  height: 104px;
+  padding: 20px;
+}
+
+.dashPanelTitle {
+  width: 180px;
+  height: 14px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.dashRow {
+  margin-top: 26px;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.dashBar {
+  width: 34px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.dashBar--blue {
+  height: 64px;
+  background: rgba(37, 99, 235, 0.38);
+}
+
+.dashBar--green {
+  height: 52px;
+  background: rgba(16, 185, 129, 0.36);
+}
+
+.dashMetric {
+  width: 74px;
+  height: 12px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.26);
+}
+
+.dashMetric--wide {
+  width: 126px;
+  margin-top: 20px;
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.loginBody {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 120px;
+  box-sizing: border-box;
+}
+
+.loginContainer {
+  width: 100%;
+  padding: 26px 28px 20px;
+  box-sizing: border-box;
+}
+
+.loginBrand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+  color: #17202a;
+}
+
+.brandHeroLogo {
+  width: 64px;
+  height: 64px;
+  display: block;
+  border-radius: 8px;
+  background: #eef5ff;
+  border: 1px solid #d7e5ff;
+  box-sizing: border-box;
 }
 
 .headline {
-  margin-top: 18px;
   color: #17202a;
-  font-size: 56px;
+  font-size: 40px;
   font-weight: 900;
   letter-spacing: 0;
-  line-height: 1.1;
+  line-height: 1.08;
 }
 
 .subtitle {
-  margin-top: 14px;
-  font-size: 26px;
+  margin-top: 8px;
+  font-size: 24px;
   color: #687385;
-  line-height: 1.5;
+  line-height: 1.4;
+  font-weight: 700;
 }
 
 .form {
-  margin-top: 34px;
   padding: 32px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.72);
+  box-shadow: 0 20px 54px rgba(37, 99, 235, 0.12);
 }
 
 .formTop {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 18px;
 }
 
 .brandMark {
-  width: 86px;
-  height: 86px;
+  width: 76px;
+  height: 76px;
   border-radius: 8px;
-  background: #17202a;
+  background: #eef5ff;
+  border: 1px solid #d7e5ff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.brandCore {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #fff;
+.brandLogo {
+  width: 54px;
+  height: 54px;
+  display: block;
 }
 
 .formTitle {
   color: #17202a;
-  font-size: 38px;
+  font-size: 36px;
   font-weight: 900;
 }
 
@@ -76,11 +197,11 @@
 }
 
 .label {
-  margin-top: 26px;
+  margin-top: 24px;
   margin-bottom: 10px;
   color: #596579;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 input {
@@ -163,6 +284,20 @@ input {
   width: 100%;
 }
 
+.loginBtn {
+  background: linear-gradient(135deg, #2563eb 0%, #0f766e 100%);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.24);
+}
+
+.loginBtn:active {
+  opacity: 0.88;
+}
+
+.loginBtn--loading {
+  opacity: 0.72;
+}
+
 .rememberRow {
   margin-top: 20px;
   display: flex;
@@ -195,10 +330,22 @@ input {
   color: #596579;
 }
 
+.loginFooter {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  padding: 12px 28px calc(28px + env(safe-area-inset-bottom));
+}
+
 .agreeRow {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(220, 226, 235, 0.9);
+  box-sizing: border-box;
 }
 
 .agreeCheckWrap {
@@ -209,21 +356,21 @@ input {
 .agreeText {
   flex: 1;
   min-width: 0;
-  font-size: 23px;
+  font-size: 22px;
   line-height: 1.65;
-  color: #596579;
+  color: #687385;
 }
 
 .agreePlain {
-  font-size: 23px;
-  color: #596579;
+  font-size: 22px;
+  color: #687385;
 }
 
 .agreeLink {
   display: inline-block;
   color: #2563eb;
-  font-weight: 800;
-  font-size: 23px;
+  font-weight: 900;
+  font-size: 22px;
   line-height: 1.65;
   padding: 4px 0;
   vertical-align: baseline;

@@ -31,14 +31,6 @@
           <view class="v">{{ channelLabel(detail?.channel) }}</view>
         </view>
         <view class="kv">
-          <view class="k">支付状态</view>
-          <view class="v">{{ paymentStatusLabel(detail?.payment_status) }}</view>
-        </view>
-        <view class="kv">
-          <view class="k">关联会员</view>
-          <view class="v">{{ memberLabel(detail?.member) }}</view>
-        </view>
-        <view class="kv">
           <view class="k">订单号</view>
           <view class="v">{{ detail?.order_no || detail?.account_no || '-' }}</view>
         </view>
@@ -62,27 +54,6 @@
           <view class="k">备注</view>
           <view class="v">{{ detail?.remark || '无' }}</view>
         </view>
-      </view>
-
-      <view class="card editCard">
-        <view class="sectionHead">
-          <view class="sectionTitle">会员与支付</view>
-          <view v-if="saving" class="sectionTip">保存中…</view>
-        </view>
-        <view class="editRow">
-          <view class="editLabel">会员</view>
-          <picker mode="selector" :range="memberOptions" range-key="label" :value="memberIndex" @change="onMemberChange">
-            <view class="pickerFake">{{ selectedMemberLabel }} <text class="pickArrowInline">›</text></view>
-          </picker>
-        </view>
-        <view class="editRow">
-          <view class="editLabel">支付状态</view>
-          <view class="paySeg">
-            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付</view>
-            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付</view>
-          </view>
-        </view>
-        <view :class="['btn saveBtn', saving ? 'btn--disabled' : '']" @tap="saveAccountMeta">保存设置</view>
       </view>
 
       <view class="card">
@@ -118,10 +89,7 @@ import { computed, ref } from 'vue'
 import {
   getStoreAccountDetail,
   listDictDataByTypeCode,
-  listMembers,
-  updateStoreAccount,
   type DictData,
-  type Member,
   type StoreAccount
 } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
@@ -132,24 +100,11 @@ const router = useRouter()
 const id = Number(router.params?.id || 0)
 const detail = ref<StoreAccount | null>(null)
 const channelDict = ref<Record<string, string>>({})
-const members = ref<Member[]>([])
-const selectedMemberId = ref(0)
-const paymentStatus = ref(1)
-const saving = ref(false)
 
 const operatorName = computed(() => {
   const operator = detail.value?.operator
   return operator?.nickname || operator?.username || operator?.phone || '-'
 })
-const memberOptions = computed(() => [
-  { label: '不绑定会员', value: 0 },
-  ...members.value.map((m) => ({ label: memberLabel(m), value: Number(m.id || 0) }))
-])
-const memberIndex = computed(() => {
-  const i = memberOptions.value.findIndex((m) => m.value === selectedMemberId.value)
-  return i >= 0 ? i : 0
-})
-const selectedMemberLabel = computed(() => memberOptions.value[memberIndex.value]?.label || '不绑定会员')
 
 function formatMoney(v: any) {
   const n = Number(v || 0)
@@ -183,23 +138,6 @@ function channelLabel(channel?: string) {
   return channelDict.value[code] || code
 }
 
-function paymentStatusLabel(v?: number) {
-  return Number(v || 1) === 2 ? '未支付' : '已支付'
-}
-
-function memberLabel(member?: Member | null) {
-  if (!member) return '-'
-  const name = String(member.name || '').trim()
-  const phone = String(member.phone || '').trim()
-  if (name && phone) return `${name}（${phone}）`
-  return name || phone || `会员 #${member.id}`
-}
-
-function onMemberChange(e: any) {
-  const idx = Number(e?.detail?.value ?? 0)
-  selectedMemberId.value = memberOptions.value[idx]?.value || 0
-}
-
 async function loadChannelDict() {
   if (!auth.token) return
   try {
@@ -215,40 +153,12 @@ async function refresh() {
   try {
     const data = await getStoreAccountDetail(auth.token, id)
     detail.value = data
-    selectedMemberId.value = Number(data.member_id || data.member?.id || 0)
-    paymentStatus.value = Number(data.payment_status || 1) === 2 ? 2 : 1
   } catch (err: any) {
     Taro.showToast({ title: err?.message || '加载失败', icon: 'none' })
   }
 }
 
-async function loadMembers() {
-  if (!auth.token) return
-  try {
-    members.value = await listMembers(auth.token, { page: 1, page_size: 100 })
-  } catch {
-    members.value = []
-  }
-}
-
-async function saveAccountMeta() {
-  if (!auth.token || !id || saving.value) return
-  saving.value = true
-  try {
-    await updateStoreAccount(auth.token, id, {
-      member_id: selectedMemberId.value > 0 ? selectedMemberId.value : 0,
-      payment_status: paymentStatus.value
-    })
-    Taro.showToast({ title: '已保存', icon: 'success' })
-    await refresh()
-  } catch (err: any) {
-    Taro.showToast({ title: err?.message || '保存失败', icon: 'none' })
-  } finally {
-    saving.value = false
-  }
-}
-
 useDidShow(() => {
-  void Promise.all([refresh(), loadChannelDict(), loadMembers()])
+  void Promise.all([refresh(), loadChannelDict()])
 })
 </script>

@@ -10,10 +10,21 @@
           <view class="heroBadge">{{ stats?.count ?? 0 }} 笔</view>
         </view>
         <view class="heroSub">本页展示 {{ list.length }} 条记录</view>
-        <view class="rangeRow">
-          <view :class="['rangePill', range === 'month' ? 'rangePill--on' : '']" @tap="setRange('month')">本月</view>
-          <view :class="['rangePill', range === 'week' ? 'rangePill--on' : '']" @tap="setRange('week')">近 7 天</view>
-          <view :class="['rangePill', range === 'all' ? 'rangePill--on' : '']" @tap="setRange('all')">全部</view>
+        <view class="dateFilter">
+          <picker mode="date" :value="startDate" :end="endDate || today" @change="onStartDateChange">
+            <view class="dateBox">
+              <view class="dateLabel">开始日期</view>
+              <view class="dateValue">{{ startDate || '不限' }}</view>
+            </view>
+          </picker>
+          <view class="dateDash">至</view>
+          <picker mode="date" :value="endDate" :start="startDate || undefined" :end="today" @change="onEndDateChange">
+            <view class="dateBox">
+              <view class="dateLabel">结束日期</view>
+              <view class="dateValue">{{ endDate || '不限' }}</view>
+            </view>
+          </picker>
+          <view class="dateClear" @tap="clearDateRange">清空</view>
         </view>
       </view>
       <view class="card cta" @tap="goCreate">
@@ -51,6 +62,45 @@
             <view class="rowMeta">其他支出 ¥{{ formatMoney(item.other_expense_amount) }}</view>
             <view class="rowMeta">{{ item.item_count ?? item.items?.length ?? 0 }} 项商品</view>
           </view>
+          <view class="rowStatus">
+            <view class="statusTags">
+              <view :class="['statusTag', paymentStatusValue(item) === 2 ? 'statusTag--warn' : 'statusTag--ok']">
+                {{ paymentStatusLabel(item.payment_status) }}
+              </view>
+              <view class="statusTag">{{ memberLabel(item.member) }}</view>
+            </view>
+            <view class="settingsBtn" @tap.stop="openMetaSheet(item)">设置</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="metaSheetOpen" class="metaMask" @tap="closeMetaSheet">
+      <view class="metaSheet" @tap.stop>
+        <view class="sheetHandle" />
+        <view class="sheetTitle">会员与支付</view>
+        <view class="sheetSub">{{ editingAccount?.account_no || `记账 #${editingAccount?.id || ''}` }}</view>
+
+        <view class="editRow">
+          <view class="editLabel">关联会员</view>
+          <picker mode="selector" :range="memberOptions" range-key="label" :value="memberIndex" @change="onMemberChange">
+            <view class="pickerFake">{{ selectedMemberLabel }} <text class="pickArrowInline">›</text></view>
+          </picker>
+        </view>
+
+        <view class="editRow">
+          <view class="editLabel">支付状态</view>
+          <view class="paySeg">
+            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付</view>
+            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付</view>
+          </view>
+        </view>
+
+        <view class="sheetActions">
+          <view class="btn btn--ghost sheetBtn" @tap="closeMetaSheet">取消</view>
+          <view :class="['btn', 'sheetBtn', savingMeta ? 'btn--disabled' : '']" @tap="saveAccountMeta">
+            {{ savingMeta ? '保存中...' : '保存设置' }}
+          </view>
         </view>
       </view>
     </view>
@@ -63,8 +113,11 @@ import { computed, ref } from 'vue'
 import {
   getStoreAccountStats,
   listDictDataByTypeCode,
+  listMembers,
   listStoreAccounts,
+  updateStoreAccount,
   type DictData,
+  type Member,
   type StoreAccount
 } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
@@ -73,26 +126,22 @@ import './index.less'
 const auth = useAuthStore()
 const list = ref<StoreAccount[]>([])
 const stats = ref<{ total_amount?: number; count?: number } | null>(null)
-const range = ref<'month' | 'week' | 'all'>('month')
 const channelDict = ref<Record<string, string>>({})
+const members = ref<Member[]>([])
+const today = todayStr()
+const startDate = ref(monthStartStr())
+const endDate = ref(today)
+const metaSheetOpen = ref(false)
+const editingAccount = ref<StoreAccount | null>(null)
+const selectedMemberId = ref(0)
+const paymentStatus = ref(1)
+const savingMeta = ref(false)
 
 const queryRange = computed(() => {
-  if (range.value === 'all') return {}
-  const now = new Date()
-  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`)
-  const y = now.getFullYear()
-  const m = now.getMonth() + 1
-  const d = now.getDate()
-  const end = `${y}-${pad(m)}-${pad(d)}`
-  if (range.value === 'month') {
-    return { start_date: `${y}-${pad(m)}-01`, end_date: end }
+  return {
+    start_date: startDate.value || undefined,
+    end_date: endDate.value || undefined
   }
-  const startDt = new Date(now)
-  startDt.setDate(startDt.getDate() - 6)
-  const sy = startDt.getFullYear()
-  const sm = startDt.getMonth() + 1
-  const sd = startDt.getDate()
-  return { start_date: `${sy}-${pad(sm)}-${pad(sd)}`, end_date: end }
 })
 
 const avgStat = computed(() => {
@@ -101,9 +150,51 @@ const avgStat = computed(() => {
   if (!c) return '0'
   return formatMoney(t / c)
 })
+const memberOptions = computed(() => [
+  { label: '不绑定会员', value: 0 },
+  ...members.value.map((m) => ({ label: memberLabel(m), value: Number(m.id || 0) }))
+])
+const memberIndex = computed(() => {
+  const i = memberOptions.value.findIndex((m) => m.value === selectedMemberId.value)
+  return i >= 0 ? i : 0
+})
+const selectedMemberLabel = computed(() => memberOptions.value[memberIndex.value]?.label || '不绑定会员')
 
-function setRange(r: 'month' | 'week' | 'all') {
-  range.value = r
+function pad(n: number) {
+  return n < 10 ? `0${n}` : `${n}`
+}
+
+function todayStr() {
+  const now = new Date()
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+function monthStartStr() {
+  const now = new Date()
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
+}
+
+function onStartDateChange(e: any) {
+  const v = String(e?.detail?.value || '').trim()
+  startDate.value = v
+  if (endDate.value && v && v > endDate.value) {
+    endDate.value = v
+  }
+  void refresh()
+}
+
+function onEndDateChange(e: any) {
+  const v = String(e?.detail?.value || '').trim()
+  endDate.value = v
+  if (startDate.value && v && startDate.value > v) {
+    startDate.value = v
+  }
+  void refresh()
+}
+
+function clearDateRange() {
+  startDate.value = ''
+  endDate.value = ''
   void refresh()
 }
 
@@ -133,6 +224,27 @@ function channelLabel(channel?: string) {
   return channelDict.value[code] || code
 }
 
+function paymentStatusValue(item: StoreAccount) {
+  return Number(item.payment_status || 1) === 2 ? 2 : 1
+}
+
+function paymentStatusLabel(v?: number) {
+  return Number(v || 1) === 2 ? '未支付' : '已支付'
+}
+
+function memberLabel(member?: Member | null) {
+  if (!member) return '不绑定会员'
+  const name = String(member.name || '').trim()
+  const phone = String(member.phone || '').trim()
+  if (name && phone) return `${name}(${phone})`
+  return name || phone || `会员 #${member.id}`
+}
+
+function onMemberChange(e: any) {
+  const idx = Number(e?.detail?.value ?? 0)
+  selectedMemberId.value = memberOptions.value[idx]?.value || 0
+}
+
 async function loadChannelDict() {
   if (!auth.token) return
   try {
@@ -140,6 +252,15 @@ async function loadChannelDict() {
     channelDict.value = mapDict(rows)
   } catch {
     channelDict.value = {}
+  }
+}
+
+async function loadMembers() {
+  if (!auth.token) return
+  try {
+    members.value = await listMembers(auth.token, { page: 1, page_size: 100 })
+  } catch {
+    members.value = []
   }
 }
 
@@ -175,13 +296,44 @@ function openDetail(id: number) {
   Taro.navigateTo({ url: `/pages/accounting/detail?id=${id}` })
 }
 
+function openMetaSheet(item: StoreAccount) {
+  editingAccount.value = item
+  selectedMemberId.value = Number(item.member_id || item.member?.id || 0)
+  paymentStatus.value = paymentStatusValue(item)
+  metaSheetOpen.value = true
+  if (!members.value.length) void loadMembers()
+}
+
+function closeMetaSheet() {
+  if (savingMeta.value) return
+  metaSheetOpen.value = false
+}
+
+async function saveAccountMeta() {
+  if (!auth.token || !editingAccount.value?.id || savingMeta.value) return
+  savingMeta.value = true
+  try {
+    await updateStoreAccount(auth.token, editingAccount.value.id, {
+      member_id: selectedMemberId.value > 0 ? selectedMemberId.value : 0,
+      payment_status: paymentStatus.value
+    })
+    Taro.showToast({ title: '已保存', icon: 'success' })
+    metaSheetOpen.value = false
+    await refresh()
+  } catch (err: any) {
+    Taro.showToast({ title: err?.message || '保存失败', icon: 'none' })
+  } finally {
+    savingMeta.value = false
+  }
+}
+
 function goCreate() {
   Taro.navigateTo({ url: '/pages/accounting/create' })
 }
 
 useDidShow(() => refresh())
 useDidShow(() => {
-  void loadChannelDict()
+  void Promise.all([loadChannelDict(), loadMembers()])
 })
 
 usePullDownRefresh(async () => {
