@@ -1,5 +1,6 @@
 export default {
   navigationBarTitleText: '记账',
-  enablePullDownRefresh: true
+  enablePullDownRefresh: true,
+  backgroundTextStyle: 'dark',
+  onReachBottomDistance: 80
 }
-

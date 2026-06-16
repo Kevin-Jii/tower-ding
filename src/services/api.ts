@@ -1,4 +1,4 @@
-import { request } from './http'
+import { request, withGlobalLoading } from './http'
 
 export type DashboardStats = Record<string, any>
 
@@ -61,6 +61,8 @@ type PaginatedList<T> = {
   page_size?: number
   page_num?: number
 }
+
+const MAX_PAGE_SIZE = 100
 
 export type UserProfile = {
   id: number
@@ -135,7 +137,21 @@ export type InventoryOrder = {
 
 export type SupplierProduct = {
   id: number
+  product_id?: number
   supplier_id?: number
+  category_id?: number
+  category_name?: string
+  category?: { id?: number; name?: string }
+  product?: {
+    id?: number
+    name?: string
+    product_name?: string
+    unit?: string
+    category_id?: number
+    category_name?: string
+    category?: { id?: number; name?: string }
+  }
+  product_name?: string
   name?: string
   unit?: string
   price?: number
@@ -163,7 +179,10 @@ export type StoreAccount = {
   channel?: string
   amount?: number
   total_amount?: number
+  income_amount?: number
   other_expense_amount?: number
+  is_errand_order?: number
+  errand_fee?: number
   net_income_amount?: number
   payment_status?: number
   member_id?: number
@@ -188,7 +207,30 @@ export type StoreAccount = {
     amount?: number
     remark?: string
   }>
+  consumables?: StoreAccountConsumable[]
   created_at?: string
+}
+
+export type StoreAccountConsumable = {
+  id?: number
+  account_id?: number
+  product_id?: number
+  product_name?: string
+  quantity?: number
+  unit?: string
+  price?: number
+  amount?: number
+  remark?: string
+}
+
+export type StoreAccountConsumableProduct = {
+  id: number
+  store_id?: number
+  name?: string
+  cost_price?: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export type CreateStoreAccountItemReq = {
@@ -211,7 +253,10 @@ export type CreateStoreAccountReq = {
   tag_name?: string
   remark?: string
   account_date?: string
+  income_amount?: number
   other_expense_amount?: number
+  is_errand_order?: number
+  errand_fee?: number
   items: CreateStoreAccountItemReq[]
 }
 
@@ -220,11 +265,14 @@ export type UpdateStoreAccountReq = {
   payment_status?: number
   channel?: string
   order_no?: string
+  income_amount?: number
   tag_code?: string
   tag_name?: string
   remark?: string
   account_date?: string
   other_expense_amount?: number
+  is_errand_order?: number
+  errand_fee?: number
 }
 
 export type Member = {
@@ -236,6 +284,122 @@ export type Member = {
   balance?: string | number
   points?: number
   level?: number
+  version?: number
+  created_at?: string
+  updated_at?: string
+}
+
+export type B2BCustomer = {
+  id: number
+  store_id?: number
+  name?: string
+  customer_type?: string
+  contact_person?: string
+  phone?: string
+  address?: string
+  settlement?: string
+  price_level?: string
+  credit_limit?: number
+  receivable?: number
+  status?: number
+  remark?: string
+}
+
+export type B2BPrice = {
+  id: number
+  store_id?: number
+  customer_id?: number
+  price_level?: string
+  product_id?: number
+  unit_spec_id?: number
+  unit_name?: string
+  supply_price?: number
+  min_quantity?: number
+  is_enabled?: boolean
+  remark?: string
+  customer?: B2BCustomer
+  product?: { id?: number; name?: string; product_name?: string }
+  unit_spec?: ProductUnitSpec
+}
+
+export type B2BSupplyOrderItem = {
+  id?: number
+  product_id?: number
+  product_name?: string
+  unit_spec_id?: number
+  unit_name?: string
+  factor_to_base?: number
+  quantity?: number
+  base_quantity?: number
+  supply_price?: number
+  cost_price?: number
+  amount?: number
+  cost_amount?: number
+  profit_amount?: number
+  remark?: string
+}
+
+export type B2BSupplyOrder = {
+  id: number
+  order_no?: string
+  store_id?: number
+  customer_id?: number
+  customer_name?: string
+  order_date?: string
+  total_amount?: number
+  paid_amount?: number
+  unpaid_amount?: number
+  cost_amount?: number
+  profit_amount?: number
+  payment_status?: number
+  delivery_status?: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  updated_at?: string
+  customer?: B2BCustomer
+  items?: B2BSupplyOrderItem[]
+}
+
+export type StoreReturnItem = {
+  id?: number
+  product_id?: number
+  product_name?: string
+  quantity?: number
+  deposit?: number
+  remark?: string
+}
+
+export type StoreReturn = {
+  id: number
+  return_no?: string
+  store_id?: number
+  return_date?: string
+  logistics_fee?: number
+  total_deposit?: number
+  item_count?: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  items?: StoreReturnItem[]
+}
+
+export type StoreReturnProduct = {
+  id: number
+  store_id?: number
+  product_name?: string
+  deposit?: number
+  remark?: string
+  status?: number
+}
+
+export type StoreReturnStats = {
+  total_deposit?: number
+  logistics_fee?: number
+  return_count?: number
+  item_count?: number
 }
 
 export type CreateInventoryOrderItemReq = {
@@ -259,6 +423,22 @@ function unwrapList<T>(payload: T[] | PaginatedList<T> | Record<string, any> | n
   if (Array.isArray((payload as any)?.items)) return (payload as any).items
   if (Array.isArray((payload as any)?.rows)) return (payload as any).rows
   return []
+}
+
+async function collectPagedList<T>(
+  loadPage: (params: { page: number; page_size: number }) => Promise<T[]>,
+  maxPages = 50,
+  showLoading = true
+) {
+  return withGlobalLoading(async () => {
+    const rows: T[] = []
+    for (let page = 1; page <= maxPages; page += 1) {
+      const pageRows = await loadPage({ page, page_size: MAX_PAGE_SIZE })
+      rows.push(...pageRows)
+      if (pageRows.length < MAX_PAGE_SIZE) break
+    }
+    return rows
+  }, showLoading)
 }
 
 export function getDashboardStats(authToken: string, params: { period?: string; store_id?: number }) {
@@ -285,13 +465,28 @@ export function getHomeCharts(
 
 export function listInventories(
   authToken: string,
-  params: { store_id?: number; keyword?: string; page?: number; page_size?: number }
+  params: { store_id?: number; keyword?: string; page?: number; page_size?: number; showLoading?: boolean }
 ) {
+  const { showLoading = true, ...data } = params
   return request<InventoryWithProduct[] | PaginatedList<InventoryWithProduct>>('/inventories', {
     method: 'GET',
-    data: params,
-    authToken
+    data,
+    authToken,
+    showLoading
   }).then(unwrapList)
+}
+
+export function listAllInventories(
+  authToken: string,
+  params: { store_id?: number; keyword?: string } = {}
+) {
+  return collectPagedList<InventoryWithProduct>((pageParams) =>
+    listInventories(authToken, {
+      ...params,
+      ...pageParams,
+      showLoading: false
+    })
+  )
 }
 
 export function getInventoryStats(authToken: string, params: { store_id?: number }) {
@@ -335,13 +530,28 @@ export function listSupplierProducts(
  */
 export function listStoreSupplierProducts(
   authToken: string,
-  params: { store_id?: number; supplier_id?: number; category_id?: number; keyword?: string } = {}
+  params: { store_id?: number; supplier_id?: number; category_id?: number; keyword?: string; page?: number; page_size?: number; showLoading?: boolean } = {}
 ) {
+  const { showLoading = true, ...data } = params
   return request<SupplierProduct[] | PaginatedList<SupplierProduct>>('/store-suppliers/products', {
     method: 'GET',
-    data: params,
-    authToken
+    data,
+    authToken,
+    showLoading
   }).then(unwrapList)
+}
+
+export function listAllStoreSupplierProducts(
+  authToken: string,
+  params: { store_id?: number; supplier_id?: number; category_id?: number; keyword?: string } = {}
+) {
+  return collectPagedList<SupplierProduct>((pageParams) =>
+    listStoreSupplierProducts(authToken, {
+      ...params,
+      ...pageParams,
+      showLoading: false
+    })
+  )
 }
 
 /** 更新商品基础单位与价格（门店侧用于维护 bottle/case） */
@@ -459,7 +669,7 @@ export function listSuppliers(
 
 export function listStoreAccounts(
   authToken: string,
-  params: { store_id?: number; channel?: string; order_no?: string; start_date?: string; end_date?: string; page?: number; page_size?: number }
+  params: { store_id?: number; channel?: string; order_no?: string; member_keyword?: string; payment_status?: number; start_date?: string; end_date?: string; page?: number; page_size?: number }
 ) {
   return request<StoreAccount[] | PaginatedList<StoreAccount>>('/store-accounts', {
     method: 'GET',
@@ -480,7 +690,7 @@ export function getStoreAccountStats(
   authToken: string,
   params: { store_id?: number; start_date?: string; end_date?: string }
 ) {
-  return request<{ total_amount?: number; count?: number }>('/store-accounts/stats', {
+  return request<{ total_amount?: number; net_income_amount?: number; count?: number }>('/store-accounts/stats', {
     method: 'GET',
     data: params,
     authToken
@@ -491,6 +701,25 @@ export function createStoreAccount(authToken: string, body: CreateStoreAccountRe
   return request<StoreAccount>('/store-accounts', { method: 'POST', data: body, authToken })
 }
 
+export function bindStoreAccountConsumables(
+  authToken: string,
+  id: number,
+  body: { consumables: Array<Record<string, unknown>> }
+) {
+  return request<null>(`/store-accounts/${id}/consumables`, { method: 'POST', data: body, authToken })
+}
+
+export function listStoreAccountConsumableProducts(
+  authToken: string,
+  params: { store_id?: number; keyword?: string; page?: number; page_size?: number; showLoading?: boolean } = {}
+) {
+  const { showLoading = true, ...data } = params
+  return request<StoreAccountConsumableProduct[] | PaginatedList<StoreAccountConsumableProduct>>(
+    '/store-accounts/consumable-products',
+    { method: 'GET', data, authToken, showLoading }
+  ).then(unwrapList)
+}
+
 export function listMembers(
   authToken: string,
   params: { keyword?: string; page?: number; page_size?: number } = {}
@@ -499,6 +728,135 @@ export function listMembers(
     method: 'GET',
     data: { page: 1, page_size: 50, ...params },
     authToken
+  }).then(unwrapList)
+}
+
+export function createMember(
+  authToken: string,
+  body: {
+    name?: string
+    phone?: string
+    balance?: number
+    points?: number
+    level?: number
+    remark?: string
+    store_id?: number
+  }
+) {
+  return request<Member>('/members', { method: 'POST', data: body, authToken })
+}
+
+export function listB2BCustomers(
+  authToken: string,
+  params: { store_id?: number; keyword?: string; status?: number; page?: number; page_size?: number } = {}
+) {
+  return request<B2BCustomer[] | PaginatedList<B2BCustomer>>('/b2b/customers', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function createB2BCustomer(authToken: string, body: Record<string, unknown>) {
+  return request<B2BCustomer>('/b2b/customers', { method: 'POST', data: body, authToken })
+}
+
+export function listB2BPrices(
+  authToken: string,
+  params: {
+    store_id?: number
+    customer_id?: number
+    price_level?: string
+    product_id?: number
+    keyword?: string
+    page?: number
+    page_size?: number
+  } = {}
+) {
+  return request<B2BPrice[] | PaginatedList<B2BPrice>>('/b2b/prices', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function listB2BSupplyOrders(
+  authToken: string,
+  params: {
+    store_id?: number
+    customer_id?: number
+    keyword?: string
+    payment_status?: number
+    delivery_status?: number
+    start_date?: string
+    end_date?: string
+    page?: number
+    page_size?: number
+  } = {}
+) {
+  return request<B2BSupplyOrder[] | PaginatedList<B2BSupplyOrder>>('/b2b/supply-orders', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function getB2BSupplyOrder(authToken: string, id: number) {
+  return request<B2BSupplyOrder>(`/b2b/supply-orders/${id}`, { method: 'GET', authToken })
+}
+
+export function createB2BSupplyOrder(authToken: string, body: Record<string, unknown>) {
+  return request<B2BSupplyOrder>('/b2b/supply-orders', { method: 'POST', data: body, authToken })
+}
+
+export function updateB2BSupplyOrderDeliveryStatus(authToken: string, id: number, body: { delivery_status: number }) {
+  return request<B2BSupplyOrder>(`/b2b/supply-orders/${id}/delivery-status`, { method: 'PUT', data: body, authToken })
+}
+
+export function updateB2BSupplyOrderPaymentStatus(
+  authToken: string,
+  id: number,
+  body: { payment_status: number; paid_amount?: number }
+) {
+  return request<B2BSupplyOrder>(`/b2b/supply-orders/${id}/payment-status`, { method: 'PUT', data: body, authToken })
+}
+
+export function listStoreReturns(
+  authToken: string,
+  params: { store_id?: number; keyword?: string; start_date?: string; end_date?: string; page?: number; page_size?: number } = {}
+) {
+  return request<StoreReturn[] | PaginatedList<StoreReturn>>('/store-returns', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function getStoreReturn(authToken: string, id: number) {
+  return request<StoreReturn>(`/store-returns/${id}`, { method: 'GET', authToken })
+}
+
+export function getStoreReturnStats(
+  authToken: string,
+  params: { store_id?: number; start_date?: string; end_date?: string } = {}
+) {
+  return request<StoreReturnStats>('/store-returns/stats', { method: 'GET', data: params, authToken })
+}
+
+export function createStoreReturn(authToken: string, body: Record<string, unknown>) {
+  return request<StoreReturn>('/store-returns', { method: 'POST', data: body, authToken })
+}
+
+export function listStoreReturnProducts(
+  authToken: string,
+  params: { store_id?: number; keyword?: string; status?: number; page?: number; page_size?: number; showLoading?: boolean } = {}
+) {
+  const { showLoading = true, ...data } = params
+  return request<StoreReturnProduct[] | PaginatedList<StoreReturnProduct>>('/store-returns/products', {
+    method: 'GET',
+    data,
+    authToken,
+    showLoading
   }).then(unwrapList)
 }
 

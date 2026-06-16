@@ -1,5 +1,14 @@
+.stockPage {
+  min-height: 100vh;
+}
+
+.stockContainer {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
 .banner {
-  margin-top: 18px;
+  margin-top: 0;
   border-radius: 28px;
   padding: 24px 22px;
   display: flex;
@@ -78,14 +87,10 @@
 
 .categoryTabs {
   margin-top: 16px;
-  white-space: nowrap;
-}
-
-.categoryTabsInner {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  min-width: 100%;
 }
 
 .categoryTab {
@@ -105,14 +110,17 @@
   background: #eef4ff;
 }
 
-.stockScroll {
-  margin-top: 14px;
-  max-height: 56vh;
-  min-height: 320px;
+.stockListPanel {
+  margin-top: 16px;
 }
 
-.stockScrollInner {
-  padding-bottom: 24px;
+.stockListPanel .section-title {
+  margin-top: 0;
+}
+
+.stockList {
+  margin-top: 14px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 

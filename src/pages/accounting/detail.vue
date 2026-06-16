@@ -15,15 +15,27 @@
           <view class="sectionTitle">基础信息</view>
         </view>
         <view class="kv">
-          <view class="k">商品总金额</view>
-          <view class="v">¥ {{ formatMoney(detail?.total_amount || detail?.amount) }}</view>
+          <view class="k">总金额</view>
+          <view class="v">¥ {{ formatMoney(displayTotalAmount) }}</view>
         </view>
         <view class="kv">
           <view class="k">其他支出</view>
           <view class="v">¥ {{ formatMoney(detail?.other_expense_amount) }}</view>
         </view>
         <view class="kv">
-          <view class="k">净收入</view>
+          <view class="k">跑腿费用</view>
+          <view class="v">¥ {{ formatMoney(detail?.errand_fee) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">商品成本</view>
+          <view class="v">¥ {{ formatMoney(itemCostAmount) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">耗材金额</view>
+          <view class="v">¥ {{ formatMoney(consumableAmount) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">净利润</view>
           <view class="v">¥ {{ formatMoney(detail?.net_income_amount) }}</view>
         </view>
         <view class="kv">
@@ -79,6 +91,29 @@
         </view>
         <view v-else class="empty">暂无明细数据</view>
       </view>
+
+      <view class="card">
+        <view class="sectionHead">
+          <view class="sectionTitle">消耗品</view>
+          <view class="sectionTip">{{ detail?.consumables?.length || 0 }} 项</view>
+        </view>
+        <view v-if="detail?.consumables?.length">
+          <view v-for="item in detail?.consumables || []" :key="item.id" class="itemRow">
+            <view class="itemTop">
+              <view>
+                <view class="itemTitle">{{ item.product_name || `消耗品 #${item.product_id}` }}</view>
+                <view class="itemMeta">
+                  {{ formatQty(item.quantity) }} {{ item.unit || '' }}
+                  <text> · 单价 ¥ {{ formatMoney(item.price) }}</text>
+                </view>
+              </view>
+              <view class="itemAmount">¥ {{ formatMoney(item.amount) }}</view>
+            </view>
+            <view v-if="item.remark" class="itemRemark">{{ item.remark }}</view>
+          </view>
+        </view>
+        <view v-else class="empty">暂无消耗品</view>
+      </view>
     </view>
   </view>
 </template>
@@ -104,6 +139,23 @@ const channelDict = ref<Record<string, string>>({})
 const operatorName = computed(() => {
   const operator = detail.value?.operator
   return operator?.nickname || operator?.username || operator?.phone || '-'
+})
+const displayTotalAmount = computed(() => {
+  const item = detail.value
+  if (!item) return 0
+  return item.total_amount ?? item.amount
+})
+const consumableAmount = computed(() => {
+  return (detail.value?.consumables || []).reduce((sum, c) => sum + Number(c.amount || 0), 0)
+})
+const itemCostAmount = computed(() => {
+  return (detail.value?.items || []).reduce((sum, item: any) => {
+    const direct = Number(item.cost_amount ?? item.cost_total ?? 0)
+    if (direct > 0) return sum + direct
+    const unitCost = Number(item.cost_price ?? item.unit_cost ?? 0)
+    const qty = Number(item.quantity || 0)
+    return sum + unitCost * qty
+  }, 0)
 })
 
 function formatMoney(v: any) {

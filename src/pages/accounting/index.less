@@ -48,38 +48,51 @@
 .dateFilter {
   margin-top: 18px;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 8px;
 }
 
 .dateBox {
   min-width: 0;
   flex: 1;
-  min-height: 76px;
-  padding: 12px 14px;
+  height: 64px;
+  padding: 0 14px;
   border-radius: 8px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid #dce2eb;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .dateLabel {
   color: #8792a2;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .dateValue {
-  margin-top: 6px;
   color: #17202a;
-  font-size: 24px;
+  font-size: 23px;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.dateArrow {
+  color: #aab4c2;
+  font-size: 30px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .dateDash {
-  width: 38px;
+  width: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,7 +102,8 @@
 }
 
 .dateClear {
-  min-width: 76px;
+  min-width: 68px;
+  height: 64px;
   border-radius: 8px;
   background: #17202a;
   color: #fff;
@@ -98,6 +112,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.actionGrid {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
 }
 
 .cta {
@@ -109,6 +129,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+}
+
+.actionGrid .cta {
+  margin-top: 0;
+}
+
+.cta--light {
+  background: #fff;
+  border-color: #dce2eb;
+  color: #17202a;
+}
+
+.cta--light .ctaSub {
+  color: #687385;
+}
+
+.cta--light .ctaPlus {
+  background: #17202a;
+  color: #fff;
 }
 
 .ctaTitle {
@@ -170,6 +209,52 @@
   padding: 42px 20px;
 }
 
+.sectionHead {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sectionHead .section-title {
+  margin-top: 0;
+}
+
+.filterBtn {
+  position: relative;
+  min-width: 96px;
+  height: 52px;
+  padding: 0 20px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dce2eb;
+  color: #17202a;
+  font-size: 23px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.filterBadge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #047857;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 28px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .list {
   margin-top: 14px;
   display: grid;
@@ -187,7 +272,16 @@
   gap: 16px;
 }
 
+.platformIcon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
 .rowMain {
+  flex: 1;
   min-width: 0;
 }
 
@@ -223,6 +317,23 @@
   font-size: 22px;
 }
 
+.platformName {
+  color: #17202a;
+  font-weight: 800;
+}
+
+.filterInput {
+  width: 100%;
+  min-height: 76px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  border: 1px solid #edf0f5;
+  color: #17202a;
+  font-size: 25px;
+  box-sizing: border-box;
+}
+
 .rowFoot {
   margin-top: 14px;
   display: flex;
@@ -231,12 +342,16 @@
 }
 
 .rowMeta {
+  max-width: 100%;
   padding: 7px 10px;
   border-radius: 6px;
   background: #f7f9fc;
   border: 1px solid #edf0f5;
   color: #687385;
   font-size: 21px;
+  line-height: 1.25;
+  box-sizing: border-box;
+  word-break: break-all;
 }
 
 .rowStatus {
@@ -293,6 +408,50 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+}
+
+.rowDate {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #8792a2;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.miniBtn {
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #dce2eb;
+  background: #fff;
+  color: #17202a;
+  font-size: 21px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+}
+
+.miniBtn--dark {
+  background: #17202a;
+  border-color: #17202a;
+  color: #fff;
+}
+
+.loadMore {
+  padding: 18px 0 8px;
+  text-align: center;
+  color: #8792a2;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .metaMask {
@@ -402,4 +561,41 @@
 .btn--disabled {
   opacity: 0.55;
   pointer-events: none;
+}
+
+.consumeLine {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  border: 1px solid #edf0f5;
+}
+
+.lineHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lineTitle {
+  font-size: 24px;
+  font-weight: 900;
+  color: #17202a;
+}
+
+.lineRemove {
+  color: #b45309;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.consumeTotal {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 8px;
+  background: #eef8f3;
+  color: #047857;
+  font-size: 26px;
+  font-weight: 900;
 }

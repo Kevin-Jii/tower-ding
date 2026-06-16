@@ -1,9 +1,9 @@
 export default {
   pages: [
+    'pages/home/index',
     'pages/login/index',
     'pages/login/user-agreement',
     'pages/login/privacy-policy',
-    'pages/home/index',
     'pages/inventory/index',
     'pages/inventory/orders',
     'pages/inventory/order-detail',
@@ -13,6 +13,11 @@ export default {
     'pages/inventory/stock-list',
     'pages/accounting/index',
     'pages/accounting/create',
+    'pages/member/index',
+    'pages/b2b/supply-orders',
+    'pages/b2b/supply-order-detail',
+    'pages/store-return/index',
+    'pages/store-return/detail',
     'pages/mine/index',
     'pages/accounting/detail'
   ],

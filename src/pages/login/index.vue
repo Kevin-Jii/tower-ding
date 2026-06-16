@@ -125,6 +125,13 @@ function hydratePolicyAccept() {
   }
 }
 
+function redirectAuthedUser() {
+  auth.hydrate()
+  if (auth.isAuthed) {
+    Taro.switchTab({ url: '/pages/home/index' })
+  }
+}
+
 function onOpenUserAgreement() {
   Taro.navigateTo({ url: '/pages/login/user-agreement' }).catch(() => {
     Taro.showToast({ title: '打开失败，请重试', icon: 'none' })
@@ -176,6 +183,7 @@ async function onSubmit() {
 }
 
 useDidShow(() => {
+  redirectAuthedUser()
   hydrateRememberForm()
   hydratePolicyAccept()
 })

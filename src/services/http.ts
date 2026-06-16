@@ -2,6 +2,7 @@ import Taro from '@tarojs/taro'
 import { CLIENT_SOURCE_HEADER, getClientSource } from './client-source'
 
 const DEFAULT_BASE_URL = 'http://47.120.27.64:5713/api/v1'
+let loadingCount = 0
 
 export type ApiResponse<T> = {
   code: number
@@ -14,43 +15,86 @@ function getBaseUrl() {
   return (process.env.TARO_APP_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '')
 }
 
+function showGlobalLoading() {
+  loadingCount += 1
+  if (loadingCount === 1) {
+    Taro.showLoading({ title: '加载中', mask: true })
+  }
+}
+
+function hideGlobalLoading() {
+  loadingCount = Math.max(0, loadingCount - 1)
+  if (loadingCount === 0) {
+    Taro.hideLoading()
+  }
+}
+
+function cleanQueryData(data: unknown): unknown {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data
+  const cleaned: Record<string, unknown> = {}
+  Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    if (value === 'undefined' || value === 'null') return
+    cleaned[key] = value
+  })
+  return cleaned
+}
+
+export async function withGlobalLoading<T>(run: () => Promise<T>, enabled = true) {
+  if (!enabled) return run()
+  showGlobalLoading()
+  try {
+    return await run()
+  } finally {
+    hideGlobalLoading()
+  }
+}
+
 export async function request<T>(
   path: string,
-  options: Omit<Taro.request.Option, 'url'> & { authToken?: string } = {}
+  options: Omit<Taro.request.Option, 'url'> & { authToken?: string; showLoading?: boolean } = {}
 ): Promise<T> {
   const url = `${getBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`
-  const { authToken, header, ...rest } = options
+  const { authToken, header, showLoading = true, method, data, ...rest } = options
+  const requestMethod = method || 'GET'
+  const requestData = requestMethod === 'GET' ? cleanQueryData(data) : data
+  if (showLoading) showGlobalLoading()
+  try {
+    const res = await Taro.request<ApiResponse<T>>({
+      url,
+      method: requestMethod,
+      data: requestData as Taro.request.Option['data'],
+      header: {
+        'content-type': 'application/json',
+        [CLIENT_SOURCE_HEADER]: getClientSource(),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...(header || {})
+      },
+      ...rest
+    })
 
-  const res = await Taro.request<ApiResponse<T>>({
-    url,
-    header: {
-      'content-type': 'application/json',
-      [CLIENT_SOURCE_HEADER]: getClientSource(),
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(header || {})
-    },
-    ...rest
-  })
+    if (res.statusCode === 401) {
+      Taro.removeStorageSync('tower.auth')
+      Taro.redirectTo({ url: '/pages/login/index' })
+      throw new Error('登录已过期，请重新登录')
+    }
 
-  if (res.statusCode === 401) {
-    Taro.removeStorageSync('tower.auth')
-    Taro.redirectTo({ url: '/pages/login/index' })
-    throw new Error('登录已过期，请重新登录')
+    const body = res.data
+    if (!body) throw new Error('接口返回为空')
+
+    if (body.code === 401) {
+      Taro.removeStorageSync('tower.auth')
+      Taro.redirectTo({ url: '/pages/login/index' })
+      throw new Error(body.message || body.error || '登录已过期，请重新登录')
+    }
+
+    if (body.code !== 0 && body.code !== 200) {
+      const msg = body.message || body.error || `请求失败(${body.code})`
+      throw new Error(msg)
+    }
+
+    return body.data as T
+  } finally {
+    if (showLoading) hideGlobalLoading()
   }
-
-  const body = res.data
-  if (!body) throw new Error('接口返回为空')
-
-  if (body.code === 401) {
-    Taro.removeStorageSync('tower.auth')
-    Taro.redirectTo({ url: '/pages/login/index' })
-    throw new Error(body.message || body.error || '登录已过期，请重新登录')
-  }
-
-  if (body.code !== 0 && body.code !== 200) {
-    const msg = body.message || body.error || `请求失败(${body.code})`
-    throw new Error(msg)
-  }
-
-  return body.data as T
 }

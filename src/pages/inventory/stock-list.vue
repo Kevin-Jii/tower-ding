@@ -1,10 +1,6 @@
 <template>
-  <view class="page">
-    <view class="container">
-      <view class="eyebrow">当前门店</view>
-      <view class="title">库存数量明细</view>
-      <view class="subtitle">汇总全部 SKU 的实时数量；低于 3 会以醒目样式提示</view>
-
+  <view class="page stockPage">
+    <view class="container stockContainer">
       <view v-if="lowStockCount > 0" class="banner banner--warn">
         <view class="bannerIcon">⚠</view>
         <view class="bannerText">
@@ -30,47 +26,43 @@
         </view>
       </view>
 
-      <scroll-view
+      <view
         v-if="categoryTabs.length > 1"
-        scroll-x
         class="categoryTabs"
-        :show-scrollbar="false"
       >
-        <view class="categoryTabsInner">
-          <view
-            v-for="tab in categoryTabs"
-            :key="tab.value"
-            :class="['categoryTab', activeCategory === tab.value ? 'categoryTab--on' : '']"
-            @tap="activeCategory = tab.value"
-          >
-            {{ tab.label }}
-          </view>
+        <view
+          v-for="tab in categoryTabs"
+          :key="tab.value"
+          :class="['categoryTab', activeCategory === tab.value ? 'categoryTab--on' : '']"
+          @tap="activeCategory = tab.value"
+        >
+          {{ tab.label }}
         </view>
-      </scroll-view>
+      </view>
 
-      <view class="section-title">{{ activeCategoryLabel }}列表</view>
-      <view v-if="loading" class="hint card">加载中…</view>
-      <view v-else-if="!sortedList.length" class="hint card">当前分类暂无库存数据</view>
-      <scroll-view v-else scroll-y class="stockScroll" :show-scrollbar="true">
-        <view class="stockScrollInner">
+      <view class="stockListPanel">
+        <view class="section-title">{{ activeCategoryLabel }}列表</view>
+        <view v-if="loading" class="hint card">加载中…</view>
+        <view v-else-if="!sortedList.length" class="hint card">当前分类暂无库存数据</view>
+        <view v-else class="stockList">
           <view v-for="inv in sortedList" :key="inv.id" :class="['stockRow', isLowStock(inv) ? 'stockRow--warn' : '']">
-          <view class="stockRowInner">
-            <view v-if="isLowStock(inv)" class="stockAccent" />
-            <view class="stockMain">
-              <view class="stockName">{{ inv.product_name || `商品 #${inv.product_id || ''}` }}</view>
-              <view class="stockMeta">{{ inv.store_name || '—' }} · ID {{ inv.product_id || '-' }}</view>
-            </view>
-            <view class="stockRight">
-              <view v-if="isLowStock(inv)" class="pillWarn">偏低</view>
-              <view :class="['stockQty', isLowStock(inv) ? 'stockQty--warn' : '']">
-                {{ formatQty(inv.quantity) }}
-                <text class="stockUnit">{{ inv.unit || '' }}</text>
+            <view class="stockRowInner">
+              <view v-if="isLowStock(inv)" class="stockAccent" />
+              <view class="stockMain">
+                <view class="stockName">{{ inv.product_name || `商品 #${inv.product_id || ''}` }}</view>
+                <view class="stockMeta">{{ inv.store_name || '—' }} · ID {{ inv.product_id || '-' }}</view>
+              </view>
+              <view class="stockRight">
+                <view v-if="isLowStock(inv)" class="pillWarn">偏低</view>
+                <view :class="['stockQty', isLowStock(inv) ? 'stockQty--warn' : '']">
+                  {{ formatQty(inv.quantity) }}
+                  <text class="stockUnit">{{ inv.unit || '' }}</text>
+                </view>
               </view>
             </view>
           </view>
         </view>
-        </view>
-      </scroll-view>
+      </view>
     </view>
   </view>
 </template>
@@ -78,7 +70,7 @@
 <script setup>
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { computed, ref } from 'vue'
-import { listInventories, listStoreSupplierProducts } from '../../services/api'
+import { listAllInventories, listAllStoreSupplierProducts } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import './stock-list.less'
 
@@ -86,6 +78,7 @@ const auth = useAuthStore()
 const list = ref([])
 const loading = ref(false)
 const activeCategory = ref('all')
+const categorySource = ref([])
 
 function qtyNum(inv) {
   const n = Number(inv?.quantity)
@@ -99,7 +92,7 @@ function isLowStock(inv) {
 
 const categoryTabs = computed(() => {
   const seen = new Map()
-  list.value.forEach((i) => {
+  categorySource.value.forEach((i) => {
     const id = Number(i?.category_id || 0)
     const name = String(i?.category_name || '').trim()
     if (id > 0 && name && !seen.has(id)) seen.set(id, name)
@@ -147,39 +140,65 @@ function formatQty(v) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2)
 }
 
+function getProductCategoryId(product) {
+  return Number(product?.category_id || product?.category?.id || product?.product?.category_id || product?.product?.category?.id || 0)
+}
+
+function getProductCategoryName(product) {
+  return String(product?.category?.name || product?.category_name || product?.product?.category?.name || product?.product?.category_name || '').trim()
+}
+
+function getSupplierProductId(product) {
+  return Number(product?.product_id || product?.product?.id || product?.id || 0)
+}
+
+function getSupplierProductName(product, fallback) {
+  return String(product?.product_name || product?.name || product?.product?.product_name || product?.product?.name || fallback || '').trim()
+}
+
+function getSupplierProductUnit(product, fallback) {
+  return String(product?.unit || product?.product?.unit || fallback || '').trim()
+}
+
 async function refresh() {
   if (!auth.token) return
   loading.value = true
   try {
     const storeId = auth.storeId || 999
     const [inventories, products] = await Promise.all([
-      listInventories(auth.token, {
-        store_id: storeId,
-        page: 1,
-        page_size: 100
-      }),
-      listStoreSupplierProducts(auth.token, { store_id: storeId })
+      listAllInventories(auth.token, { store_id: storeId }),
+      listAllStoreSupplierProducts(auth.token, { store_id: storeId })
     ])
 
-    const metaByProductId = new Map()
-    products.forEach((p) => {
-      const pid = Number(p?.id || 0)
-      if (pid <= 0) return
-      metaByProductId.set(pid, {
-        category_id: Number(p?.category_id || 0),
-        category_name: String(p?.category?.name || '').trim()
-      })
+    const inventoryByProductId = new Map()
+    inventories.forEach((inv) => {
+      const pid = Number(inv?.product_id || 0)
+      if (pid > 0) inventoryByProductId.set(pid, inv)
     })
 
-    list.value = inventories.map((inv) => {
-      const pid = Number(inv?.product_id || 0)
-      const meta = metaByProductId.get(pid)
+    categorySource.value = products.map((p) => ({
+      category_id: getProductCategoryId(p),
+      category_name: getProductCategoryName(p)
+    }))
+
+    list.value = products.map((p) => {
+      const pid = getSupplierProductId(p)
+      const inv = inventoryByProductId.get(pid)
+      const categoryId = getProductCategoryId(p)
+      const categoryName = getProductCategoryName(p)
       return {
-        ...inv,
-        category_id: meta?.category_id || 0,
-        category_name: meta?.category_name || ''
+        id: inv?.id || p?.id || pid,
+        store_id: inv?.store_id || storeId,
+        store_name: inv?.store_name || auth.user?.store?.name || '当前门店',
+        product_id: pid,
+        product_name: getSupplierProductName(p, inv?.product_name || `商品 #${pid || p?.id || ''}`),
+        quantity: inv?.quantity ?? 0,
+        unit: inv?.unit || getSupplierProductUnit(p, ''),
+        category_id: categoryId,
+        category_name: categoryName
       }
-    })
+    }).filter((item) => Number(item.product_id || 0) > 0 || item.product_name)
+
     if (!categoryTabs.value.some((tab) => tab.value === activeCategory.value)) {
       activeCategory.value = 'all'
     }

@@ -15,9 +15,35 @@
           </view>
           <view class="roRow mt">
             <text class="roK">记账日期</text>
-            <text class="roV">{{ accountDate }}</text>
+            <text class="roV">后端按营业日生成</text>
           </view>
         </template>
+      </view>
+
+      <view class="card metaCard">
+        <view class="metaHint">会员与支付</view>
+        <view class="roRow">
+          <text class="roK">关联会员</text>
+          <picker mode="selector" :range="memberOptions" range-key="label" :value="memberIndex" @change="onMemberChange">
+            <view class="pickerFake">{{ selectedMemberLabel }} <text class="pickArrowInline">›</text></view>
+          </picker>
+        </view>
+        <view class="roRow mt">
+          <text class="roK">支付状态</text>
+          <view class="paySeg">
+            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付</view>
+            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付</view>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="isTakeawayChannel" class="card takeawayCard">
+        <view class="totalLabel">外卖订单</view>
+        <view class="takeawayHint">{{ channelLabel }} 实际收入会覆盖商品明细销售额，商品明细只用于扣库存和成本核算</view>
+        <view class="fieldLabel mt">外卖订单号</view>
+        <input class="input" :value="orderNo" placeholder="如：美团1号 / 淘宝闪购1号" @input="onOrderNoInput" />
+        <view class="fieldLabel mt">平台收入金额</view>
+        <input class="input" type="digit" :value="incomeAmount" placeholder="0.00" @input="onIncomeAmountInput" />
       </view>
 
       <view class="section-title">商品明细</view>
@@ -92,9 +118,24 @@
 
       <view class="card totalCard">
         <view class="totalLabel">金额设置</view>
-        <view class="totalHint">商品单价与每行小计由后端按单位自动取价并计算</view>
+        <view v-if="isTakeawayChannel" class="amountSummary">
+          <view class="amountLine">
+            <text>商品标价合计</text>
+            <text>¥ {{ formatMoney(markedAmount) }}</text>
+          </view>
+          <view class="amountLine">
+            <text>平台收入金额</text>
+            <text>¥ {{ formatMoney(incomeAmount) }}</text>
+          </view>
+        </view>
+        <view v-else class="totalHint">商品单价与每行小计由后端按单位自动取价并计算</view>
         <view class="fieldLabel mt">其他支出</view>
-        <input class="input" type="digit" :value="formatMoney(otherExpenseAmount)" @input="onOtherExpenseInput" />
+        <input class="input" type="digit" :value="otherExpenseAmount" placeholder="0.00" @input="onOtherExpenseInput" />
+        <view v-if="isTakeawayChannel" class="netPreview">
+          <view class="netLabel">预计净收入</view>
+          <view class="netValue">¥ {{ formatMoney(estimatedNetIncome) }}</view>
+        </view>
+        <view v-if="isTakeawayChannel" class="totalHint">预计值未扣商品成本和消耗品成本，最终以后端计算为准</view>
       </view>
 
       <view class="btnRow">
@@ -105,15 +146,25 @@
       <view v-if="pickerOpen" class="mask" @tap="closePicker">
         <view class="sheet" @tap.stop>
           <view class="sheetTitle">选择商品</view>
-          <scroll-view scroll-y class="sheetList">
-            <view v-if="!products.length" class="sheetEmpty">暂无库存商品</view>
-            <view v-for="p in products" :key="p.id" class="sheetRow" @tap="pickProduct(p)">
+          <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
+            <view
+              v-for="tab in productTabs"
+              :key="tab.value"
+              :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']"
+              @tap="productTab = tab.value"
+            >
+              {{ tab.label }}
+            </view>
+          </scroll-view>
+          <view class="sheetList">
+            <view v-if="!filteredProducts.length" class="sheetEmpty">暂无库存商品</view>
+            <view v-for="p in filteredProducts" :key="p.id" class="sheetRow" @tap="pickProduct(p)">
               <view>
                 <view class="sheetName">{{ p.product_name || `商品 #${p.product_id || ''}` }}</view>
                 <view class="sheetSub">库存 {{ p.quantity ?? 0 }} {{ p.unit || '-' }}</view>
               </view>
             </view>
-          </scroll-view>
+          </view>
           <view class="sheetClose btn btn--ghost" @tap="closePicker">关闭</view>
         </view>
       </view>
@@ -121,27 +172,36 @@
   </view>
 </template>
 
-<script setup>
-import Taro, { useDidShow } from '@tarojs/taro'
+<script setup lang="ts">
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 import {
   createStoreAccount,
-  listInventories,
+  listAllInventories,
   listDictDataByTypeCode,
-  listProductUnitSpecs
+  listMembers,
+  listProductUnitSpecs,
+  listAllStoreSupplierProducts,
+  type Member
 } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import './create.less'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 const channelOptions = ref([])
 const channelDictLoading = ref(false)
 const channel = ref('')
 const accountDate = ref(todayStr())
-const otherExpenseAmount = ref(0)
+const members = ref<Member[]>([])
+const selectedMemberId = ref(0)
+const paymentStatus = ref(1)
+const otherExpenseAmount = ref('')
+const orderNo = ref('')
+const incomeAmount = ref('')
 function newLine() {
-  return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, product_name: '', remark: '', is_custom: false }
+  return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, list_price: 0, product_name: '', remark: '', is_custom: false }
 }
 
 const lines = ref([newLine()])
@@ -150,6 +210,8 @@ const submitting = ref(false)
 const pickerOpen = ref(false)
 const pickerLine = ref(0)
 const products = ref([])
+const categorySource = ref([])
+const productTab = ref('all')
 const unitOptionsMap = ref({})
 
 const channelLabel = computed(() => {
@@ -160,6 +222,66 @@ const channelLabel = computed(() => {
 const channelIndex = computed(() => {
   const i = channelOptions.value.findIndex((c) => c.value === channel.value)
   return i >= 0 ? i : 0
+})
+const memberOptions = computed(() => [
+  { label: '不绑定会员', value: 0 },
+  ...members.value.map((m) => ({ label: memberLabel(m), value: Number(m.id || 0) }))
+])
+const memberIndex = computed(() => {
+  const i = memberOptions.value.findIndex((m) => m.value === selectedMemberId.value)
+  return i >= 0 ? i : 0
+})
+const selectedMemberLabel = computed(() => memberOptions.value[memberIndex.value]?.label || '不绑定会员')
+const isTakeawayChannel = computed(() => {
+  const text = `${channel.value} ${channelLabel.value}`.toLowerCase()
+  return [
+    '外卖',
+    '美团',
+    '饿了么',
+    '淘宝',
+    '闪购',
+    '京东',
+    '商城',
+    '小程序',
+    'waimai',
+    'takeaway',
+    'delivery',
+    'meituan',
+    'eleme',
+    'elm',
+    'taobao',
+    'shangou',
+    'jingdong',
+    'jd',
+    'mall',
+    'miniapp'
+  ].some((keyword) => text.includes(keyword))
+})
+const productTabs = computed(() => {
+  const seen = new Map()
+  categorySource.value.forEach((p) => {
+    const id = Number(p?.category_id || 0)
+    const name = String(p?.category_name || '').trim()
+    if (id > 0 && name && !seen.has(id)) seen.set(id, name)
+  })
+  const tabs = [{ label: '全部分类', value: 'all' }]
+  seen.forEach((label, id) => {
+    tabs.push({ label, value: String(id) })
+  })
+  return tabs
+})
+const filteredProducts = computed(() => {
+  if (productTab.value !== 'all') {
+    return products.value.filter((p) => String(Number(p?.category_id || 0)) === productTab.value)
+  }
+  return products.value
+})
+const markedAmount = computed(() => {
+  return lines.value.reduce((sum, line) => sum + lineMarkedAmount(line), 0)
+})
+const estimatedNetIncome = computed(() => {
+  if (!isTakeawayChannel.value) return 0
+  return Number(incomeAmount.value || 0) - Number(otherExpenseAmount.value || 0)
 })
 
 function mapDictOptions(rows) {
@@ -174,6 +296,31 @@ function mapDictOptions(rows) {
 function pickDefaultValue(rows) {
   const def = rows.find((r) => r.is_default)
   return String(def?.value || rows[0]?.value || '').trim()
+}
+
+function getProductCategoryId(product) {
+  return Number(product?.category_id || product?.category?.id || product?.product?.category_id || product?.product?.category?.id || 0)
+}
+
+function getProductCategoryName(product) {
+  return String(product?.category?.name || product?.category_name || product?.product?.category?.name || product?.product?.category_name || '').trim()
+}
+
+function getSupplierProductId(product) {
+  return Number(product?.product_id || product?.product?.id || product?.id || 0)
+}
+
+function getSupplierProductName(product, fallback) {
+  return String(product?.product_name || product?.name || product?.product?.product_name || product?.product?.name || fallback || '').trim()
+}
+
+function getSupplierProductUnit(product, fallback) {
+  return String(product?.unit || product?.product?.unit || fallback || '').trim()
+}
+
+function getSupplierProductPrice(product) {
+  const n = Number(product?.sale_price || product?.price || product?.bottle_price || product?.product?.sale_price || product?.product?.price || 0)
+  return Number.isFinite(n) && n > 0 ? n : 0
 }
 
 async function loadChannelDict() {
@@ -200,6 +347,18 @@ function todayStr() {
   return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`
 }
 
+function memberLabel(member) {
+  const name = String(member?.name || '').trim()
+  const phone = String(member?.phone || '').trim()
+  if (name && phone) return `${name}(${phone})`
+  return name || phone || `会员 #${member?.id || ''}`
+}
+
+function onMemberChange(e) {
+  const idx = Number(e?.detail?.value ?? 0)
+  selectedMemberId.value = memberOptions.value[idx]?.value || 0
+}
+
 function addLine() {
   lines.value.push(newLine())
 }
@@ -214,15 +373,29 @@ function qtyStr(line) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
 }
 
+function moneyInputValue(e) {
+  const raw = String(e?.detail?.value || '').replace(/[^\d.]/g, '')
+  const [head, ...tail] = raw.split('.')
+  return tail.length ? `${head}.${tail.join('').slice(0, 2)}` : head
+}
+
 function onOtherExpenseInput(e) {
-  const n = Number(String(e?.detail?.value || '').replace(/[^\d.]/g, ''))
-  otherExpenseAmount.value = Number.isFinite(n) && n >= 0 ? n : 0
+  otherExpenseAmount.value = moneyInputValue(e)
+}
+
+function onOrderNoInput(e) {
+  orderNo.value = String(e?.detail?.value || '')
+}
+
+function onIncomeAmountInput(e) {
+  incomeAmount.value = moneyInputValue(e)
 }
 
 function onChannelChange(e) {
   const idx = Number(e?.detail?.value ?? -1)
   if (!Number.isInteger(idx) || idx < 0 || idx >= channelOptions.value.length) return
   channel.value = channelOptions.value[idx]?.value || ''
+  if (isTakeawayChannel.value) paymentStatus.value = 1
 }
 
 function setLineMode(i, isCustom) {
@@ -235,6 +408,7 @@ function setLineMode(i, isCustom) {
   line.spec = ''
   line.price = 0
   line.amount = 0
+  line.list_price = 0
   line.remark = ''
 }
 
@@ -269,6 +443,8 @@ function setLineUnit(i, unit, spec) {
   if (!line) return
   line.unit = unit
   line.spec = spec
+  const opt = lineUnitOptions(line).find((o) => o.value === unit)
+  if (opt?.sale_price > 0) line.list_price = opt.sale_price
 }
 
 function lineUnitOptions(line) {
@@ -284,10 +460,11 @@ function buildUnitOptions(specs) {
       const label = String(s?.unit_name || s?.unit_code || '').trim()
       const factor = Number(s?.factor_to_base || 1)
       return {
-        label: factor > 1 ? `${label} x${factor}` : label,
+        label,
         value: label,
         spec: label,
-        factor
+        factor,
+        sale_price: Number(s?.sale_price || 0)
       }
     })
     .filter((o) => o.value)
@@ -299,7 +476,7 @@ function buildUnitOptions(specs) {
     .forEach((o) => {
       if (seen.has(o.value)) return
       seen.add(o.value)
-      dedup.push({ label: o.label, value: o.value, spec: o.spec })
+      dedup.push({ label: o.label, value: o.value, spec: o.spec, sale_price: o.sale_price })
     })
   return dedup
 }
@@ -317,6 +494,10 @@ async function loadUnitOptionsForProduct(productId, fallbackUnit) {
         if (!exists) {
           line.unit = opts[0].value
           line.spec = opts[0].spec
+          if (opts[0]?.sale_price > 0) line.list_price = opts[0].sale_price
+        } else {
+          const current = opts.find((o) => o.value === line.unit)
+          if (current?.sale_price > 0) line.list_price = current.sale_price
         }
       }
       return
@@ -341,13 +522,9 @@ function decQty(i) {
   line.quantity = Math.max(1, Math.round((q - 1) * 100) / 100)
 }
 
-function formatMoney(v) {
-  const n = Number(v || 0)
-  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
-}
-
 function openPicker(lineIdx) {
   pickerLine.value = lineIdx
+  productTab.value = 'all'
   pickerOpen.value = true
   void loadProducts()
 }
@@ -359,13 +536,73 @@ function closePicker() {
 async function loadProducts() {
   if (!auth.token) return
   try {
-    products.value = await listInventories(auth.token, {
-      store_id: auth.storeId || undefined,
-      page: 1,
-      page_size: 100
+    const storeId = auth.storeId || undefined
+    const [inventories, supplierProducts] = await Promise.all([
+      listAllInventories(auth.token, { store_id: storeId }),
+      listAllStoreSupplierProducts(auth.token, { store_id: storeId })
+    ])
+    const inventoryByProductId = new Map()
+    categorySource.value = supplierProducts.map((p) => ({
+      category_id: getProductCategoryId(p),
+      category_name: getProductCategoryName(p)
+    }))
+    inventories.forEach((inv) => {
+      const pid = Number(inv?.product_id || 0)
+      if (pid > 0) inventoryByProductId.set(pid, inv)
     })
+    const rows = []
+    const supplierProductIds = new Set()
+    supplierProducts.forEach((p) => {
+      const pid = getSupplierProductId(p)
+      if (pid <= 0) return
+      supplierProductIds.add(pid)
+      const inv = inventoryByProductId.get(pid)
+      rows.push({
+        id: pid,
+        product_id: pid,
+        product_name: getSupplierProductName(p, inv?.product_name || `商品 #${pid}`),
+        quantity: inv?.quantity ?? 0,
+        unit: inv?.unit || getSupplierProductUnit(p, ''),
+        list_price: getSupplierProductPrice(p),
+        category_id: getProductCategoryId(p),
+        category_name: getProductCategoryName(p)
+      })
+    })
+    inventories.forEach((inv) => {
+      const pid = Number(inv?.product_id || 0)
+      if (pid <= 0 || supplierProductIds.has(pid)) return
+      rows.push({
+        ...inv,
+        category_id: 0,
+        category_name: ''
+      })
+    })
+    products.value = rows
+    if (!productTabs.value.some((tab) => tab.value === productTab.value)) {
+      productTab.value = 'all'
+    }
   } catch (err) {
     Taro.showToast({ title: err?.message || '加载库存商品失败', icon: 'none' })
+  }
+}
+
+async function loadMembers() {
+  if (!auth.token) return
+  try {
+    members.value = await listMembers(auth.token, { page: 1, page_size: 100 })
+  } catch {
+    members.value = []
+  }
+}
+
+function applyInitialMode() {
+  const mode = String(router.params?.mode || '')
+  if (mode === 'custom') {
+    lines.value = [newLine()]
+    setLineMode(0, true)
+  } else if (mode === 'quick') {
+    lines.value = [newLine()]
+    setLineMode(0, false)
   }
 }
 
@@ -379,10 +616,27 @@ function pickProduct(p) {
   const fallback = String(p.unit || '').trim() || '件'
   row.unit = fallback
   row.spec = fallback
+  row.list_price = Number(p.list_price || 0)
   row.price = undefined
   row.amount = undefined
   void loadUnitOptionsForProduct(pid, fallback)
   closePicker()
+}
+
+function lineMarkedAmount(line) {
+  const qty = Number(line?.quantity || 0)
+  if (!(qty > 0)) return 0
+  if (line?.is_custom) {
+    const price = Number(line?.price || 0)
+    return price > 0 ? Math.round(qty * price * 100) / 100 : 0
+  }
+  const price = Number(line?.list_price || 0)
+  return price > 0 ? Math.round(qty * price * 100) / 100 : 0
+}
+
+function formatMoney(v) {
+  const n = Number(v || 0)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
 async function submit() {
@@ -390,6 +644,16 @@ async function submit() {
   if (!channel.value) {
     Taro.showToast({ title: channelOptions.value.length ? '请选择销售渠道' : '销售渠道字典未配置', icon: 'none' })
     return
+  }
+  if (isTakeawayChannel.value) {
+    if (!orderNo.value.trim()) {
+      Taro.showToast({ title: '请填写外卖订单号', icon: 'none' })
+      return
+    }
+    if (!(Number(incomeAmount.value) > 0)) {
+      Taro.showToast({ title: '请填写平台收入金额', icon: 'none' })
+      return
+    }
   }
   const items = []
   let hasMissingUnit = false
@@ -450,12 +714,19 @@ async function submit() {
   }
   submitting.value = true
   try {
-    const acc = await createStoreAccount(auth.token, {
+    const payload = {
       channel: channel.value,
-      account_date: accountDate.value,
       other_expense_amount: Number(otherExpenseAmount.value || 0),
+      payment_status: isTakeawayChannel.value ? 1 : paymentStatus.value,
+      member_id: selectedMemberId.value > 0 ? selectedMemberId.value : 0,
       items
-    })
+    }
+    if (isTakeawayChannel.value) {
+      payload.order_no = orderNo.value.trim()
+      payload.income_amount = Number(incomeAmount.value || 0)
+      payload.remark = `${channelLabel.value}外卖订单`
+    }
+    const acc = await createStoreAccount(auth.token, payload)
     Taro.showToast({ title: '已创建', icon: 'success' })
     setTimeout(() => {
       Taro.redirectTo({ url: `/pages/accounting/detail?id=${acc.id}` })
@@ -469,6 +740,7 @@ async function submit() {
 
 useDidShow(() => {
   accountDate.value = todayStr()
-  void Promise.all([loadChannelDict(), loadProducts()])
+  applyInitialMode()
+  void Promise.all([loadChannelDict(), loadProducts(), loadMembers()])
 })
 </script>
