@@ -7,7 +7,7 @@
         <view class="heroSub">{{ detail?.store?.name || '当前门店' }} · {{ formatDate(detail?.account_date ||
           detail?.created_at) }}</view>
         <view class="heroAmount">¥ {{ formatMoney(detail?.net_income_amount ?? detail?.total_amount ?? detail?.amount)
-          }}</view>
+        }}</view>
       </view>
 
       <view class="card summary">
@@ -27,16 +27,8 @@
           <view class="v">¥ {{ formatMoney(detail?.errand_fee) }}</view>
         </view>
         <view class="kv">
-          <view class="k">商品成本</view>
-          <view class="v">¥ {{ formatMoney(itemCostAmount) }}</view>
-        </view>
-        <view class="kv">
           <view class="k">耗材金额</view>
           <view class="v">¥ {{ formatMoney(consumableAmount) }}</view>
-        </view>
-        <view class="kv">
-          <view class="k">净利润</view>
-          <view class="v">¥ {{ formatMoney(detail?.net_income_amount) }}</view>
         </view>
         <view class="kv">
           <view class="k">渠道</view>

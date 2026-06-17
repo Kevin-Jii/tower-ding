@@ -1,9 +1,6 @@
 <template>
   <view class="page">
     <view class="container dashboard-wrapper">
-      <view class="eyebrow">库存中心</view>
-      <view class="title">库存工作台</view>
-      <view class="subtitle">常用库存操作入口</view>
 
       <view class="card action-banner" @tap="goForm">
         <view class="banner-content">

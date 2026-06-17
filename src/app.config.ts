@@ -17,6 +17,7 @@ export default {
     'pages/b2b/supply-orders',
     'pages/b2b/supply-order-detail',
     'pages/store-return/index',
+    'pages/store-return/form',
     'pages/store-return/detail',
     'pages/mine/index',
     'pages/accounting/detail'

@@ -9,24 +9,14 @@
           </view>
           <view class="heroBadge">{{ stats?.count ?? 0 }} 笔</view>
         </view>
-        <view class="heroSub">{{ refreshing ? '正在刷新列表...' : `净利润 ¥${formatMoney(stats?.net_income_amount)}` }}</view>
         <view class="dateFilter">
-          <Picker mode="date" fields="day" :value="startDate" :end="endDate || today" @change="onStartDateChange">
-            <view class="dateBox">
-              <view class="dateLabel">开始</view>
-              <view class="dateValue">{{ startDate || '选择日期' }}</view>
+          <Picker mode="date" fields="day" :value="accountDate" :end="today" @change="onAccountDateChange">
+            <view class="dateBox dateBox--single">
+              <view class="dateLabel">日期</view>
+              <view class="dateValue">{{ accountDate || '选择日期' }}</view>
               <text class="dateArrow">›</text>
             </view>
           </Picker>
-          <view class="dateDash">至</view>
-          <Picker mode="date" fields="day" :value="endDate" :start="startDate || undefined" :end="today" @change="onEndDateChange">
-            <view class="dateBox">
-              <view class="dateLabel">结束</view>
-              <view class="dateValue">{{ endDate || '选择日期' }}</view>
-              <text class="dateArrow">›</text>
-            </view>
-          </Picker>
-          <view class="dateClear" @tap="clearDateRange">清空</view>
         </view>
       </view>
       <view class="actionGrid">
@@ -36,23 +26,6 @@
             <view class="ctaSub">选择系统商品，后端自动算价并扣库存</view>
           </view>
           <view class="ctaPlus">+</view>
-        </view>
-        <view class="card cta cta--light" @tap="goCreate('custom')">
-          <view>
-            <view class="ctaTitle">自定义记账</view>
-            <view class="ctaSub">手写商品描述，不关联系统库存</view>
-          </view>
-          <view class="ctaPlus">+</view>
-        </view>
-      </view>
-      <view class="grid">
-        <view class="metric card">
-          <view class="metricLabel">净利润</view>
-          <view class="metricValue">¥ {{ formatMoney(stats?.net_income_amount) }}</view>
-        </view>
-        <view class="metric card">
-          <view class="metricLabel">笔均销售额</view>
-          <view class="metricValue">¥ {{ avgStat }}</view>
         </view>
       </view>
 
@@ -78,10 +51,10 @@
             <view class="amount amount--in">¥ {{ formatMoney(item.total_amount ?? item.amount) }}</view>
           </view>
           <view class="rowFoot">
-            <view class="rowMeta">净利润 ¥{{ formatMoney(item.net_income_amount) }}</view>
             <view class="rowMeta">{{ item.item_count ?? item.items?.length ?? 0 }} 项商品</view>
             <view class="rowMeta">操作人 {{ operatorLabel(item) }}</view>
-            <view class="rowMeta">记账日期 {{ formatDay(item.account_date || item.created_at) }}</view>
+            <view v-if="Number(item.is_errand_order || 0) === 1" class="rowMeta">跑腿 ¥{{ formatMoney(item.errand_fee) }}</view>
+            <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view>
           </view>
           <view class="rowStatus">
             <view class="statusTags">
@@ -93,9 +66,9 @@
             </view>
             <view class="rowActions" @tap.stop>
               <view class="miniBtn" @tap="openDetail(item.id)">详情</view>
-              <template v-if="canEditAccount(item)">
+              <template v-if="canOpenMetaSheet(item)">
                 <view class="miniBtn" @tap="openMetaSheet(item)">编辑</view>
-                <view class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品</view>
+                <view v-if="canModifyAccount(item)" class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品</view>
               </template>
             </view>
           </view>
@@ -140,46 +113,25 @@
         <view class="sheetTitle">编辑记账</view>
         <view class="sheetSub">{{ editingAccount?.account_no || `记账 #${editingAccount?.id || ''}` }}</view>
 
-        <view class="editRow">
-          <view class="editLabel">渠道</view>
-          <picker mode="selector" :range="channelOptions" range-key="label" :value="editChannelIndex" @change="onEditChannelChange">
-            <view class="pickerFake">{{ editChannelLabel }} <text class="pickArrowInline">›</text></view>
-          </picker>
-        </view>
-
-        <view class="editRow">
-          <view class="editLabel">订单号</view>
-          <input class="filterInput" :value="editOrderNo" placeholder="选填" @input="onEditOrderNoInput" />
-        </view>
-
-        <view v-if="isEditTakeawayChannel" class="editRow">
-          <view class="editLabel">收入金额</view>
-          <input class="filterInput" type="digit" :value="editIncomeAmount" placeholder="0.00" @input="onEditIncomeInput" />
-        </view>
-
-        <view class="editRow">
-          <view class="editLabel">关联会员</view>
-          <picker mode="selector" :range="memberOptions" range-key="label" :value="memberIndex" @change="onMemberChange">
-            <view class="pickerFake">{{ selectedMemberLabel }} <text class="pickArrowInline">›</text></view>
-          </picker>
-        </view>
-
-        <view class="editRow">
-          <view class="editLabel">支付状态</view>
-          <view class="paySeg">
-            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付</view>
-            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付</view>
+        <view class="switchRow">
+          <view>
+            <view class="editLabel">支付状态</view>
+            <view class="switchHint">{{ paymentStatus === 1 ? '已支付' : '未支付' }}</view>
           </view>
+          <Switch color="#17202a" :checked="paymentStatus === 1" @change="onPaymentStatusSwitch" />
         </view>
 
-        <view class="editRow">
-          <view class="editLabel">其他支出</view>
-          <input class="filterInput" type="digit" :value="editOtherExpense" placeholder="0.00" @input="onEditOtherExpenseInput" />
+        <view class="switchRow">
+          <view>
+            <view class="editLabel">是否跑腿</view>
+            <view class="switchHint">{{ editIsErrandOrder === 1 ? '跑腿订单' : '普通订单' }}</view>
+          </view>
+          <Switch color="#17202a" :checked="editIsErrandOrder === 1" @change="onErrandSwitch" />
         </view>
 
-        <view class="editRow">
-          <view class="editLabel">备注</view>
-          <input class="filterInput" :value="editRemark" placeholder="选填" @input="onEditRemarkInput" />
+        <view v-if="editIsErrandOrder === 1" class="editRow">
+          <view class="editLabel">跑腿费用</view>
+          <input class="filterInput" type="digit" :value="editErrandFee" placeholder="0.00" @input="onEditErrandFeeInput" />
         </view>
 
         <view class="sheetActions">
@@ -247,7 +199,7 @@
 </template>
 
 <script setup lang="ts">
-import { Picker } from '@tarojs/components'
+import { Picker, Switch } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh, useReachBottom } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 import elemeIcon from '../../assets/platforms/eleme.png'
@@ -275,22 +227,17 @@ import './index.less'
 
 const auth = useAuthStore()
 const list = ref<StoreAccount[]>([])
-const stats = ref<{ total_amount?: number; net_income_amount?: number; count?: number } | null>(null)
+const stats = ref<{ total_amount?: number; count?: number } | null>(null)
 const channelDict = ref<Record<string, string>>({})
 const channelOptions = ref<Array<{ label: string; value: string }>>([])
 const members = ref<Member[]>([])
 const today = businessDateStr()
-const startDate = ref(monthStartStr())
-const endDate = ref(today)
+const accountDate = ref(today)
 const metaSheetOpen = ref(false)
 const editingAccount = ref<StoreAccount | null>(null)
-const selectedMemberId = ref(0)
 const paymentStatus = ref(1)
-const editChannel = ref('')
-const editOrderNo = ref('')
-const editIncomeAmount = ref('')
-const editOtherExpense = ref('')
-const editRemark = ref('')
+const editIsErrandOrder = ref(0)
+const editErrandFee = ref('')
 const paymentFilter = ref(0)
 const memberKeyword = ref('')
 const filterSheetOpen = ref(false)
@@ -313,29 +260,11 @@ const paymentFilterOptions = [
 
 const queryRange = computed(() => {
   return {
-    start_date: startDate.value || undefined,
-    end_date: endDate.value || undefined
+    start_date: accountDate.value || undefined,
+    end_date: accountDate.value || undefined
   }
 })
 
-const avgStat = computed(() => {
-  const c = Number(stats.value?.count || 0)
-  const t = Number(stats.value?.total_amount || 0)
-  if (!c) return '0'
-  return formatMoney(t / c)
-})
-const memberOptions = computed(() => [
-  { label: '不绑定会员', value: 0 },
-  ...members.value.map((m) => ({ label: memberLabel(m), value: Number(m.id || 0) }))
-])
-const memberIndex = computed(() => {
-  const i = memberOptions.value.findIndex((m) => m.value === selectedMemberId.value)
-  return i >= 0 ? i : 0
-})
-const selectedMemberLabel = computed(() => memberOptions.value[memberIndex.value]?.label || '不绑定会员')
-const editChannelIndex = computed(() => Math.max(0, channelOptions.value.findIndex((c) => c.value === editChannel.value)))
-const editChannelLabel = computed(() => channelOptions.value[editChannelIndex.value]?.label || editChannel.value || '请选择')
-const isEditTakeawayChannel = computed(() => isTakeawayChannelValue(editChannel.value, editChannelLabel.value))
 const consumableProductOptions = computed(() =>
   consumableProducts.value.map((p) => ({ label: `${p.name || `消耗品 #${p.id}`}（¥${formatMoney(p.cost_price)}）`, value: p.id }))
 )
@@ -379,43 +308,14 @@ function businessDateStr() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-function monthStartStr() {
-  const now = businessDate()
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-}
-
-function onStartDateChange(e: any) {
-  const v = String(e?.detail?.value || '').trim()
-  startDate.value = v
-  if (endDate.value && v && v > endDate.value) {
-    endDate.value = v
-  }
-  void refresh()
-}
-
-function onEndDateChange(e: any) {
-  const v = String(e?.detail?.value || '').trim()
-  endDate.value = v
-  if (startDate.value && v && startDate.value > v) {
-    startDate.value = v
-  }
-  void refresh()
-}
-
-function clearDateRange() {
-  startDate.value = monthStartStr()
-  endDate.value = businessDateStr()
+function onAccountDateChange(e: any) {
+  accountDate.value = String(e?.detail?.value || '').trim()
   void refresh()
 }
 
 function formatMoney(v: any) {
   const n = Number(v || 0)
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
-}
-
-function formatDay(v?: string) {
-  if (!v) return '-'
-  return String(v).slice(0, 10)
 }
 
 function mapDict(rows: DictData[]) {
@@ -432,28 +332,6 @@ function channelLabel(channel?: string) {
   const code = String(channel || '').trim()
   if (!code) return '—'
   return channelDict.value[code] || code
-}
-
-function isTakeawayChannelValue(channel?: string, label?: string) {
-  const text = `${channel || ''} ${label || channelLabel(channel)}`.toLowerCase()
-  return [
-    '外卖',
-    '美团',
-    '饿了么',
-    '淘宝',
-    '闪购',
-    '京东',
-    'waimai',
-    'takeaway',
-    'delivery',
-    'meituan',
-    'eleme',
-    'elm',
-    'taobao',
-    'shangou',
-    'jingdong',
-    'jd'
-  ].some((keyword) => text.includes(keyword))
 }
 
 function channelText(item: StoreAccount) {
@@ -540,12 +418,37 @@ function paymentStatusLabel(v?: number) {
 }
 
 function canEditAccount(item: StoreAccount) {
-  const s = String(item.created_at || '').trim()
-  if (!s) return false
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return false
+  const d = accountCreatedAt(item)
+  if (!d) return false
   const now = new Date()
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
+function accountCreatedAt(item: StoreAccount) {
+  const s = String(item.created_at || '').trim()
+  if (!s) return null
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return false
+  return d
+}
+
+function canEditPaymentStatus(item: StoreAccount) {
+  const d = accountCreatedAt(item)
+  if (!d) return false
+  const now = new Date()
+  return now.getTime() - d.getTime() >= 0 && now.getTime() - d.getTime() < 5 * 24 * 60 * 60 * 1000
+}
+
+function hasConsumables(item: StoreAccount) {
+  return (item.consumables?.length || 0) > 0
+}
+
+function canModifyAccount(item: StoreAccount) {
+  return canEditAccount(item) && !hasConsumables(item)
+}
+
+function canOpenMetaSheet(item: StoreAccount) {
+  return !hasConsumables(item) && canEditPaymentStatus(item)
 }
 
 function memberLabel(member?: Member | null) {
@@ -560,11 +463,6 @@ function accountMemberLabel(item: StoreAccount) {
   if (item.member) return memberLabel(item.member)
   const mid = Number(item.member_id || 0)
   return mid > 0 ? `会员 #${mid}` : '-'
-}
-
-function onMemberChange(e: any) {
-  const idx = Number(e?.detail?.value ?? 0)
-  selectedMemberId.value = memberOptions.value[idx]?.value || 0
 }
 
 function onMemberKeywordInput(e: any) {
@@ -613,10 +511,14 @@ async function loadChannelDict() {
   }
 }
 
-async function loadMembers() {
+async function loadMembers(keyword = '') {
   if (!auth.token) return
   try {
-    members.value = await listMembers(auth.token, { page: 1, page_size: 100 })
+    members.value = await listMembers(auth.token, {
+      keyword: keyword || undefined,
+      page: 1,
+      page_size: 100
+    })
   } catch {
     members.value = []
   }
@@ -685,20 +587,15 @@ function openDetail(id: number) {
 }
 
 function openMetaSheet(item: StoreAccount) {
-  if (!canEditAccount(item)) {
-    Taro.showToast({ title: '该记录已超过可编辑时间', icon: 'none' })
+  if (!canOpenMetaSheet(item)) {
+    Taro.showToast({ title: hasConsumables(item) ? '已绑定耗材，不能修改' : '该记录已超过支付状态可修改时间', icon: 'none' })
     return
   }
   editingAccount.value = item
-  selectedMemberId.value = Number(item.member_id || item.member?.id || 0)
   paymentStatus.value = paymentStatusValue(item)
-  editChannel.value = item.channel || ''
-  editOrderNo.value = item.order_no || ''
-  editIncomeAmount.value = String(item.income_amount ?? item.total_amount ?? '')
-  editOtherExpense.value = String(item.other_expense_amount ?? '')
-  editRemark.value = item.remark || ''
+  editIsErrandOrder.value = Number(item.is_errand_order || 0) === 1 ? 1 : 0
+  editErrandFee.value = String(item.errand_fee ?? '')
   metaSheetOpen.value = true
-  if (!members.value.length) void loadMembers()
 }
 
 function closeMetaSheet() {
@@ -711,13 +608,9 @@ async function saveAccountMeta() {
   savingMeta.value = true
   try {
     await updateStoreAccount(auth.token, editingAccount.value.id, {
-      member_id: selectedMemberId.value > 0 ? selectedMemberId.value : 0,
       payment_status: paymentStatus.value,
-      channel: editChannel.value,
-      order_no: editOrderNo.value.trim() || undefined,
-      income_amount: isEditTakeawayChannel.value ? Number(editIncomeAmount.value || 0) : undefined,
-      other_expense_amount: Number(editOtherExpense.value || 0),
-      remark: editRemark.value.trim()
+      is_errand_order: editIsErrandOrder.value,
+      errand_fee: editIsErrandOrder.value === 1 ? Number(editErrandFee.value || 0) : 0
     })
     Taro.showToast({ title: '已保存', icon: 'success' })
     metaSheetOpen.value = false
@@ -729,25 +622,17 @@ async function saveAccountMeta() {
   }
 }
 
-function onEditChannelChange(e: any) {
-  const idx = Number(e?.detail?.value ?? 0)
-  editChannel.value = channelOptions.value[idx]?.value || ''
+function onEditErrandFeeInput(e: any) {
+  editErrandFee.value = moneyInputValue(e)
 }
 
-function onEditOrderNoInput(e: any) {
-  editOrderNo.value = String(e?.detail?.value || '')
+function onPaymentStatusSwitch(e: any) {
+  paymentStatus.value = e?.detail?.value ? 1 : 2
 }
 
-function onEditIncomeInput(e: any) {
-  editIncomeAmount.value = moneyInputValue(e)
-}
-
-function onEditOtherExpenseInput(e: any) {
-  editOtherExpense.value = moneyInputValue(e)
-}
-
-function onEditRemarkInput(e: any) {
-  editRemark.value = String(e?.detail?.value || '')
+function onErrandSwitch(e: any) {
+  editIsErrandOrder.value = e?.detail?.value ? 1 : 0
+  if (editIsErrandOrder.value === 0) editErrandFee.value = ''
 }
 
 function moneyInputValue(e: any) {
@@ -765,8 +650,8 @@ function makeConsumableLine(kind: 'product' | 'custom' = 'product') {
 }
 
 async function openConsumableSheet(item: StoreAccount) {
-  if (!canEditAccount(item)) {
-    Taro.showToast({ title: '该记录已超过可编辑时间', icon: 'none' })
+  if (!canModifyAccount(item)) {
+    Taro.showToast({ title: hasConsumables(item) ? '已绑定耗材，不能再次绑定' : '该记录已超过可编辑时间', icon: 'none' })
     return
   }
   consumableTarget.value = item

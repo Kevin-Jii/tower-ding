@@ -13,26 +13,25 @@
               <view class="pickerFake">{{ channelLabel }} <text class="pickArrowInline">›</text></view>
             </picker>
           </view>
-          <view class="roRow mt">
-            <text class="roK">记账日期</text>
-            <text class="roV">后端按营业日生成</text>
-          </view>
         </template>
       </view>
 
       <view class="card metaCard">
         <view class="metaHint">会员与支付</view>
-        <view class="roRow">
-          <text class="roK">关联会员</text>
-          <picker mode="selector" :range="memberOptions" range-key="label" :value="memberIndex" @change="onMemberChange">
-            <view class="pickerFake">{{ selectedMemberLabel }} <text class="pickArrowInline">›</text></view>
-          </picker>
+        <view class="switchRow">
+          <view>
+            <view class="roK">是否绑定会员</view>
+            <view class="switchHint">{{ bindMemberEnabled ? selectedMemberLabel : '不绑定会员' }}</view>
+          </view>
+          <Switch color="#111418" :checked="bindMemberEnabled" @change="onBindMemberSwitch" />
         </view>
         <view class="roRow mt">
           <text class="roK">支付状态</text>
           <view class="paySeg">
-            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付</view>
-            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付</view>
+            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付
+            </view>
+            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付
+            </view>
           </view>
         </view>
       </view>
@@ -54,7 +53,8 @@
             <view v-if="lines.length > 1" class="lineRemove" @tap="removeLine(idx)">删除</view>
           </view>
           <view class="lineMode">
-            <view :class="['modePill', !line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, false)">库存商品</view>
+            <view :class="['modePill', !line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, false)">库存商品
+            </view>
             <view :class="['modePill', line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, true)">自定义内容</view>
           </view>
           <view v-if="!line.is_custom" class="pickRow" @tap="openPicker(idx)">
@@ -67,37 +67,35 @@
           </view>
           <view v-else class="customBox">
             <view class="fieldLabel">记账内容</view>
-            <input class="input compactInput" :value="line.product_name" placeholder="如：临时服务费 / 手工收入" @input="onCustomNameInput(idx, $event)" />
+            <input class="input compactInput" :value="line.product_name" placeholder="如：临时服务费 / 手工收入"
+              @input="onCustomNameInput(idx, $event)" />
             <view class="row2">
               <view class="col">
                 <view class="fieldLabel mt">单位</view>
-                <input class="input compactInput" :value="line.unit" placeholder="次/份/项" @input="onCustomUnitInput(idx, $event)" />
+                <input class="input compactInput" :value="line.unit" placeholder="次/份/项"
+                  @input="onCustomUnitInput(idx, $event)" />
               </view>
               <view class="col">
                 <view class="fieldLabel mt">单价</view>
-                <input class="input compactInput" type="digit" :value="line.price || ''" placeholder="0.00" @input="onCustomPriceInput(idx, $event)" />
+                <input class="input compactInput" type="digit" :value="line.price || ''" placeholder="0.00"
+                  @input="onCustomPriceInput(idx, $event)" />
               </view>
             </view>
             <view class="fieldLabel mt">备注</view>
-            <input class="input compactInput" :value="line.remark || ''" placeholder="选填" @input="onLineRemarkInput(idx, $event)" />
+            <input class="input compactInput" :value="line.remark || ''" placeholder="选填"
+              @input="onLineRemarkInput(idx, $event)" />
           </view>
           <view v-if="line.product_id" class="lineReadRow">
             <view class="lrItem lrItem--wide">
               <view class="fieldLabel">规格单位</view>
               <view class="unitPills">
-                <view
-                  v-for="u in lineUnitOptions(line)"
-                  :key="u.value"
+                <view v-for="u in lineUnitOptions(line)" :key="u.value"
                   :class="['unitPill', line.unit === u.value ? 'unitPill--on' : '']"
-                  @tap="setLineUnit(idx, u.value, u.spec)"
-                >
+                  @tap="setLineUnit(idx, u.value, u.spec)">
                   {{ u.label }}
                 </view>
               </view>
-              <view
-                v-if="lineUnitOptions(line).length < 2"
-                class="lrVal lrVal--hint"
-              >
+              <view v-if="lineUnitOptions(line).length < 2" class="lrVal lrVal--hint">
                 暂无大规格可选，请先到「库存 → 商品单位与价格配置」启用大规格
               </view>
               <view class="lrVal lrVal--hint">单价与小计由后端自动计算</view>
@@ -147,12 +145,8 @@
         <view class="sheet" @tap.stop>
           <view class="sheetTitle">选择商品</view>
           <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
-            <view
-              v-for="tab in productTabs"
-              :key="tab.value"
-              :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']"
-              @tap="productTab = tab.value"
-            >
+            <view v-for="tab in productTabs" :key="tab.value"
+              :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']" @tap="productTab = tab.value">
               {{ tab.label }}
             </view>
           </scroll-view>
@@ -168,11 +162,44 @@
           <view class="sheetClose btn btn--ghost" @tap="closePicker">关闭</view>
         </view>
       </view>
+
+      <view v-if="memberSheetOpen" class="mask" @tap="closeMemberSheet">
+        <view class="sheet memberSheet" @tap.stop>
+          <view class="sheetTitle">选择会员</view>
+          <view class="memberSearchRow">
+            <input
+              class="memberSearchInput"
+              :value="memberSearchKeyword"
+              placeholder="姓名 / 手机号 / 会员号"
+              confirm-type="search"
+              @input="onMemberSearchInput"
+              @confirm="searchMembers"
+            />
+            <view class="memberSearchBtn" @tap="searchMembers">搜索</view>
+          </view>
+          <view class="sheetList memberList">
+            <view v-if="!members.length" class="sheetEmpty">暂无会员</view>
+            <view
+              v-for="member in members"
+              :key="member.id"
+              :class="['sheetRow', selectedMemberId === Number(member.id || 0) ? 'sheetRow--on' : '']"
+              @tap="pickMember(member)"
+            >
+              <view>
+                <view class="sheetName">{{ memberLabel(member) }}</view>
+                <view class="sheetSub">会员 #{{ member.id }}</view>
+              </view>
+            </view>
+          </view>
+          <view class="sheetClose btn btn--ghost" @tap="closeMemberSheet">关闭</view>
+        </view>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
+import { Switch } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 import {
@@ -193,9 +220,11 @@ const router = useRouter()
 const channelOptions = ref([])
 const channelDictLoading = ref(false)
 const channel = ref('')
-const accountDate = ref(todayStr())
 const members = ref<Member[]>([])
+const memberSearchKeyword = ref('')
 const selectedMemberId = ref(0)
+const bindMemberEnabled = ref(false)
+const memberSheetOpen = ref(false)
 const paymentStatus = ref(1)
 const otherExpenseAmount = ref('')
 const orderNo = ref('')
@@ -213,6 +242,7 @@ const products = ref([])
 const categorySource = ref([])
 const productTab = ref('all')
 const unitOptionsMap = ref({})
+const initialModeApplied = ref(false)
 
 const channelLabel = computed(() => {
   const o = channelOptions.value.find((c) => c.value === channel.value)
@@ -341,12 +371,6 @@ async function loadChannelDict() {
   }
 }
 
-function todayStr() {
-  const n = new Date()
-  const p = (x) => (x < 10 ? `0${x}` : `${x}`)
-  return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`
-}
-
 function memberLabel(member) {
   const name = String(member?.name || '').trim()
   const phone = String(member?.phone || '').trim()
@@ -354,9 +378,34 @@ function memberLabel(member) {
   return name || phone || `会员 #${member?.id || ''}`
 }
 
-function onMemberChange(e) {
-  const idx = Number(e?.detail?.value ?? 0)
-  selectedMemberId.value = memberOptions.value[idx]?.value || 0
+function onMemberSearchInput(e) {
+  memberSearchKeyword.value = String(e?.detail?.value || '')
+}
+
+function searchMembers() {
+  void loadMembers(memberSearchKeyword.value.trim())
+}
+
+function onBindMemberSwitch(e) {
+  bindMemberEnabled.value = Boolean(e?.detail?.value)
+  if (bindMemberEnabled.value) {
+    memberSheetOpen.value = true
+    void loadMembers(memberSearchKeyword.value.trim())
+    return
+  }
+  selectedMemberId.value = 0
+  memberSheetOpen.value = false
+}
+
+function pickMember(member) {
+  selectedMemberId.value = Number(member?.id || 0)
+  bindMemberEnabled.value = selectedMemberId.value > 0
+  memberSheetOpen.value = false
+}
+
+function closeMemberSheet() {
+  memberSheetOpen.value = false
+  if (!selectedMemberId.value) bindMemberEnabled.value = false
 }
 
 function addLine() {
@@ -395,7 +444,6 @@ function onChannelChange(e) {
   const idx = Number(e?.detail?.value ?? -1)
   if (!Number.isInteger(idx) || idx < 0 || idx >= channelOptions.value.length) return
   channel.value = channelOptions.value[idx]?.value || ''
-  if (isTakeawayChannel.value) paymentStatus.value = 1
 }
 
 function setLineMode(i, isCustom) {
@@ -586,16 +634,22 @@ async function loadProducts() {
   }
 }
 
-async function loadMembers() {
+async function loadMembers(keyword = '') {
   if (!auth.token) return
   try {
-    members.value = await listMembers(auth.token, { page: 1, page_size: 100 })
+    members.value = await listMembers(auth.token, {
+      keyword: keyword || undefined,
+      page: 1,
+      page_size: 100
+    })
   } catch {
     members.value = []
   }
 }
 
 function applyInitialMode() {
+  if (initialModeApplied.value) return
+  initialModeApplied.value = true
   const mode = String(router.params?.mode || '')
   if (mode === 'custom') {
     lines.value = [newLine()]
@@ -644,16 +698,6 @@ async function submit() {
   if (!channel.value) {
     Taro.showToast({ title: channelOptions.value.length ? '请选择销售渠道' : '销售渠道字典未配置', icon: 'none' })
     return
-  }
-  if (isTakeawayChannel.value) {
-    if (!orderNo.value.trim()) {
-      Taro.showToast({ title: '请填写外卖订单号', icon: 'none' })
-      return
-    }
-    if (!(Number(incomeAmount.value) > 0)) {
-      Taro.showToast({ title: '请填写平台收入金额', icon: 'none' })
-      return
-    }
   }
   const items = []
   let hasMissingUnit = false
@@ -714,16 +758,16 @@ async function submit() {
   }
   submitting.value = true
   try {
-    const payload = {
+    const payload: Record<string, any> = {
       channel: channel.value,
       other_expense_amount: Number(otherExpenseAmount.value || 0),
-      payment_status: isTakeawayChannel.value ? 1 : paymentStatus.value,
-      member_id: selectedMemberId.value > 0 ? selectedMemberId.value : 0,
+      payment_status: paymentStatus.value,
+      member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
       items
     }
     if (isTakeawayChannel.value) {
-      payload.order_no = orderNo.value.trim()
-      payload.income_amount = Number(incomeAmount.value || 0)
+      if (orderNo.value.trim()) payload.order_no = orderNo.value.trim()
+      if (incomeAmount.value !== '') payload.income_amount = Number(incomeAmount.value || 0)
       payload.remark = `${channelLabel.value}外卖订单`
     }
     const acc = await createStoreAccount(auth.token, payload)
@@ -739,7 +783,6 @@ async function submit() {
 }
 
 useDidShow(() => {
-  accountDate.value = todayStr()
   applyInitialMode()
   void Promise.all([loadChannelDict(), loadProducts(), loadMembers()])
 })

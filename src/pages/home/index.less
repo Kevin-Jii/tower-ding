@@ -1,136 +1,230 @@
 .workspace {
-  .primaryAction {
+  min-height: 100vh;
+  padding-top: 24px;
+  background:
+    radial-gradient(circle at 16% 5%, rgba(255, 255, 255, 0.92) 0, rgba(255, 255, 255, 0) 190px),
+    linear-gradient(180deg, #eef1f6 0%, #f7f8fb 56%, #ffffff 100%);
+
+  .eyebrow {
+    color: #687385;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .title {
+    margin-top: 4px;
+    color: #0f1720;
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  .overview {
     margin-top: 22px;
-    min-height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    background: #17202a;
-    border-color: #17202a;
+    padding: 22px;
+    background:
+      linear-gradient(135deg, rgba(23, 32, 42, 0.94), rgba(46, 61, 79, 0.94)),
+      #17202a;
+    border-color: rgba(255, 255, 255, 0.08);
     color: #fff;
   }
 
-  .primaryTitle {
-    font-size: 34px;
+  .sectionHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .sectionName {
+    color: inherit;
+    font-size: 28px;
     font-weight: 900;
-    line-height: 1.25;
   }
 
-  .primarySub {
-    margin-top: 8px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 23px;
-    line-height: 1.45;
-  }
-
-  .primaryMark {
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
-    background: #fff;
-    color: #17202a;
-    font-size: 42px;
+  .sectionMeta {
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 21px;
     font-weight: 800;
+  }
+
+  .overviewGrid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .overviewItem {
+    min-height: 92px;
+    padding: 14px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-sizing: border-box;
+  }
+
+  .overviewLabel {
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  .overviewValue {
+    margin-top: 8px;
+    color: #fff;
+    font-size: 31px;
+    font-weight: 900;
+    line-height: 1.1;
+    word-break: break-all;
+  }
+
+  .group {
+    margin-top: 24px;
+  }
+
+  .groupTitle {
+    margin-bottom: 12px;
+    color: #17202a;
+    font-size: 28px;
+    font-weight: 900;
+  }
+
+  .moduleList {
+    display: grid;
+    gap: 10px;
+  }
+
+  .moduleCard {
+    min-height: 104px;
+    padding: 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(226, 232, 240, 0.96);
+    box-shadow: 0 10px 24px rgba(31, 41, 55, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-sizing: border-box;
+  }
+
+  .moduleCard:active {
+    transform: scale(0.99);
+  }
+
+  .moduleIcon {
+    width: 54px;
+    height: 54px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 900;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.14);
   }
 
-  .moduleGrid {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  .moduleCard {
-    min-height: 190px;
-    padding: 24px;
-    border-radius: 8px;
-    border: 1px solid #dce2eb;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 8px 22px rgba(28, 39, 58, 0.05);
-    box-sizing: border-box;
-  }
-
-  .moduleIcon {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-  }
-
-  .moduleIcon--member {
-    background: #0891b2;
-  }
-
-  .moduleIcon--account {
-    background: #16a34a;
-  }
-
-  .moduleIcon--b2b {
-    background: #4f46e5;
-  }
-
-  .moduleIcon--return {
-    background: #d97706;
-  }
-
-  .moduleIcon--stock {
-    background: #2563eb;
+  .moduleMain {
+    flex: 1;
+    min-width: 0;
   }
 
   .moduleTitle {
-    margin-top: 18px;
-    color: #17202a;
-    font-size: 28px;
+    color: #0f1720;
+    font-size: 27px;
     font-weight: 900;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
-  .moduleSub {
-    margin-top: 8px;
+  .moduleDesc {
+    margin-top: 5px;
     color: #687385;
     font-size: 21px;
-    line-height: 1.42;
+    font-weight: 700;
+    line-height: 1.35;
   }
 
-  .quickList {
+  .moduleArrow {
+    color: #aab4c2;
+    font-size: 36px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .moduleTone--member {
+    background: linear-gradient(135deg, #273240, #0f1720);
+  }
+
+  .moduleTone--b2b {
+    background: linear-gradient(135deg, #8c86ff, #4f46e5);
+  }
+
+  .moduleTone--return {
+    background: linear-gradient(135deg, #ffb454, #f97316);
+  }
+
+  .moduleTone--quick {
+    background: linear-gradient(135deg, #67d58c, #19a96c);
+  }
+
+  .moduleTone--stock {
+    background: linear-gradient(135deg, #7ca5ff, #2f6df6);
+  }
+
+  .moduleTone--inventory {
+    background: linear-gradient(135deg, #14b8a6, #0f766e);
+  }
+
+  .todo {
+    margin-top: 24px;
+    padding: 22px;
+  }
+
+  .todo .sectionName {
+    color: #17202a;
+  }
+
+  .todoList {
     margin-top: 14px;
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .quickRow {
-    min-height: 110px;
-    padding: 22px 24px;
+  .todoItem {
+    min-height: 58px;
+    padding: 12px 14px;
     border-radius: 8px;
-    border: 1px solid #dce2eb;
-    background: #fff;
+    background: #f7f9fc;
+    border: 1px solid #edf0f5;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 10px;
     box-sizing: border-box;
   }
 
-  .quickTitle {
+  .todoDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .todoItem--warn .todoDot {
+    background: #f97316;
+  }
+
+  .todoText {
+    color: #475569;
+    font-size: 23px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .todoItem--warn .todoText {
     color: #17202a;
-    font-size: 28px;
-    font-weight: 900;
-  }
-
-  .quickSub {
-    margin-top: 7px;
-    color: #687385;
-    font-size: 22px;
-    line-height: 1.4;
-  }
-
-  .quickArrow {
-    color: #aab4c2;
-    font-size: 42px;
-    line-height: 1;
   }
 }

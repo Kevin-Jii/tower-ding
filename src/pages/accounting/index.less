@@ -39,17 +39,16 @@
   font-weight: 900;
 }
 
-.heroSub {
-  margin-top: 12px;
-  color: #687385;
-  font-size: 24px;
-}
-
 .dateFilter {
   margin-top: 18px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dateFilter > picker {
+  flex: 1;
+  min-width: 0;
 }
 
 .dateBox {
@@ -64,6 +63,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dateBox--single {
+  width: 100%;
 }
 
 .dateLabel {
@@ -91,29 +94,6 @@
   flex-shrink: 0;
 }
 
-.dateDash {
-  width: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #687385;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.dateClear {
-  min-width: 68px;
-  height: 64px;
-  border-radius: 8px;
-  background: #17202a;
-  color: #fff;
-  font-size: 22px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .actionGrid {
   margin-top: 18px;
   display: grid;
@@ -133,21 +113,6 @@
 
 .actionGrid .cta {
   margin-top: 0;
-}
-
-.cta--light {
-  background: #fff;
-  border-color: #dce2eb;
-  color: #17202a;
-}
-
-.cta--light .ctaSub {
-  color: #687385;
-}
-
-.cta--light .ctaPlus {
-  background: #17202a;
-  color: #fff;
 }
 
 .ctaTitle {
@@ -174,32 +139,6 @@
   font-size: 40px;
   font-weight: 700;
   flex-shrink: 0;
-}
-
-.grid {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.metric {
-  min-height: 146px;
-}
-
-.metricLabel {
-  color: #687385;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.metricValue {
-  margin-top: 12px;
-  color: #17202a;
-  font-size: 38px;
-  font-weight: 900;
-  line-height: 1.1;
-  word-break: break-all;
 }
 
 .empty {
@@ -334,6 +273,31 @@
   box-sizing: border-box;
 }
 
+.memberSearchRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.memberSearchInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.memberSearchBtn {
+  width: 112px;
+  min-height: 76px;
+  border-radius: 8px;
+  background: #17202a;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .rowFoot {
   margin-top: 14px;
   display: flex;
@@ -352,6 +316,12 @@
   line-height: 1.25;
   box-sizing: border-box;
   word-break: break-all;
+}
+
+.rowMeta--locked {
+  color: #475569;
+  background: #eef2f7;
+  border-color: #dce2eb;
 }
 
 .rowStatus {
@@ -494,6 +464,24 @@
 
 .editRow {
   margin-top: 20px;
+}
+
+.switchRow {
+  margin-top: 20px;
+  min-height: 84px;
+  padding: 18px 0;
+  border-bottom: 1px solid #edf0f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.switchHint {
+  margin-top: 6px;
+  color: #8792a2;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .editLabel {
