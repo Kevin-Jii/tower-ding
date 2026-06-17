@@ -2,9 +2,15 @@
   <view class="page formPage">
     <view class="container formContainer">
       <view class="formTopbar">
-        <view>
-          <view class="eyebrow">库存单据</view>
-          <view class="title">登记出入库</view>
+        <view class="typeSwitch">
+          <view
+            v-for="item in typeOptions"
+            :key="item.value"
+            :class="['typeOption', type === item.value ? 'typeOption--on' : '']"
+            @tap="selectType(item.value)"
+          >
+            {{ item.label }}单
+          </view>
         </view>
         <view class="selectedBadge">已选 {{ selectedCount }}</view>
       </view>
@@ -20,33 +26,39 @@
       </view>
       <view v-else class="productList">
         <view class="productScrollInner">
-          <view v-for="p in products" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
-            <view class="productRowTop">
-              <view class="productRowMain" @tap="toggleSelect(p.id)">
-                <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
-                  <text v-if="isSelected(p.id)" class="checkMark">✓</text>
-                </view>
-                <view class="productText">
-                  <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
-                  <view class="productSub">{{ productMeta(p) }}</view>
-                  <view class="productSub">¥{{ formatMoney(displayPrice(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
-                </view>
-              </view>
-              <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
-                <view class="stepBtn" @tap="decQty(p.id)">−</view>
-                <view class="stepVal">{{ formatQty(selection[p.id]?.quantity) }} {{ selectedUnitLabel(p.id) }}</view>
-                <view class="stepBtn" @tap="incQty(p.id)">+</view>
-              </view>
+          <view v-for="group in groupedProducts" :key="group.name" class="categoryGroup">
+            <view class="categoryHead">
+              <view class="categoryName">{{ group.name }}</view>
+              <view class="categoryCount">{{ group.items.length }} 个</view>
             </view>
-            <view v-if="isSelected(p.id)" class="unitPills">
-              <view class="unitLabel">单位</view>
-              <view
-                v-for="u in selectedUnitOptions(p.id)"
-                :key="u.value"
-                :class="['unitPill', selection[p.id]?.unit === u.value ? 'unitPill--on' : '']"
-                @tap="selectUnit(p.id, u)"
-              >
-                {{ u.label }}
+            <view v-for="p in group.items" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
+              <view class="productRowTop">
+                <view class="productRowMain" @tap="toggleSelect(p.id)">
+                  <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
+                    <text v-if="isSelected(p.id)" class="checkMark">✓</text>
+                  </view>
+                  <view class="productText">
+                    <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
+                    <view class="productSub">{{ productMeta(p) }}</view>
+                    <view class="productSub">¥{{ formatMoney(displayPrice(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
+                  </view>
+                </view>
+                <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
+                  <view class="stepBtn" @tap="decQty(p.id)">−</view>
+                  <view class="stepVal">{{ formatQty(selection[p.id]?.quantity) }} {{ selectedUnitLabel(p.id) }}</view>
+                  <view class="stepBtn" @tap="incQty(p.id)">+</view>
+                </view>
+              </view>
+              <view v-if="isSelected(p.id)" class="unitPills">
+                <view class="unitLabel">单位</view>
+                <view
+                  v-for="u in selectedUnitOptions(p.id)"
+                  :key="u.value"
+                  :class="['unitPill', selection[p.id]?.unit === u.value ? 'unitPill--on' : '']"
+                  @tap="selectUnit(p.id, u)"
+                >
+                  {{ u.label }}
+                </view>
               </view>
             </view>
           </view>
@@ -67,17 +79,7 @@
         <view class="submitSheet" @tap.stop>
           <view class="sheetHandle" />
           <view class="sheetTitle">提交单据</view>
-          <view class="sheetSub">请补全单据信息，以下均为必填项</view>
-
-          <view class="sheetField">
-            <view class="fieldLabel">出入库类型</view>
-            <picker mode="selector" :range="typeOptions" range-key="label" :value="typeIndex" @change="onTypeChange">
-              <view class="pickerRow">
-                <text>{{ typeLabel }}</text>
-                <text class="pickerArrow">›</text>
-              </view>
-            </picker>
-          </view>
+          <view class="sheetSub">当前为{{ typeLabel }}单，请补全单据信息后提交</view>
 
           <view class="sheetField">
             <view class="fieldLabel">原因</view>
@@ -109,7 +111,7 @@
 </template>
 
 <script setup>
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, reactive, ref } from 'vue'
 import {
   createInventoryOrder,
@@ -121,6 +123,7 @@ import { useAuthStore } from '../../stores/auth'
 import './form.less'
 
 const auth = useAuthStore()
+const router = useRouter()
 const type = ref(1)
 const reason = ref('')
 const remark = ref('')
@@ -144,6 +147,15 @@ const typeIndex = computed(() => {
   return i >= 0 ? i : 0
 })
 const typeLabel = computed(() => typeOptions[typeIndex.value]?.label || '请选择')
+const groupedProducts = computed(() => {
+  const map = new Map()
+  products.value.forEach((p) => {
+    const name = productCategoryName(p)
+    if (!map.has(name)) map.set(name, [])
+    map.get(name).push(p)
+  })
+  return Array.from(map.entries()).map(([name, items]) => ({ name, items }))
+})
 const reasonIndex = computed(() => {
   const i = reasonOptions.value.findIndex((o) => o.value === reason.value)
   return i >= 0 ? i : 0
@@ -154,9 +166,17 @@ function onRemark(e) {
   remark.value = String(e?.detail?.value || '')
 }
 
-function onTypeChange(e) {
-  const idx = Number(e?.detail?.value || 0)
-  type.value = typeOptions[idx]?.value || 1
+function selectType(value) {
+  type.value = Number(value) === 2 ? 2 : 1
+}
+
+function applyRouteType() {
+  const raw = String(router.params?.type || '').trim().toLowerCase()
+  if (raw === '2' || raw === 'out' || raw === 'outbound') {
+    type.value = 2
+  } else if (raw === '1' || raw === 'in' || raw === 'inbound') {
+    type.value = 1
+  }
 }
 
 function onReasonChange(e) {
@@ -250,9 +270,19 @@ function displayPrice(p) {
 
 function productMeta(p) {
   const supplierName = String(p?.supplier?.supplier_name || '').trim()
-  const categoryName = String(p?.category?.name || '').trim()
+  const categoryName = productCategoryName(p)
   const spec = String(p?.spec || '').trim()
   return [supplierName, categoryName, spec].filter(Boolean).join(' · ') || `商品ID ${p.id}`
+}
+
+function productCategoryName(p) {
+  return String(
+    p?.category?.name ||
+    p?.category_name ||
+    p?.product?.category?.name ||
+    p?.product?.category_name ||
+    ''
+  ).trim() || '未分类商品'
 }
 
 function mapReasonOptions(rows) {
@@ -384,6 +414,7 @@ async function submit() {
 }
 
 useDidShow(() => {
+  applyRouteType()
   void Promise.all([loadReasonDict(), loadAllProducts()])
 })
 </script>

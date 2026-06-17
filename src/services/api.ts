@@ -135,6 +135,38 @@ export type InventoryOrder = {
   items?: InventoryOrderItem[]
 }
 
+export type InventoryLossType = 'loss' | 'self_use' | 'gift'
+
+export type InventoryLossOrderItem = {
+  id?: number
+  order_id?: number
+  product_id?: number
+  product_name?: string
+  unit?: string
+  quantity?: number
+  base_quantity?: number
+  base_unit?: string
+  cost_price?: number
+  cost_amount?: number
+  remark?: string
+}
+
+export type InventoryLossOrder = {
+  id: number
+  order_no?: string
+  store_id?: number
+  type?: InventoryLossType | string
+  member_id?: number
+  member?: Member
+  reason?: string
+  total_cost?: number
+  item_count?: number
+  operator_name?: string
+  is_canceled?: boolean
+  created_at?: string
+  items?: InventoryLossOrderItem[]
+}
+
 export type SupplierProduct = {
   id: number
   product_id?: number
@@ -510,6 +542,43 @@ export function getInventoryOrder(authToken: string, id: number) {
 
 export function createInventoryOrder(authToken: string, body: CreateInventoryOrderReq) {
   return request<InventoryOrder>('/inventory-orders', { method: 'POST', data: body, authToken })
+}
+
+export function listInventoryLossOrders(
+  authToken: string,
+  params: {
+    store_id?: number
+    type?: InventoryLossType | string
+    member_id?: number
+    keyword?: string
+    start_date?: string
+    end_date?: string
+    page?: number
+    page_size?: number
+  } = {}
+) {
+  return request<InventoryLossOrder[] | PaginatedList<InventoryLossOrder>>('/inventory-loss-orders', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function createInventoryLossOrder(
+  authToken: string,
+  body: {
+    store_id?: number
+    type: InventoryLossType
+    member_id?: number
+    reason: string
+    items: Array<{ product_id: number; unit: string; quantity: number; remark?: string }>
+  }
+) {
+  return request<InventoryLossOrder>('/inventory-loss-orders', { method: 'POST', data: body, authToken })
+}
+
+export function getInventoryLossOrder(authToken: string, id: number) {
+  return request<InventoryLossOrder>(`/inventory-loss-orders/${id}`, { method: 'GET', authToken })
 }
 
 /** 全平台供应商商品（管理端）；门店小程序选品请用 {@link listStoreSupplierProducts} */

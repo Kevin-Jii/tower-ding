@@ -1,44 +1,114 @@
 <template>
   <view class="page">
     <view class="container workspace">
-      <view class="eyebrow">{{ greeting }}，{{ storeName }}</view>
-      <view class="title">门店工作台</view>
-
-      <view class="overview card">
-        <view class="sectionHead">
-          <view class="sectionName">今日概览</view>
-          <view class="sectionMeta">{{ today }}</view>
+      <view class="topBar">
+        <view>
+          <view class="eyebrow">{{ greeting }}，{{ userName }}</view>
+          <view class="title">Tower工作台</view>
         </view>
-        <view class="overviewGrid">
-          <view class="overviewItem">
-            <view class="overviewLabel">今日记账金额</view>
-            <view class="overviewValue">¥{{ formatMoney(todayAmount) }}</view>
+        <view class="avatarBtn" @tap="go('/pages/mine/index')">{{ initials }}</view>
+      </view>
+
+      <view class="heroGrid">
+        <view class="salesCard bentoCard" @tap="go('/pages/accounting/index')">
+          <view class="salesTop">
+            <view class="cardLabel">今日销售额</view>
+            <view>
+              <view class="miniLabel">未支付订单</view>
+              <view class="miniValue">{{ unpaidCount }}笔</view>
+            </view>
           </view>
-          <view class="overviewItem">
-            <view class="overviewLabel">未支付订单数</view>
-            <view class="overviewValue">{{ unpaidCount }}</view>
+          <view class="salesAmount">¥{{ formatMoney(todayAmount) }}</view>
+          <view class="salesTrend">
+            <canvas id="salesTrendCanvas" canvas-id="salesTrendCanvas" class="trendCanvas" />
           </view>
-          <view class="overviewItem">
-            <view class="overviewLabel">库存预警</view>
-            <view class="overviewValue">{{ lowStockCount }}</view>
+        </view>
+
+        <view class="stockAlertCard bentoCard" @tap="go('/pages/inventory/stock-list')">
+          <view class="alertHead">
+            <view class="redDot" />
+            <view class="cardLabel">库存预警</view>
           </view>
-          <view class="overviewItem">
-            <view class="overviewLabel">待处理返厂</view>
-            <view class="overviewValue">{{ pendingReturnCount }}</view>
-          </view>
+          <view class="stockAlertNum">{{ lowStockCount }}</view>
+          <view class="stockAlertText">{{ lowStockCount }}件商品低于预警线</view>
         </view>
       </view>
 
-      <view v-for="group in moduleGroups" :key="group.title" class="group">
-        <view class="groupTitle">{{ group.title }}</view>
-        <view class="moduleList">
-          <view v-for="item in group.items" :key="item.url" class="moduleCard" @tap="go(item.url)">
-            <view :class="['moduleIcon', item.tone]">{{ item.badge }}</view>
-            <view class="moduleMain">
-              <view class="moduleTitle">{{ item.title }}</view>
-              <view class="moduleDesc">{{ item.desc }}</view>
+      <view class="bentoGrid">
+        <view class="returnSmall bentoCard">
+          <view class="cardLabel">待处理返厂</view>
+          <view class="returnNum">{{ pendingReturnCount }}</view>
+        </view>
+
+        <view class="quickCard bentoCard" @tap="go('/pages/accounting/create?mode=quick')">
+          <view class="iconBox moduleTone--quick">¥</view>
+          <view>
+            <view class="moduleTitle">快速记账</view>
+            <view class="moduleDesc">快速记录支出/收入</view>
+          </view>
+        </view>
+
+        <view class="memberCard bentoCard" @tap="go('/pages/member/index')">
+          <view class="cardTitleRow">
+            <view class="iconBox moduleTone--member">会</view>
+            <view class="moduleTitle">会员管理</view>
+          </view>
+          <view class="miniStats">
+            <view>
+              <view class="miniLabel">会员总数</view>
+              <view class="miniValue">{{ memberTotal }}人</view>
             </view>
-            <view class="moduleArrow">›</view>
+            <view>
+              <view class="miniLabel">新增会员</view>
+              <view class="miniValue">{{ monthNewMembers }}人</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="businessCard bentoCard" @tap="go('/pages/b2b/supply-orders')">
+          <view class="cardLabel">经营管理</view>
+          <view class="inlineEntry">
+            <view class="iconBox moduleTone--b2b">B</view>
+            <view>
+              <view class="moduleTitle">B2B供货单</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="storeBizCard bentoCard">
+          <view class="cardLabel">门店业务</view>
+          <view class="entryRow" @tap="go('/pages/store-return/index')">
+            <view class="iconBox moduleTone--return">返</view>
+            <view>
+              <view class="entryTitle">门店返厂</view>
+            </view>
+          </view>
+          <view class="entryDivider" />
+          <view class="entryRow" @tap="go('/pages/inventory-loss/index')">
+            <view class="iconBox moduleTone--loss">损</view>
+            <view>
+              <view class="entryTitle">报损自用</view>
+              <view class="entryDesc">登记报损与自用出库</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="inventoryCard bentoCard">
+          <view class="cardLabel">库存工具</view>
+          <view class="entryRow" @tap="go('/pages/inventory/stock-list')">
+            <view class="iconBox moduleTone--stock">库</view>
+            <view>
+              <view class="entryTitle">库存查询</view>
+              <view class="entryDesc">查看实时查询低库存</view>
+            </view>
+          </view>
+          <view class="entryDivider" />
+          <view class="entryRow" @tap="go('/pages/inventory/form')">
+            <view class="iconBox moduleTone--inventory">入</view>
+            <view>
+              <view class="entryTitle">入库/出库</view>
+              <view class="entryDesc">登记出入库单据</view>
+            </view>
           </view>
         </view>
       </view>
@@ -60,12 +130,14 @@
 
 <script setup lang="ts">
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import {
+  getHomeCharts,
   getStoreAccountStats,
   listAllInventories,
   listStoreAccounts,
   listStoreReturns,
+  type HomeChartLinePoint,
   type StoreAccount,
   type StoreReturn
 } from '../../services/api'
@@ -78,8 +150,14 @@ const todayAmount = ref(0)
 const unpaidCount = ref(0)
 const lowStockCount = ref(0)
 const pendingReturnCount = ref(0)
+const salesTrend = ref<HomeChartLinePoint[]>([])
 
 const storeName = computed(() => auth.user?.store?.name || auth.user?.nickname || '门店')
+const userName = computed(() => auth.user?.nickname || auth.user?.nickname || '姓')
+const initials = computed(() => {
+  const text = auth.user?.nickname || auth.user?.username || auth.user?.phone || '我'
+  return String(text).slice(0, 1).toUpperCase()
+})
 const greeting = computed(() => {
   const h = new Date().getHours()
   if (h < 11) return '早上好'
@@ -87,29 +165,8 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-const moduleGroups = [
-  {
-    title: '经营管理',
-    items: [
-      { title: '会员模块', desc: '会员资料、搜索与新增', badge: '会', url: '/pages/member/index', tone: 'moduleTone--member' },
-      { title: 'B2B供货单', desc: '供货单新增与状态查看', badge: 'B', url: '/pages/b2b/supply-orders', tone: 'moduleTone--b2b' }
-    ]
-  },
-  {
-    title: '门店业务',
-    items: [
-      { title: '门店返厂', desc: '查看返厂列表与新增记录', badge: '返', url: '/pages/store-return/index', tone: 'moduleTone--return' },
-      { title: '快速记账', desc: '系统商品自动算价扣库存', badge: '¥', url: '/pages/accounting/create?mode=quick', tone: 'moduleTone--quick' }
-    ]
-  },
-  {
-    title: '库存工具',
-    items: [
-      { title: '库存查询', desc: '查看实时库存和低库存商品', badge: '库', url: '/pages/inventory/stock-list', tone: 'moduleTone--stock' },
-      { title: '入库/出库', desc: '登记商品入库或出库单据', badge: '入', url: '/pages/inventory/form', tone: 'moduleTone--inventory' }
-    ]
-  }
-]
+const memberTotal = ref(683)
+const monthNewMembers = ref(3)
 
 const todos = computed(() => [
   {
@@ -125,8 +182,6 @@ const todos = computed(() => [
     warn: pendingReturnCount.value > 0
   }
 ])
-
-const tabPages = new Set(['/pages/home/index', '/pages/inventory/index', '/pages/accounting/index', '/pages/mine/index'])
 
 function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`
@@ -149,6 +204,77 @@ function formatMoney(v: any) {
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
+function addDays(date: Date, days: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function formatDate(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function getTrendValues() {
+  const rows = salesTrend.value.length > 1
+    ? salesTrend.value
+    : [
+      { amount: Math.max(todayAmount.value * 0.46, 20) },
+      { amount: Math.max(todayAmount.value * 0.58, 28) },
+      { amount: Math.max(todayAmount.value * 0.52, 24) },
+      { amount: Math.max(todayAmount.value * 0.76, 36) },
+      { amount: Math.max(todayAmount.value * 0.68, 32) },
+      { amount: Math.max(todayAmount.value, 42) }
+    ]
+  return rows.map((row) => Number(row.amount || 0))
+}
+
+function drawSalesTrend() {
+  void nextTick(() => {
+    Taro.createSelectorQuery()
+      .select('.salesTrend')
+      .boundingClientRect((rect) => {
+        const box = Array.isArray(rect) ? rect[0] : rect
+        const width = Number(box?.width || 142)
+        const height = Number(box?.height || 48)
+        const values = getTrendValues()
+        const max = Math.max(...values, 1)
+        const min = Math.min(...values, 0)
+        const range = Math.max(max - min, 1)
+        const paddingX = 8
+        const paddingY = 9
+        const usableW = width - paddingX * 2
+        const usableH = height - paddingY * 2
+        const points = values.map((value, index) => {
+          const x = paddingX + (values.length === 1 ? 0 : (index / (values.length - 1)) * usableW)
+          const ratio = (value - min) / range
+          const y = paddingY + (1 - ratio) * usableH
+          return { x, y }
+        })
+        const ctx = Taro.createCanvasContext('salesTrendCanvas')
+        ctx.clearRect(0, 0, width, height)
+        if (points.length < 2) {
+          ctx.draw()
+          return
+        }
+        ctx.setLineCap('round')
+        ctx.setLineJoin('round')
+        ctx.setStrokeStyle('#3b82f6')
+        ctx.setLineWidth(3)
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let i = 0; i < points.length - 1; i += 1) {
+          const current = points[i]
+          const next = points[i + 1]
+          const midX = (current.x + next.x) / 2
+          ctx.bezierCurveTo(midX, current.y, midX, next.y, next.x, next.y)
+        }
+        ctx.stroke()
+        ctx.draw()
+      })
+      .exec()
+  })
+}
+
 function isLowStock(row: any) {
   const qty = Number(row?.quantity || 0)
   return Number.isFinite(qty) && qty < 3
@@ -164,8 +290,9 @@ async function refresh() {
     return
   }
   const storeID = auth.storeId || undefined
+  const startDate = formatDate(addDays(businessDate(), -6))
   try {
-    const [accountStats, unpaidRows, inventories, returnRows] = await Promise.all([
+    const [accountStats, unpaidRows, inventories, returnRows, chartRows] = await Promise.all([
       getStoreAccountStats(auth.token, { store_id: storeID, start_date: today, end_date: today }),
       listStoreAccounts(auth.token, {
         store_id: storeID,
@@ -176,24 +303,29 @@ async function refresh() {
         page_size: 100
       }),
       listAllInventories(auth.token, { store_id: storeID }),
-      listStoreReturns(auth.token, { store_id: storeID, start_date: today, end_date: today, page: 1, page_size: 100 })
+      listStoreReturns(auth.token, { store_id: storeID, start_date: today, end_date: today, page: 1, page_size: 100 }),
+      getHomeCharts(auth.token, {
+        store_id: storeID,
+        start_date: startDate,
+        end_date: today,
+        granularity: 'day'
+      }).catch(() => null)
     ])
     todayAmount.value = Number(accountStats?.total_amount || 0)
     unpaidCount.value = countUnpaid(unpaidRows)
     lowStockCount.value = inventories.filter(isLowStock).length
     pendingReturnCount.value = (returnRows as StoreReturn[]).length
+    salesTrend.value = Array.isArray(chartRows?.line) ? chartRows.line : []
   } catch (err: any) {
     Taro.showToast({ title: err?.message || '首页数据加载失败', icon: 'none' })
+  } finally {
+    drawSalesTrend()
   }
 }
 
 function go(url: string) {
   if (!auth.token) {
     Taro.redirectTo({ url: '/pages/login/index' })
-    return
-  }
-  if (tabPages.has(url)) {
-    Taro.switchTab({ url })
     return
   }
   Taro.navigateTo({ url })

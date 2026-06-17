@@ -128,7 +128,7 @@ function hydratePolicyAccept() {
 function redirectAuthedUser() {
   auth.hydrate()
   if (auth.isAuthed) {
-    Taro.switchTab({ url: '/pages/home/index' })
+    Taro.reLaunch({ url: '/pages/home/index' })
   }
 }
 
@@ -173,7 +173,7 @@ async function onSubmit() {
       Taro.removeStorageSync(LOGIN_FORM_KEY)
     }
     Taro.hideLoading()
-    Taro.switchTab({ url: '/pages/home/index' })
+    Taro.reLaunch({ url: '/pages/home/index' })
   } catch (err: any) {
     Taro.hideLoading()
     Taro.showToast({ title: err?.message || '登录失败', icon: 'none' })
