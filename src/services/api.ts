@@ -800,6 +800,29 @@ export function listMembers(
   }).then(unwrapList)
 }
 
+export function getMemberPage(
+  authToken: string,
+  params: { keyword?: string; page?: number; page_size?: number } = {}
+) {
+  return request<Member[] | PaginatedList<Member>>('/members', {
+    method: 'GET',
+    data: { page: 1, page_size: 50, ...params },
+    authToken,
+    showLoading: false
+  }).then((payload) => {
+    if (Array.isArray(payload)) {
+      return { list: payload, total: payload.length, page: params.page || 1, page_size: params.page_size || payload.length }
+    }
+    return {
+      list: payload?.list || [],
+      total: Number(payload?.total || 0),
+      page: Number(payload?.page || params.page || 1),
+      page_size: Number(payload?.page_size || params.page_size || 50),
+      page_num: Number(payload?.page_num || 0)
+    }
+  })
+}
+
 export function createMember(
   authToken: string,
   body: {

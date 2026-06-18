@@ -134,9 +134,11 @@ import { computed, nextTick, ref } from 'vue'
 import {
   getHomeCharts,
   getStoreAccountStats,
+  getMemberPage,
   listAllInventories,
   listStoreAccounts,
   listStoreReturns,
+  type Member,
   type HomeChartLinePoint,
   type StoreAccount,
   type StoreReturn
@@ -165,8 +167,8 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-const memberTotal = ref(683)
-const monthNewMembers = ref(3)
+const memberTotal = ref(0)
+const monthNewMembers = ref(0)
 
 const todos = computed(() => [
   {
@@ -212,6 +214,28 @@ function addDays(date: Date, days: number) {
 
 function formatDate(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function isThisMonth(dateText?: string) {
+  if (!dateText) return false
+  const date = new Date(dateText)
+  if (Number.isNaN(date.getTime())) return false
+  const now = new Date()
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+}
+
+async function loadMemberStats() {
+  if (!auth.token) return { total: 0, monthNew: 0 }
+  let total = 0
+  let monthNew = 0
+  for (let page = 1; page <= 20; page += 1) {
+    const data = await getMemberPage(auth.token, { page, page_size: 100 })
+    const rows = data.list as Member[]
+    if (page === 1) total = Number(data.total || rows.length || 0)
+    monthNew += rows.filter((row) => isThisMonth(row.created_at)).length
+    if (rows.length < 100 || page * 100 >= total) break
+  }
+  return { total, monthNew }
 }
 
 function getTrendValues() {
@@ -292,7 +316,7 @@ async function refresh() {
   const storeID = auth.storeId || undefined
   const startDate = formatDate(addDays(businessDate(), -6))
   try {
-    const [accountStats, unpaidRows, inventories, returnRows, chartRows] = await Promise.all([
+    const [accountStats, unpaidRows, inventories, returnRows, chartRows, memberStats] = await Promise.all([
       getStoreAccountStats(auth.token, { store_id: storeID, start_date: today, end_date: today }),
       listStoreAccounts(auth.token, {
         store_id: storeID,
@@ -309,13 +333,16 @@ async function refresh() {
         start_date: startDate,
         end_date: today,
         granularity: 'day'
-      }).catch(() => null)
+      }).catch(() => null),
+      loadMemberStats()
     ])
     todayAmount.value = Number(accountStats?.total_amount || 0)
     unpaidCount.value = countUnpaid(unpaidRows)
     lowStockCount.value = inventories.filter(isLowStock).length
     pendingReturnCount.value = (returnRows as StoreReturn[]).length
     salesTrend.value = Array.isArray(chartRows?.line) ? chartRows.line : []
+    memberTotal.value = Number(memberStats.total || 0)
+    monthNewMembers.value = Number(memberStats.monthNew || 0)
   } catch (err: any) {
     Taro.showToast({ title: err?.message || '首页数据加载失败', icon: 'none' })
   } finally {

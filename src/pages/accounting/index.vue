@@ -206,6 +206,7 @@ import elemeIcon from '../../assets/platforms/eleme.png'
 import jdIcon from '../../assets/platforms/jd.png'
 import meituanIcon from '../../assets/platforms/meituan.png'
 import miniappIcon from '../../assets/platforms/miniapp.png'
+import storeIcon from '../../assets/platforms/store.png'
 import taobaoIcon from '../../assets/platforms/taobao.png'
 import wechatIcon from '../../assets/platforms/wechat.png'
 import {
@@ -357,6 +358,9 @@ function platformInfo(item: StoreAccount) {
   }
   if (text.includes('微信') || text.includes('wechat')) {
     return { label: '微信', icon: wechatIcon }
+  }
+  if (text.includes('线下') || text.includes('门店') || text.includes('offline') || text.includes('store')) {
+    return { label: '线下门店', icon: storeIcon }
   }
   return null
 }
