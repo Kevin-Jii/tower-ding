@@ -1,355 +1,286 @@
-.workspace {
+.page {
   min-height: 100vh;
-  padding: 56px 32px 48px;
   background:
-    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
-    radial-gradient(circle at 86% 18%, rgba(184, 255, 236, 0.72), rgba(184, 255, 236, 0) 250px),
-    radial-gradient(circle at 12% 42%, rgba(125, 211, 252, 0.46), rgba(125, 211, 252, 0) 280px),
-    linear-gradient(180deg, #eef6ff 0%, #f7fbff 54%, #ffffff 100%);
-  background-size: 52px 52px, 52px 52px, auto, auto, auto;
+    radial-gradient(circle at 12% -6%, rgba(224, 236, 255, 0.92) 0, rgba(224, 236, 255, 0) 360px),
+    radial-gradient(circle at 92% 8%, rgba(236, 242, 250, 0.92) 0, rgba(236, 242, 250, 0) 300px),
+    #f4f6f9;
+}
 
-  .topBar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24px;
-  }
+.home {
+  min-height: 100vh;
+  padding: 58px 32px 58px;
+  box-sizing: border-box;
+  color: #081426;
+}
 
-  .avatarBtn {
-    width: 72px;
-    height: 72px;
-    margin-top: 8px;
-    border-radius: 50%;
-    color: #fff;
-    font-size: 30px;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-      linear-gradient(135deg, rgba(37, 99, 235, 0.42), rgba(20, 184, 166, 0.42)),
-      #111827;
-    border: 3px solid rgba(255, 255, 255, 0.9);
-    box-shadow:
-      0 18px 36px rgba(15, 23, 42, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22);
-    box-sizing: border-box;
-    flex-shrink: 0;
-  }
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 8px 0 34px;
+}
 
-  .avatarBtn:active {
-    transform: scale(0.96);
-  }
+.heroText {
+  min-width: 0;
+}
 
-  .eyebrow {
-    color: #1f2937;
-    font-size: 27px;
-    font-weight: 800;
-    line-height: 1.35;
-  }
+.greeting {
+  color: #101b2c;
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1.28;
+}
 
-  .title {
-    margin-top: 4px;
-    color: #050a12;
-    font-size: 46px;
-    font-weight: 900;
-    line-height: 1.08;
-  }
+.brand {
+  margin-top: 18px;
+  color: #061225;
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0;
+}
 
-  .bentoCard {
-    border-radius: 24px;
-    background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(246, 250, 255, 0.68));
-    border: 1px solid rgba(255, 255, 255, 0.92);
-    box-shadow:
-      0 22px 50px rgba(15, 23, 42, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.96);
-    box-sizing: border-box;
-    overflow: hidden;
-  }
+.avatarBtn {
+  width: 86px;
+  height: 86px;
+  margin-top: 30px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 40%),
+    #14233a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 40px;
+  font-weight: 800;
+  box-shadow: 0 18px 36px rgba(20, 35, 58, 0.22);
+}
 
-  .bentoCard:active {
-    transform: scale(0.99);
-  }
+.avatarBtn:active,
+.actionCard:active,
+.todoRow:active,
+.overviewItem:active {
+  transform: scale(0.985);
+}
 
-  .heroGrid {
-    margin-top: 28px;
-    display: grid;
-    grid-template-columns: 2.15fr 0.85fr;
-    gap: 14px;
-  }
+.panel {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(221, 228, 238, 0.92);
+  box-shadow:
+    0 22px 54px rgba(17, 31, 50, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  box-sizing: border-box;
+  overflow: hidden;
+}
 
-  .salesCard {
-    position: relative;
-    min-height: 170px;
-    padding: 24px;
-  }
+.panelTitle {
+  color: #081426;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.22;
+}
 
-  .salesTop {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-  }
+.overviewPanel {
+  padding: 24px 0 0;
+}
 
-  .cardLabel {
-    color: #050a12;
-    font-size: 28px;
-    font-weight: 900;
-    line-height: 1.25;
-  }
+.overviewPanel .panelTitle {
+  padding: 0 24px;
+}
 
-  .miniLabel {
-    color: #111827;
-    font-size: 24px;
-    font-weight: 800;
-    line-height: 1.25;
-  }
+.overviewGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 
-  .miniValue {
-    margin-top: 6px;
-    color: #050a12;
-    font-size: 32px;
-    font-weight: 900;
-    line-height: 1.08;
-  }
+.overviewItem {
+  min-height: 144px;
+  padding: 22px 20px 24px;
+  box-sizing: border-box;
+}
 
-  .salesAmount {
-    margin-top: 52px;
-    color: #050a12;
-    font-size: 48px;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: 0;
-  }
+.overviewItem + .overviewItem {
+  border-left: 1px solid #dfe5ed;
+}
 
-  .salesTrend {
-    position: absolute;
-    right: 24px;
-    bottom: 30px;
-    width: 132px;
-    height: 42px;
-    overflow: hidden;
-    pointer-events: none;
-  }
+.overviewMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: flex-start;
+  gap: 8px;
+}
 
-  .trendCanvas {
-    width: 132px;
-    height: 42px;
-    display: block;
-  }
+.metricLabel {
+  color: #111b2c;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
 
-  .stockAlertCard {
-    min-height: 170px;
-    padding: 22px;
-  }
+.warningLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-  .alertHead {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+.warningDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff565b;
+  display: inline-flex;
+}
 
-  .redDot {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #ef4444;
-    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.1);
-    flex-shrink: 0;
-  }
+.metricValue {
+  margin-top: 28px;
+  color: #081426;
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
 
-  .stockAlertNum {
-    margin-top: 20px;
-    color: #050a12;
-    font-size: 44px;
-    font-weight: 900;
-    line-height: 1;
-  }
+.metricValue--danger {
+  color: #ff4d55;
+}
 
-  .stockAlertText {
-    margin-top: 16px;
-    color: #111827;
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.25;
-  }
+.metricIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 24px;
+  font-weight: 900;
+}
 
-  .bentoGrid {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
+.metricIcon--blue {
+  color: #1d7bea;
+  background: #e8f1ff;
+}
 
-  .returnSmall,
-  .quickCard,
-  .memberCard,
-  .businessCard,
-  .storeBizCard,
-  .inventoryCard {
-    padding: 22px;
-  }
+.metricIcon--red {
+  color: #ff4d55;
+  background: #ffe8ec;
+}
 
-  .returnSmall,
-  .quickCard {
-    min-height: 112px;
-  }
+.actionGrid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
 
-  .quickCard {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-  }
+.actionCard {
+  min-height: 154px;
+  padding: 20px 8px 18px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(249, 251, 254, 0.95));
+  border: 1px solid #dfe6ef;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  box-shadow: 0 12px 26px rgba(17, 31, 50, 0.04);
+}
 
-  .returnNum {
-    margin-top: 12px;
-    color: #050a12;
-    font-size: 36px;
-    font-weight: 900;
-    line-height: 1;
-  }
+.actionIcon {
+  width: 68px;
+  height: 68px;
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 42%),
+    #13233a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 12px 22px rgba(19, 35, 58, 0.18);
+}
 
-  .memberCard,
-  .businessCard {
-    min-height: 176px;
-  }
+.actionTitle {
+  margin-top: 18px;
+  color: #081426;
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1.18;
+  text-align: center;
+  white-space: nowrap;
+}
 
-  .cardTitleRow {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
+.todoPanel {
+  padding-bottom: 26px;
+}
 
-  .miniStats {
-    margin-top: 36px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
+.todoList {
+  margin-top: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  background: #fff;
+}
 
-  .inlineEntry {
-    margin-top: 38px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+.todoRow {
+  height: 64px;
+  padding: 0 24px 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-sizing: border-box;
+}
 
-  .storeBizCard,
-  .inventoryCard {
-    min-height: 250px;
-  }
+.todoRow + .todoRow {
+  border-top: 1px solid #e8edf3;
+}
 
-  .entryRow {
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
+.todoIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
 
-  .entryDivider {
-    height: 1px;
-    margin: 18px 0 0 66px;
-    background: rgba(226, 232, 240, 0.85);
-  }
+.todoIcon--blue {
+  color: #287fe5;
+  background: #e9f2ff;
+}
 
-  .iconBox {
-    width: 58px;
-    height: 58px;
-    border-radius: 16px;
-    color: #fff;
-    font-size: 26px;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.16);
-  }
+.todoIcon--orange {
+  color: #ff9d2d;
+  background: #fff1db;
+}
 
-  .moduleTitle,
-  .entryTitle {
-    color: #050a12;
-    font-size: 29px;
-    font-weight: 900;
-    line-height: 1.22;
-  }
+.todoText {
+  flex: 1;
+  color: #0e1929;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+}
 
-  .moduleDesc,
-  .entryDesc {
-    margin-top: 6px;
-    color: #111827;
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.28;
-  }
-
-  .moduleTone--member {
-    background: linear-gradient(135deg, #1f2937, #050a12);
-  }
-
-  .moduleTone--b2b {
-    background: linear-gradient(135deg, #9b8cff, #5b4df1);
-  }
-
-  .moduleTone--return {
-    background: linear-gradient(135deg, #ffb454, #f97316);
-  }
-
-  .moduleTone--quick {
-    background: linear-gradient(135deg, #65d98b, #22c55e);
-  }
-
-  .moduleTone--loss {
-    background: linear-gradient(135deg, #fb7185, #e11d48);
-  }
-
-  .moduleTone--stock {
-    background: linear-gradient(135deg, #74a8ff, #3b82f6);
-  }
-
-  .moduleTone--inventory {
-    background: linear-gradient(135deg, #18b6a5, #0f766e);
-  }
-
-  .todo {
-    margin-top: 18px;
-    padding: 22px;
-  }
-
-  .todoList {
-    margin-top: 18px;
-    display: grid;
-    gap: 12px;
-  }
-
-  .todoItem {
-    min-height: 52px;
-    padding: 0 16px;
-    border-radius: 12px;
-    background: rgba(241, 245, 249, 0.82);
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .todoDot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #94a3b8;
-    flex-shrink: 0;
-  }
-
-  .todoItem--warn .todoDot {
-    background: #f97316;
-  }
-
-  .todoText {
-    color: #111827;
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1.35;
-  }
+.chevron {
+  color: #8a96a6;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 300;
 }

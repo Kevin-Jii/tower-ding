@@ -15,6 +15,7 @@ export default {
     'pages/accounting/index',
     'pages/accounting/create',
     'pages/member/index',
+    'pages/member-wine/index',
     'pages/b2b/supply-orders',
     'pages/b2b/supply-order-detail',
     'pages/store-return/index',

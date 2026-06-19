@@ -321,6 +321,35 @@ export type Member = {
   updated_at?: string
 }
 
+export type MemberWineStorage = {
+  id: number
+  store_id?: number
+  member_id?: number
+  member?: Member
+  wine_name?: string
+  unit?: string
+  quantity?: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export type MemberWineTransaction = {
+  id: number
+  store_id?: number
+  storage_id?: number
+  member_id?: number
+  member?: Member
+  type?: number
+  wine_name?: string
+  unit?: string
+  quantity?: number
+  balance_after?: number
+  remark?: string
+  operator_name?: string
+  created_at?: string
+}
+
 export type B2BCustomer = {
   id: number
   store_id?: number
@@ -836,6 +865,58 @@ export function createMember(
   }
 ) {
   return request<Member>('/members', { method: 'POST', data: body, authToken })
+}
+
+export function listMemberWineStorages(
+  authToken: string,
+  params: { keyword?: string; member_id?: number; only_stock?: number; page?: number; page_size?: number } = {}
+) {
+  return request<MemberWineStorage[] | PaginatedList<MemberWineStorage>>('/member-wines', {
+    method: 'GET',
+    data: { page: 1, page_size: 50, only_stock: 1, ...params },
+    authToken
+  }).then((payload) => {
+    if (Array.isArray(payload)) return { list: payload, total: payload.length, page: 1, page_size: payload.length }
+    return {
+      list: payload?.list || [],
+      total: Number(payload?.total || 0),
+      page: Number(payload?.page || params.page || 1),
+      page_size: Number(payload?.page_size || params.page_size || 50)
+    }
+  })
+}
+
+export function depositMemberWine(
+  authToken: string,
+  body: { member_id: number; wine_name: string; unit?: string; quantity: number; remark?: string }
+) {
+  return request<MemberWineStorage>('/member-wines/deposit', { method: 'POST', data: body, authToken })
+}
+
+export function withdrawMemberWine(
+  authToken: string,
+  body: { member_id: number; wine_name: string; unit?: string; quantity: number; remark?: string }
+) {
+  return request<MemberWineStorage>('/member-wines/withdraw', { method: 'POST', data: body, authToken })
+}
+
+export function listMemberWineTransactions(
+  authToken: string,
+  params: { storage_id?: number; member_id?: number; type?: number; keyword?: string; start_date?: string; end_date?: string; page?: number; page_size?: number } = {}
+) {
+  return request<MemberWineTransaction[] | PaginatedList<MemberWineTransaction>>('/member-wines/transactions', {
+    method: 'GET',
+    data: { page: 1, page_size: 50, ...params },
+    authToken
+  }).then((payload) => {
+    if (Array.isArray(payload)) return { list: payload, total: payload.length, page: 1, page_size: payload.length }
+    return {
+      list: payload?.list || [],
+      total: Number(payload?.total || 0),
+      page: Number(payload?.page || params.page || 1),
+      page_size: Number(payload?.page_size || params.page_size || 50)
+    }
+  })
 }
 
 export function listB2BCustomers(

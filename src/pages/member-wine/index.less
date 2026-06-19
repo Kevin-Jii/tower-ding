@@ -1,0 +1,290 @@
+.winePage {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(218, 232, 255, 0.72) 0, rgba(218, 232, 255, 0) 320px),
+    #f6f8fb;
+}
+
+.wineContainer {
+  padding-bottom: 48px;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.summaryLabel {
+  color: #687385;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.summaryValue {
+  margin-top: 6px;
+  color: #17202a;
+  font-size: 38px;
+  font-weight: 900;
+}
+
+.summaryBtn {
+  min-width: 148px;
+  min-height: 72px;
+}
+
+.searchRow {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  height: 78px;
+  padding: 0 22px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #dce2eb;
+  color: #17202a;
+  font-size: 25px;
+  box-sizing: border-box;
+}
+
+.searchBtn {
+  min-width: 110px;
+  height: 78px;
+  border-radius: 18px;
+  background: #17202a;
+  color: #fff;
+  font-size: 25px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabs {
+  margin-top: 18px;
+  padding: 6px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dce2eb;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tab {
+  height: 66px;
+  border-radius: 14px;
+  color: #687385;
+  font-size: 25px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab--on {
+  color: #fff;
+  background: #17202a;
+}
+
+.list {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.empty {
+  color: #687385;
+  font-size: 25px;
+}
+
+.row {
+  padding: 24px;
+}
+
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.rowTitle {
+  color: #17202a;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.rowSub {
+  margin-top: 6px;
+  color: #687385;
+  font-size: 23px;
+}
+
+.qtyPill,
+.typePill {
+  flex-shrink: 0;
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 23px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+}
+
+.qtyPill,
+.typePill--in {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.typePill--out {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.rowFoot {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rowMeta {
+  color: #687385;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.rowActions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.miniBtn {
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  color: #17202a;
+  font-size: 23px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+}
+
+.miniBtn--dark {
+  background: #17202a;
+  color: #fff;
+}
+
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  padding: 18px 24px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: #fff;
+  box-shadow: 0 -18px 48px rgba(15, 23, 42, 0.18);
+  box-sizing: border-box;
+}
+
+.sheetHandle {
+  width: 64px;
+  height: 8px;
+  border-radius: 8px;
+  background: #d7dee9;
+  margin: 0 auto 18px;
+}
+
+.sheetTitle {
+  color: #17202a;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.field {
+  margin-top: 18px;
+}
+
+.fieldLabel {
+  margin-bottom: 10px;
+  color: #687385;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.pickerFake,
+.input {
+  min-height: 78px;
+  padding: 0 22px;
+  border-radius: 16px;
+  border: 1px solid #dce2eb;
+  background: #f7f9fc;
+  color: #17202a;
+  font-size: 26px;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+
+.pickerFake {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.input {
+  width: 100%;
+}
+
+.pickArrow {
+  color: #aab4c2;
+  font-size: 34px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stockHint {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.sheetActions {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sheetBtn {
+  min-height: 78px;
+}
+
+.btn--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
