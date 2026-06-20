@@ -1,6 +1,7 @@
 export default {
   pages: [
     'pages/home/index',
+    'pages/home/more',
     'pages/login/index',
     'pages/login/user-agreement',
     'pages/login/privacy-policy',

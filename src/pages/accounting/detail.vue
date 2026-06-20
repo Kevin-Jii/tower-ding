@@ -23,8 +23,20 @@
           <view class="v">¥ {{ formatMoney(detail?.other_expense_amount) }}</view>
         </view>
         <view class="kv">
+          <view class="k">抹零金额</view>
+          <view class="v">¥ {{ formatMoney(detail?.round_amount) }}</view>
+        </view>
+        <view class="kv">
           <view class="k">跑腿费用</view>
           <view class="v">¥ {{ formatMoney(detail?.errand_fee) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">赠酒</view>
+          <view class="v">{{ giftWineText }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">赠酒成本</view>
+          <view class="v">¥ {{ formatMoney(detail?.gift_wine_cost_amount) }}</view>
         </view>
         <view class="kv">
           <view class="k">耗材金额</view>
@@ -148,6 +160,12 @@ const itemCostAmount = computed(() => {
     const qty = Number(item.quantity || 0)
     return sum + unitCost * qty
   }, 0)
+})
+const giftWineText = computed(() => {
+  const item = detail.value
+  if (Number(item?.is_gift_wine || 0) !== 1) return '否'
+  const name = String(item?.gift_wine_product_name || '').trim() || (item?.gift_wine_product_id ? `商品 #${item.gift_wine_product_id}` : '赠酒商品')
+  return `${name} ${formatQty(item?.gift_wine_quantity)} ${item?.gift_wine_unit || ''}`.trim()
 })
 
 function formatMoney(v: any) {

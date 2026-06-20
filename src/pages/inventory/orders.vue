@@ -35,19 +35,32 @@
 </template>
 
 <script setup lang="ts">
-import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
+import Taro, { useDidShow, usePullDownRefresh, useRouter } from '@tarojs/taro'
 import { ref } from 'vue'
 import { listInventoryOrders, type InventoryOrder } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
 import './orders.less'
 
 const auth = useAuthStore()
+const router = useRouter()
 const list = ref<InventoryOrder[]>([])
 const typeFilter = ref<number | undefined>(undefined)
+const routeTypeApplied = ref(false)
 
 function setType(t: number | undefined) {
   typeFilter.value = t
   void refresh()
+}
+
+function applyRouteType() {
+  if (routeTypeApplied.value) return
+  routeTypeApplied.value = true
+  const raw = String(router.params?.type || '').trim().toLowerCase()
+  if (raw === '1' || raw === 'in' || raw === 'inbound') {
+    typeFilter.value = 1
+  } else if (raw === '2' || raw === 'out' || raw === 'outbound') {
+    typeFilter.value = 2
+  }
 }
 
 function formatQty(v: any) {
@@ -82,7 +95,10 @@ function openDetail(id: number) {
   Taro.navigateTo({ url: `/pages/inventory/order-detail?id=${id}` })
 }
 
-useDidShow(() => refresh())
+useDidShow(() => {
+  applyRouteType()
+  void refresh()
+})
 
 usePullDownRefresh(async () => {
   await refresh()

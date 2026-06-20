@@ -215,6 +215,14 @@ export type StoreAccount = {
   other_expense_amount?: number
   is_errand_order?: number
   errand_fee?: number
+  round_amount?: number
+  is_gift_wine?: number
+  gift_wine_product_path?: Array<string | number>
+  gift_wine_product_id?: number
+  gift_wine_product_name?: string
+  gift_wine_unit?: string
+  gift_wine_quantity?: number
+  gift_wine_cost_amount?: number
   net_income_amount?: number
   payment_status?: number
   member_id?: number
@@ -289,6 +297,13 @@ export type CreateStoreAccountReq = {
   other_expense_amount?: number
   is_errand_order?: number
   errand_fee?: number
+  round_amount?: number
+  is_gift_wine?: number
+  gift_wine_product_path?: Array<string | number>
+  gift_wine_product_id?: number
+  gift_wine_unit?: string
+  gift_wine_quantity?: number
+  gift_wine_cost_amount?: number
   items: CreateStoreAccountItemReq[]
 }
 
@@ -305,6 +320,13 @@ export type UpdateStoreAccountReq = {
   other_expense_amount?: number
   is_errand_order?: number
   errand_fee?: number
+  round_amount?: number
+  is_gift_wine?: number
+  gift_wine_product_path?: Array<string | number>
+  gift_wine_product_id?: number
+  gift_wine_unit?: string
+  gift_wine_quantity?: number
+  gift_wine_cost_amount?: number
 }
 
 export type Member = {

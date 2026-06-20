@@ -129,6 +129,54 @@
         <view v-else class="totalHint">商品单价与每行小计由后端按单位自动取价并计算</view>
         <view class="fieldLabel mt">其他支出</view>
         <input class="input" type="digit" :value="otherExpenseAmount" placeholder="0.00" @input="onOtherExpenseInput" />
+
+        <view class="switchRow mt">
+          <view>
+            <view class="roK">是否赠酒</view>
+            <view class="switchHint">{{ giftWineEnabled ? giftWineSummary : '不赠酒' }}</view>
+          </view>
+          <Switch color="#111418" :checked="giftWineEnabled" @change="onGiftWineSwitch" />
+        </view>
+        <view v-if="giftWineEnabled" class="giftWineBox">
+          <view class="pickRow" @tap="openGiftWinePicker">
+            <view v-if="giftWineProductId" class="pickMain">
+              <view class="pickName">{{ giftWineProductName }}</view>
+              <view class="pickSub">ID {{ giftWineProductId }}</view>
+            </view>
+            <view v-else class="pickPlaceholder">点击选择赠酒商品</view>
+            <view class="pickArrow">›</view>
+          </view>
+          <view v-if="giftWineProductId" class="lineReadRow">
+            <view class="lrItem lrItem--wide">
+              <view class="fieldLabel">规格单位</view>
+              <view class="unitPills">
+                <view v-for="u in giftWineUnitOptions" :key="u.value"
+                  :class="['unitPill', giftWineUnit === u.value ? 'unitPill--on' : '']"
+                  @tap="setGiftWineUnit(u.value)">
+                  {{ u.label }}
+                </view>
+              </view>
+              <view v-if="giftWineUnitOptions.length < 2" class="lrVal lrVal--hint">
+                暂无更多规格，成本按当前单位计算
+              </view>
+            </view>
+          </view>
+          <view class="giftWineFoot">
+            <view class="giftQty">
+              <view class="fieldLabel">赠酒数量</view>
+              <view class="stepper" @tap.stop>
+                <view class="stepBtn" @tap="decGiftWineQty">−</view>
+                <input class="stepInput" type="digit" :value="giftWineQuantity" @input="onGiftWineQuantityInput" />
+                <view class="stepBtn" @tap="incGiftWineQty">+</view>
+              </view>
+            </view>
+            <view class="giftCost">
+              <view class="fieldLabel">赠酒成本</view>
+              <view class="netValue">¥ {{ formatMoney(giftWineCostAmount) }}</view>
+            </view>
+          </view>
+        </view>
+
         <view v-if="isTakeawayChannel" class="netPreview">
           <view class="netLabel">预计净收入</view>
           <view class="netValue">¥ {{ formatMoney(estimatedNetIncome) }}</view>
@@ -143,7 +191,7 @@
 
       <view v-if="pickerOpen" class="mask" @tap="closePicker">
         <view class="sheet" @tap.stop>
-          <view class="sheetTitle">选择商品</view>
+          <view class="sheetTitle">{{ pickerTarget === 'gift' ? '选择赠酒商品' : '选择商品' }}</view>
           <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
             <view v-for="tab in productTabs" :key="tab.value"
               :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']" @tap="productTab = tab.value">
@@ -238,11 +286,18 @@ const submitting = ref(false)
 
 const pickerOpen = ref(false)
 const pickerLine = ref(0)
+const pickerTarget = ref<'line' | 'gift'>('line')
 const products = ref([])
 const categorySource = ref([])
 const productTab = ref('all')
 const unitOptionsMap = ref({})
 const initialModeApplied = ref(false)
+const giftWineEnabled = ref(false)
+const giftWineProductPath = ref<Array<string | number>>([])
+const giftWineProductId = ref(0)
+const giftWineProductName = ref('')
+const giftWineUnit = ref('')
+const giftWineQuantity = ref('1')
 
 const channelLabel = computed(() => {
   const o = channelOptions.value.find((c) => c.value === channel.value)
@@ -313,6 +368,26 @@ const estimatedNetIncome = computed(() => {
   if (!isTakeawayChannel.value) return 0
   return Number(incomeAmount.value || 0) - Number(otherExpenseAmount.value || 0)
 })
+const giftWineUnitOptions = computed(() => {
+  const pid = Number(giftWineProductId.value || 0)
+  if (!pid) return []
+  return unitOptionsMap.value[pid] || []
+})
+const selectedGiftWineUnit = computed(() => {
+  return giftWineUnitOptions.value.find((u) => u.value === giftWineUnit.value) || giftWineUnitOptions.value[0] || null
+})
+const giftWineCostAmount = computed(() => {
+  if (!giftWineEnabled.value) return 0
+  const qty = Number(giftWineQuantity.value || 0)
+  const cost = Number(selectedGiftWineUnit.value?.cost_price || 0)
+  return qty > 0 && cost > 0 ? Math.round(qty * cost * 100) / 100 : 0
+})
+const giftWineSummary = computed(() => {
+  if (!giftWineProductId.value) return '请选择赠酒商品'
+  const qty = Number(giftWineQuantity.value || 0)
+  const q = Number.isInteger(qty) ? String(qty) : qty.toFixed(2).replace(/\.?0+$/, '')
+  return `${giftWineProductName.value || '赠酒商品'} ${q || 0}${giftWineUnit.value || ''}`
+})
 
 function mapDictOptions(rows) {
   return rows
@@ -351,6 +426,12 @@ function getSupplierProductUnit(product, fallback) {
 function getSupplierProductPrice(product) {
   const n = Number(product?.sale_price || product?.price || product?.bottle_price || product?.product?.sale_price || product?.product?.price || 0)
   return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+function productPathOf(product) {
+  const categoryId = getProductCategoryId(product)
+  const productId = Number(product?.product_id || product?.id || 0)
+  return categoryId > 0 ? [categoryId, productId] : [productId]
 }
 
 async function loadChannelDict() {
@@ -495,6 +576,10 @@ function setLineUnit(i, unit, spec) {
   if (opt?.sale_price > 0) line.list_price = opt.sale_price
 }
 
+function setGiftWineUnit(unit) {
+  giftWineUnit.value = String(unit || '').trim()
+}
+
 function lineUnitOptions(line) {
   const pid = Number(line?.product_id || 0)
   if (!pid) return []
@@ -512,6 +597,7 @@ function buildUnitOptions(specs) {
         value: label,
         spec: label,
         factor,
+        cost_price: Number(s?.cost_price || 0),
         sale_price: Number(s?.sale_price || 0)
       }
     })
@@ -524,7 +610,7 @@ function buildUnitOptions(specs) {
     .forEach((o) => {
       if (seen.has(o.value)) return
       seen.add(o.value)
-      dedup.push({ label: o.label, value: o.value, spec: o.spec, sale_price: o.sale_price })
+      dedup.push({ label: o.label, value: o.value, spec: o.spec, cost_price: o.cost_price, sale_price: o.sale_price })
     })
   return dedup
 }
@@ -547,6 +633,9 @@ async function loadUnitOptionsForProduct(productId, fallbackUnit) {
           const current = opts.find((o) => o.value === line.unit)
           if (current?.sale_price > 0) line.list_price = current.sale_price
         }
+      }
+      if (Number(giftWineProductId.value || 0) === productId && !opts.some((o) => o.value === giftWineUnit.value)) {
+        giftWineUnit.value = opts[0].value
       }
       return
     }
@@ -571,7 +660,15 @@ function decQty(i) {
 }
 
 function openPicker(lineIdx) {
+  pickerTarget.value = 'line'
   pickerLine.value = lineIdx
+  productTab.value = 'all'
+  pickerOpen.value = true
+  void loadProducts()
+}
+
+function openGiftWinePicker() {
+  pickerTarget.value = 'gift'
   productTab.value = 'all'
   pickerOpen.value = true
   void loadProducts()
@@ -661,6 +758,10 @@ function applyInitialMode() {
 }
 
 function pickProduct(p) {
+  if (pickerTarget.value === 'gift') {
+    pickGiftWineProduct(p)
+    return
+  }
   const i = pickerLine.value
   const row = lines.value[i]
   const pid = Number(p.product_id || 0)
@@ -675,6 +776,46 @@ function pickProduct(p) {
   row.amount = undefined
   void loadUnitOptionsForProduct(pid, fallback)
   closePicker()
+}
+
+function pickGiftWineProduct(p) {
+  const pid = Number(p.product_id || 0)
+  if (!pid) return
+  giftWineProductId.value = pid
+  giftWineProductName.value = p.product_name || `商品 #${pid}`
+  giftWineProductPath.value = productPathOf(p)
+  const fallback = String(p.unit || '').trim() || '件'
+  giftWineUnit.value = fallback
+  if (!(Number(giftWineQuantity.value || 0) > 0)) giftWineQuantity.value = '1'
+  void loadUnitOptionsForProduct(pid, fallback)
+  closePicker()
+}
+
+function onGiftWineSwitch(e) {
+  giftWineEnabled.value = Boolean(e?.detail?.value)
+  if (giftWineEnabled.value) {
+    if (!giftWineQuantity.value) giftWineQuantity.value = '1'
+    return
+  }
+  giftWineProductPath.value = []
+  giftWineProductId.value = 0
+  giftWineProductName.value = ''
+  giftWineUnit.value = ''
+  giftWineQuantity.value = '1'
+}
+
+function onGiftWineQuantityInput(e) {
+  giftWineQuantity.value = moneyInputValue(e)
+}
+
+function incGiftWineQty() {
+  const q = Number(giftWineQuantity.value || 1)
+  giftWineQuantity.value = String(Math.round((q + 1) * 100) / 100)
+}
+
+function decGiftWineQty() {
+  const q = Number(giftWineQuantity.value || 1)
+  giftWineQuantity.value = String(Math.max(1, Math.round((q - 1) * 100) / 100))
 }
 
 function lineMarkedAmount(line) {
@@ -756,6 +897,24 @@ async function submit() {
     Taro.showToast({ title: '请完善至少一行商品（含单位）', icon: 'none' })
     return
   }
+  if (giftWineEnabled.value) {
+    if (!giftWineProductId.value) {
+      Taro.showToast({ title: '请选择赠酒商品', icon: 'none' })
+      return
+    }
+    if (!giftWineUnit.value) {
+      Taro.showToast({ title: '请选择赠酒规格单位', icon: 'none' })
+      return
+    }
+    if (!(Number(giftWineQuantity.value || 0) > 0)) {
+      Taro.showToast({ title: '请填写赠酒数量', icon: 'none' })
+      return
+    }
+    if (!(giftWineCostAmount.value > 0)) {
+      Taro.showToast({ title: '赠酒商品未维护规格成本价', icon: 'none' })
+      return
+    }
+  }
   submitting.value = true
   try {
     const payload: Record<string, any> = {
@@ -763,6 +922,12 @@ async function submit() {
       other_expense_amount: Number(otherExpenseAmount.value || 0),
       payment_status: paymentStatus.value,
       member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
+      is_gift_wine: giftWineEnabled.value ? 1 : 0,
+      gift_wine_product_path: giftWineEnabled.value ? giftWineProductPath.value : [],
+      gift_wine_product_id: giftWineEnabled.value ? giftWineProductId.value : 0,
+      gift_wine_unit: giftWineEnabled.value ? giftWineUnit.value : '',
+      gift_wine_quantity: giftWineEnabled.value ? Number(giftWineQuantity.value || 0) : 0,
+      gift_wine_cost_amount: giftWineEnabled.value ? giftWineCostAmount.value : 0,
       items
     }
     if (isTakeawayChannel.value) {

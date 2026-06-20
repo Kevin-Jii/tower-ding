@@ -54,6 +54,8 @@
             <view class="rowMeta">{{ item.item_count ?? item.items?.length ?? 0 }} 项商品</view>
             <view class="rowMeta">操作人 {{ operatorLabel(item) }}</view>
             <view v-if="Number(item.is_errand_order || 0) === 1" class="rowMeta">跑腿 ¥{{ formatMoney(item.errand_fee) }}</view>
+            <view v-if="Number(item.round_amount || 0) > 0" class="rowMeta">抹零 ¥{{ formatMoney(item.round_amount) }}</view>
+            <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{ formatMoney(item.gift_wine_cost_amount) }}</view>
             <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view>
           </view>
           <view class="rowStatus">
@@ -134,6 +136,62 @@
           <input class="filterInput" type="digit" :value="editErrandFee" placeholder="0.00" @input="onEditErrandFeeInput" />
         </view>
 
+        <view class="switchRow">
+          <view>
+            <view class="editLabel">是否抹零</view>
+            <view class="switchHint">{{ editIsRounding === 1 ? '抹零订单' : '不抹零' }}</view>
+          </view>
+          <Switch color="#17202a" :checked="editIsRounding === 1" @change="onRoundingSwitch" />
+        </view>
+
+        <view v-if="editIsRounding === 1" class="editRow">
+          <view class="editLabel">抹零金额</view>
+          <input class="filterInput" type="digit" :value="editRoundingAmount" placeholder="0.00" @input="onEditRoundingAmountInput" />
+        </view>
+
+        <view class="switchRow">
+          <view>
+            <view class="editLabel">是否赠酒</view>
+            <view class="switchHint">{{ editIsGiftWine === 1 ? editGiftWineSummary : '不赠酒' }}</view>
+          </view>
+          <Switch color="#17202a" :checked="editIsGiftWine === 1" @change="onGiftWineSwitch" />
+        </view>
+
+        <view v-if="editIsGiftWine === 1" class="giftWineBox">
+          <view class="pickRow" @tap="openGiftWinePicker">
+            <view v-if="editGiftWineProductId" class="pickMain">
+              <view class="pickName">{{ editGiftWineProductName }}</view>
+              <view class="pickSub">ID {{ editGiftWineProductId }}</view>
+            </view>
+            <view v-else class="pickPlaceholder">点击选择赠酒商品</view>
+            <view class="pickArrow">›</view>
+          </view>
+          <view v-if="editGiftWineProductId" class="editRow">
+            <view class="editLabel">赠酒规格</view>
+            <view class="unitPills">
+              <view v-for="u in editGiftWineUnitOptions" :key="u.value"
+                :class="['unitPill', editGiftWineUnit === u.value ? 'unitPill--on' : '']"
+                @tap="editGiftWineUnit = u.value">
+                {{ u.label }}
+              </view>
+            </view>
+          </view>
+          <view class="giftWineFoot">
+            <view class="giftQty">
+              <view class="editLabel">赠酒数量</view>
+              <view class="stepper" @tap.stop>
+                <view class="stepBtn" @tap="decGiftWineQty">−</view>
+                <input class="stepInput" type="digit" :value="editGiftWineQuantity" @input="onGiftWineQuantityInput" />
+                <view class="stepBtn" @tap="incGiftWineQty">+</view>
+              </view>
+            </view>
+            <view class="giftCost">
+              <view class="editLabel">赠酒成本</view>
+              <view class="giftCostValue">¥ {{ formatMoney(editGiftWineCostAmount) }}</view>
+            </view>
+          </view>
+        </view>
+
         <view class="sheetActions">
           <view class="btn btn--ghost sheetBtn" @tap="closeMetaSheet">取消</view>
           <view :class="['btn', 'sheetBtn', savingMeta ? 'btn--disabled' : '']" @tap="saveAccountMeta">
@@ -195,6 +253,30 @@
         </view>
       </view>
     </view>
+
+    <view v-if="giftWinePickerOpen" class="metaMask" @tap="closeGiftWinePicker">
+      <view class="productSheet" @tap.stop>
+        <view class="sheetHandle" />
+        <view class="sheetTitle">选择赠酒商品</view>
+        <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
+          <view v-for="tab in productTabs" :key="tab.value"
+            :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']"
+            @tap="productTab = tab.value">
+            {{ tab.label }}
+          </view>
+        </scroll-view>
+        <view class="productList">
+          <view v-if="!filteredProducts.length" class="sheetEmpty">暂无库存商品</view>
+          <view v-for="p in filteredProducts" :key="p.id" class="productRow" @tap="pickGiftWineProduct(p)">
+            <view>
+              <view class="pickName">{{ p.product_name || `商品 #${p.product_id || ''}` }}</view>
+              <view class="pickSub">库存 {{ p.quantity ?? 0 }} {{ p.unit || '-' }}</view>
+            </view>
+          </view>
+        </view>
+        <view class="btn btn--ghost sheetBtn" @tap="closeGiftWinePicker">关闭</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -214,7 +296,10 @@ import {
   bindStoreAccountConsumables,
   getStoreAccountDetail,
   listDictDataByTypeCode,
+  listAllInventories,
+  listAllStoreSupplierProducts,
   listMembers,
+  listProductUnitSpecs,
   listStoreAccounts,
   listStoreAccountConsumableProducts,
   updateStoreAccount,
@@ -239,6 +324,19 @@ const editingAccount = ref<StoreAccount | null>(null)
 const paymentStatus = ref(1)
 const editIsErrandOrder = ref(0)
 const editErrandFee = ref('')
+const editIsRounding = ref(0)
+const editRoundingAmount = ref('')
+const editIsGiftWine = ref(0)
+const editGiftWineProductPath = ref<Array<string | number>>([])
+const editGiftWineProductId = ref(0)
+const editGiftWineProductName = ref('')
+const editGiftWineUnit = ref('')
+const editGiftWineQuantity = ref('1')
+const giftWinePickerOpen = ref(false)
+const products = ref<any[]>([])
+const categorySource = ref<any[]>([])
+const productTab = ref('all')
+const unitOptionsMap = ref<Record<number, Array<{ label: string; value: string; spec: string; cost_price: number; sale_price?: number }>>>({})
 const paymentFilter = ref(0)
 const memberKeyword = ref('')
 const filterSheetOpen = ref(false)
@@ -292,6 +390,41 @@ const activeFilterCount = computed(() => {
   if (paymentFilter.value) count += 1
   return count
 })
+const productTabs = computed(() => {
+  const seen = new Map<number, string>()
+  categorySource.value.forEach((p) => {
+    const id = Number(p?.category_id || 0)
+    const name = String(p?.category_name || '').trim()
+    if (id > 0 && name && !seen.has(id)) seen.set(id, name)
+  })
+  const tabs = [{ label: '全部分类', value: 'all' }]
+  seen.forEach((label, id) => tabs.push({ label, value: String(id) }))
+  return tabs
+})
+const filteredProducts = computed(() => {
+  if (productTab.value === 'all') return products.value
+  return products.value.filter((p) => String(Number(p?.category_id || 0)) === productTab.value)
+})
+const editGiftWineUnitOptions = computed(() => {
+  const pid = Number(editGiftWineProductId.value || 0)
+  if (!pid) return []
+  return unitOptionsMap.value[pid] || []
+})
+const selectedGiftWineUnit = computed(() => {
+  return editGiftWineUnitOptions.value.find((u) => u.value === editGiftWineUnit.value) || editGiftWineUnitOptions.value[0] || null
+})
+const editGiftWineCostAmount = computed(() => {
+  if (editIsGiftWine.value !== 1) return 0
+  const qty = Number(editGiftWineQuantity.value || 0)
+  const cost = Number(selectedGiftWineUnit.value?.cost_price || 0)
+  return qty > 0 && cost > 0 ? Math.round(qty * cost * 100) / 100 : 0
+})
+const editGiftWineSummary = computed(() => {
+  if (!editGiftWineProductId.value) return '请选择赠酒商品'
+  const qty = Number(editGiftWineQuantity.value || 0)
+  const q = Number.isInteger(qty) ? String(qty) : qty.toFixed(2).replace(/\.?0+$/, '')
+  return `${editGiftWineProductName.value || '赠酒商品'} ${q || 0}${editGiftWineUnit.value || ''}`
+})
 
 function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`
@@ -327,6 +460,66 @@ function mapDict(rows: DictData[]) {
     map[value] = String(r?.label || r?.value || '').trim() || value
   })
   return map
+}
+
+function getProductCategoryId(product: any) {
+  return Number(product?.category_id || product?.category?.id || product?.product?.category_id || product?.product?.category?.id || 0)
+}
+
+function getProductCategoryName(product: any) {
+  return String(product?.category?.name || product?.category_name || product?.product?.category?.name || product?.product?.category_name || '').trim()
+}
+
+function getSupplierProductId(product: any) {
+  return Number(product?.product_id || product?.product?.id || product?.id || 0)
+}
+
+function getSupplierProductName(product: any, fallback = '') {
+  return String(product?.product_name || product?.name || product?.product?.product_name || product?.product?.name || fallback || '').trim()
+}
+
+function getSupplierProductUnit(product: any, fallback = '') {
+  return String(product?.unit || product?.product?.unit || fallback || '').trim()
+}
+
+function getSupplierProductPrice(product: any) {
+  const n = Number(product?.sale_price || product?.price || product?.bottle_price || product?.product?.sale_price || product?.product?.price || 0)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+function productPathOf(product: any) {
+  const categoryId = getProductCategoryId(product)
+  const productId = Number(product?.product_id || product?.id || 0)
+  return categoryId > 0 ? [categoryId, productId] : [productId]
+}
+
+function buildUnitOptions(specs: any[]) {
+  const enabled = specs
+    .filter((s) => s?.is_enabled !== false)
+    .map((s) => {
+      const label = String(s?.unit_name || s?.unit_code || '').trim()
+      const factor = Number(s?.factor_to_base || 1)
+      return {
+        label,
+        value: label,
+        spec: label,
+        factor,
+        cost_price: Number(s?.cost_price || 0),
+        sale_price: Number(s?.sale_price || 0)
+      }
+    })
+    .filter((o) => o.value)
+
+  const dedup: Array<{ label: string; value: string; spec: string; cost_price: number; sale_price?: number }> = []
+  const seen = new Set<string>()
+  enabled
+    .sort((a, b) => a.factor - b.factor)
+    .forEach((o) => {
+      if (seen.has(o.value)) return
+      seen.add(o.value)
+      dedup.push({ label: o.label, value: o.value, spec: o.spec, cost_price: o.cost_price, sale_price: o.sale_price })
+    })
+  return dedup
 }
 
 function channelLabel(channel?: string) {
@@ -528,6 +721,73 @@ async function loadMembers(keyword = '') {
   }
 }
 
+async function loadProducts() {
+  if (!auth.token) return
+  try {
+    const storeId = auth.storeId || undefined
+    const [inventories, supplierProducts] = await Promise.all([
+      listAllInventories(auth.token, { store_id: storeId }),
+      listAllStoreSupplierProducts(auth.token, { store_id: storeId })
+    ])
+    const inventoryByProductId = new Map<number, any>()
+    categorySource.value = supplierProducts.map((p: any) => ({
+      category_id: getProductCategoryId(p),
+      category_name: getProductCategoryName(p)
+    }))
+    inventories.forEach((inv: any) => {
+      const pid = Number(inv?.product_id || 0)
+      if (pid > 0) inventoryByProductId.set(pid, inv)
+    })
+    const rows: any[] = []
+    const supplierProductIds = new Set<number>()
+    supplierProducts.forEach((p: any) => {
+      const pid = getSupplierProductId(p)
+      if (pid <= 0) return
+      supplierProductIds.add(pid)
+      const inv = inventoryByProductId.get(pid)
+      rows.push({
+        id: pid,
+        product_id: pid,
+        product_name: getSupplierProductName(p, inv?.product_name || `商品 #${pid}`),
+        quantity: inv?.quantity ?? 0,
+        unit: inv?.unit || getSupplierProductUnit(p, ''),
+        list_price: getSupplierProductPrice(p),
+        category_id: getProductCategoryId(p),
+        category_name: getProductCategoryName(p)
+      })
+    })
+    inventories.forEach((inv: any) => {
+      const pid = Number(inv?.product_id || 0)
+      if (pid <= 0 || supplierProductIds.has(pid)) return
+      rows.push({ ...inv, id: pid, category_id: 0, category_name: '' })
+    })
+    products.value = rows
+    if (!productTabs.value.some((tab) => tab.value === productTab.value)) productTab.value = 'all'
+  } catch (err: any) {
+    Taro.showToast({ title: err?.message || '加载库存商品失败', icon: 'none' })
+  }
+}
+
+async function loadUnitOptionsForProduct(productId: number, fallbackUnit = '') {
+  if (!auth.token || !productId) return
+  try {
+    const specs = await listProductUnitSpecs(auth.token, productId)
+    const opts = buildUnitOptions(specs as any[])
+    if (opts.length) {
+      unitOptionsMap.value[productId] = opts
+      if (Number(editGiftWineProductId.value || 0) === productId && !opts.some((o) => o.value === editGiftWineUnit.value)) {
+        editGiftWineUnit.value = opts[0].value
+      }
+      return
+    }
+  } catch {
+    // fallback below
+  }
+  unitOptionsMap.value[productId] = fallbackUnit
+    ? [{ label: fallbackUnit, value: fallbackUnit, spec: fallbackUnit, cost_price: 0 }]
+    : []
+}
+
 async function loadConsumableProducts() {
   if (!auth.token) return
   try {
@@ -599,6 +859,15 @@ function openMetaSheet(item: StoreAccount) {
   paymentStatus.value = paymentStatusValue(item)
   editIsErrandOrder.value = Number(item.is_errand_order || 0) === 1 ? 1 : 0
   editErrandFee.value = String(item.errand_fee ?? '')
+  editIsRounding.value = Number(item.round_amount || 0) > 0 ? 1 : 0
+  editRoundingAmount.value = String(item.round_amount ?? '')
+  editIsGiftWine.value = Number(item.is_gift_wine || 0) === 1 ? 1 : 0
+  editGiftWineProductId.value = Number(item.gift_wine_product_id || 0)
+  editGiftWineProductName.value = String(item.gift_wine_product_name || '')
+  editGiftWineProductPath.value = item.gift_wine_product_path || (editGiftWineProductId.value ? [editGiftWineProductId.value] : [])
+  editGiftWineUnit.value = String(item.gift_wine_unit || '')
+  editGiftWineQuantity.value = String(item.gift_wine_quantity || 1)
+  if (editGiftWineProductId.value > 0) void loadUnitOptionsForProduct(editGiftWineProductId.value, editGiftWineUnit.value)
   metaSheetOpen.value = true
 }
 
@@ -609,12 +878,37 @@ function closeMetaSheet() {
 
 async function saveAccountMeta() {
   if (!auth.token || !editingAccount.value?.id || savingMeta.value) return
+  if (editIsGiftWine.value === 1) {
+    if (!editGiftWineProductId.value) {
+      Taro.showToast({ title: '请选择赠酒商品', icon: 'none' })
+      return
+    }
+    if (!editGiftWineUnit.value) {
+      Taro.showToast({ title: '请选择赠酒规格单位', icon: 'none' })
+      return
+    }
+    if (!(Number(editGiftWineQuantity.value || 0) > 0)) {
+      Taro.showToast({ title: '请填写赠酒数量', icon: 'none' })
+      return
+    }
+    if (!(editGiftWineCostAmount.value > 0)) {
+      Taro.showToast({ title: '赠酒商品未维护规格成本价', icon: 'none' })
+      return
+    }
+  }
   savingMeta.value = true
   try {
     await updateStoreAccount(auth.token, editingAccount.value.id, {
       payment_status: paymentStatus.value,
       is_errand_order: editIsErrandOrder.value,
-      errand_fee: editIsErrandOrder.value === 1 ? Number(editErrandFee.value || 0) : 0
+      errand_fee: editIsErrandOrder.value === 1 ? Number(editErrandFee.value || 0) : 0,
+      round_amount: editIsRounding.value === 1 ? Number(editRoundingAmount.value || 0) : 0,
+      is_gift_wine: editIsGiftWine.value,
+      gift_wine_product_path: editIsGiftWine.value === 1 ? editGiftWineProductPath.value : [],
+      gift_wine_product_id: editIsGiftWine.value === 1 ? editGiftWineProductId.value : 0,
+      gift_wine_unit: editIsGiftWine.value === 1 ? editGiftWineUnit.value : '',
+      gift_wine_quantity: editIsGiftWine.value === 1 ? Number(editGiftWineQuantity.value || 0) : 0,
+      gift_wine_cost_amount: editIsGiftWine.value === 1 ? editGiftWineCostAmount.value : 0
     })
     Taro.showToast({ title: '已保存', icon: 'success' })
     metaSheetOpen.value = false
@@ -630,6 +924,10 @@ function onEditErrandFeeInput(e: any) {
   editErrandFee.value = moneyInputValue(e)
 }
 
+function onEditRoundingAmountInput(e: any) {
+  editRoundingAmount.value = moneyInputValue(e)
+}
+
 function onPaymentStatusSwitch(e: any) {
   paymentStatus.value = e?.detail?.value ? 1 : 2
 }
@@ -637,6 +935,59 @@ function onPaymentStatusSwitch(e: any) {
 function onErrandSwitch(e: any) {
   editIsErrandOrder.value = e?.detail?.value ? 1 : 0
   if (editIsErrandOrder.value === 0) editErrandFee.value = ''
+}
+
+function onRoundingSwitch(e: any) {
+  editIsRounding.value = e?.detail?.value ? 1 : 0
+  if (editIsRounding.value === 0) editRoundingAmount.value = ''
+}
+
+function onGiftWineSwitch(e: any) {
+  editIsGiftWine.value = e?.detail?.value ? 1 : 0
+  if (editIsGiftWine.value === 0) {
+    editGiftWineProductPath.value = []
+    editGiftWineProductId.value = 0
+    editGiftWineProductName.value = ''
+    editGiftWineUnit.value = ''
+    editGiftWineQuantity.value = '1'
+  }
+}
+
+function openGiftWinePicker() {
+  productTab.value = 'all'
+  giftWinePickerOpen.value = true
+  void loadProducts()
+}
+
+function closeGiftWinePicker() {
+  giftWinePickerOpen.value = false
+}
+
+function pickGiftWineProduct(product: any) {
+  const pid = Number(product?.product_id || product?.id || 0)
+  if (!pid) return
+  editGiftWineProductPath.value = productPathOf(product)
+  editGiftWineProductId.value = pid
+  editGiftWineProductName.value = String(product?.product_name || `商品 #${pid}`)
+  const fallback = String(product?.unit || '').trim() || '件'
+  editGiftWineUnit.value = fallback
+  if (!(Number(editGiftWineQuantity.value || 0) > 0)) editGiftWineQuantity.value = '1'
+  void loadUnitOptionsForProduct(pid, fallback)
+  closeGiftWinePicker()
+}
+
+function onGiftWineQuantityInput(e: any) {
+  editGiftWineQuantity.value = moneyInputValue(e)
+}
+
+function incGiftWineQty() {
+  const q = Number(editGiftWineQuantity.value || 1)
+  editGiftWineQuantity.value = String(Math.round((q + 1) * 100) / 100)
+}
+
+function decGiftWineQty() {
+  const q = Number(editGiftWineQuantity.value || 1)
+  editGiftWineQuantity.value = String(Math.max(1, Math.round((q - 1) * 100) / 100))
 }
 
 function moneyInputValue(e: any) {
@@ -766,7 +1117,7 @@ async function saveConsumables() {
 
 useDidShow(() => refresh(true))
 useDidShow(() => {
-  void Promise.all([loadChannelDict(), loadMembers(), loadConsumableProducts()])
+  void Promise.all([loadChannelDict(), loadMembers(), loadConsumableProducts(), loadProducts()])
 })
 
 usePullDownRefresh(async () => {

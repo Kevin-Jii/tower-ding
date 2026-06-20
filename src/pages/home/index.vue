@@ -18,7 +18,9 @@
                 <view class="metricLabel">今日销售额</view>
                 <view class="metricValue">¥{{ formatMoney(todayAmount) }}</view>
               </view>
-              <view class="metricIcon metricIcon--blue">↗</view>
+              <view class="metricIcon metricIcon--sales">
+                <LucideIcon name="chart-column-increasing" color="#287fe5" :size="15" />
+              </view>
             </view>
           </view>
 
@@ -28,7 +30,9 @@
                 <view class="metricLabel">待支付订单</view>
                 <view class="metricValue">{{ unpaidCount }}</view>
               </view>
-              <view class="metricIcon metricIcon--blue">单</view>
+              <view class="metricIcon metricIcon--payment">
+                <LucideIcon name="receipt-text" color="#697789" :size="15" />
+              </view>
             </view>
           </view>
 
@@ -41,7 +45,9 @@
                 </view>
                 <view class="metricValue metricValue--danger">{{ lowStockCount }}</view>
               </view>
-              <view class="metricIcon metricIcon--red">铃</view>
+              <view class="metricIcon metricIcon--stock">
+                <LucideIcon name="bell-ring" color="#ff3f48" :size="15" />
+              </view>
             </view>
           </view>
         </view>
@@ -51,17 +57,27 @@
         <view class="panelTitle">快捷操作</view>
         <view class="actionGrid">
           <view v-for="item in quickActions" :key="item.title" class="actionCard" @tap="go(item.url)">
-            <view class="actionIcon">{{ item.icon }}</view>
+            <view :class="['actionIcon', `actionIcon--${item.tone}`]">
+              <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+            </view>
             <view class="actionTitle">{{ item.title }}</view>
           </view>
         </view>
       </view>
 
       <view class="panel">
-        <view class="panelTitle">业务管理</view>
+        <view class="panelHead">
+          <view class="panelTitle">业务管理</view>
+          <view class="moreLink" @tap="go('/pages/home/more')">
+            查看更多
+            <text class="moreArrow">›</text>
+          </view>
+        </view>
         <view class="actionGrid">
           <view v-for="item in businessActions" :key="item.title" class="actionCard" @tap="go(item.url)">
-            <view class="actionIcon">{{ item.icon }}</view>
+            <view :class="['actionIcon', `actionIcon--${item.tone}`]">
+              <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+            </view>
             <view class="actionTitle">{{ item.title }}</view>
           </view>
         </view>
@@ -71,7 +87,9 @@
         <view class="panelTitle">待办提醒</view>
         <view class="todoList">
           <view v-for="todo in todos" :key="todo.text" class="todoRow" @tap="go(todo.url)">
-            <view :class="['todoIcon', `todoIcon--${todo.tone}`]">{{ todo.icon }}</view>
+            <view :class="['todoIcon', `todoIcon--${todo.tone}`]">
+              <LucideIcon :name="todo.icon" :color="todo.color" :size="22" />
+            </view>
             <view class="todoText">{{ todo.text }}</view>
             <view class="chevron">›</view>
           </view>
@@ -84,6 +102,7 @@
 <script setup lang="ts">
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { computed, ref } from 'vue'
+import LucideIcon from '../../components/LucideIcon.vue'
 import {
   getStoreAccountStats,
   listAllInventories,
@@ -93,7 +112,24 @@ import {
   type StoreReturn
 } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
+import type { LucideIconName } from '../../utils/lucide-icons'
 import './index.less'
+
+type HomeAction = {
+  title: string
+  icon: LucideIconName
+  tone: string
+  color: string
+  url: string
+}
+
+type HomeTodo = {
+  text: string
+  icon: LucideIconName
+  tone: string
+  color: string
+  url: string
+}
 
 const auth = useAuthStore()
 const today = businessDateStr()
@@ -114,37 +150,40 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
-const quickActions = [
-  { title: '会员存酒', icon: '人', url: '/pages/member-wine/index' },
-  { title: '快速记账', icon: '¥', url: '/pages/accounting/create?mode=quick' },
-  { title: '库存查询', icon: '□', url: '/pages/inventory/stock-list' },
-  { title: '入库出库', icon: '↕', url: '/pages/inventory/form' }
+const quickActions: HomeAction[] = [
+  { title: '会员存酒', icon: 'bottle-wine', tone: 'sky', color: '#2f80ed', url: '/pages/member-wine/index' },
+  { title: '快速记账', icon: 'wallet-cards', tone: 'blue', color: '#287fe5', url: '/pages/accounting/create?mode=quick' },
+  { title: '库存查询', icon: 'package-search', tone: 'violet', color: '#6b5cff', url: '/pages/inventory/stock-list' },
+  { title: '入库出库', icon: 'arrow-down-up', tone: 'cyan', color: '#2f80ed', url: '/pages/inventory/form' }
 ]
 
-const businessActions = [
-  { title: '会员管理', icon: '员', url: '/pages/member/index' },
-  { title: 'B2B供货单', icon: '单', url: '/pages/b2b/supply-orders' },
-  { title: '门店返厂', icon: '↺', url: '/pages/store-return/index' },
-  { title: '报损自用', icon: '!', url: '/pages/inventory-loss/index' }
+const businessActions: HomeAction[] = [
+  { title: '会员管理', icon: 'users-round', tone: 'indigo', color: '#3f7df4', url: '/pages/member/index' },
+  { title: 'B2B供货', icon: 'warehouse', tone: 'green', color: '#35a853', url: '/pages/b2b/supply-orders' },
+  { title: '门店返厂', icon: 'shopping-bag', tone: 'orange', color: '#ff8b2c', url: '/pages/store-return/index' },
+  { title: '报损自用', icon: 'wallet', tone: 'purple', color: '#7c5ce8', url: '/pages/inventory-loss/index' }
 ]
 
-const todos = computed(() => [
+const todos = computed<HomeTodo[]>(() => [
   {
     text: unpaidCount.value > 0 ? `有 ${unpaidCount.value} 笔未支付账单` : '暂无未支付账单',
-    icon: '单',
+    icon: 'file-text',
     tone: 'blue',
+    color: '#287fe5',
     url: '/pages/accounting/index'
   },
   {
     text: lowStockCount.value > 0 ? `有 ${lowStockCount.value} 个商品库存偏低` : '暂无库存预警',
-    icon: '!',
+    icon: 'triangle-alert',
     tone: 'orange',
+    color: '#ff9d2d',
     url: '/pages/inventory/stock-list'
   },
   {
     text: pendingReturnCount.value > 0 ? `今日有 ${pendingReturnCount.value} 条返厂记录` : '今日暂无返厂记录',
-    icon: '时',
+    icon: 'clock',
     tone: 'blue',
+    color: '#287fe5',
     url: '/pages/store-return/index'
   }
 ])
