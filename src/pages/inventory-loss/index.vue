@@ -1,20 +1,39 @@
 <template>
   <view class="page lossPage">
     <view class="container lossContainer">
-      <view class="typeSwitch card">
-        <view
-          v-for="item in typeOptions"
-          :key="item.value"
-          :class="['typeOption', formType === item.value ? 'typeOption--on' : '']"
-          @tap="selectType(item.value)"
-        >
-          {{ item.label }}
-        </view>
+      <view class="reasonCard card">
+        <view class="fieldLabel">业务类型</view>
+        <picker mode="selector" :range="typeOptions" range-key="label" :value="typeIndex" @change="onTypeChange">
+          <view class="typePicker">
+            <text>{{ typeLabel }}</text>
+            <text class="pickerArrow">›</text>
+          </view>
+        </picker>
+
+        <view class="fieldLabel">原因说明</view>
+        <picker mode="selector" :range="reasonOptions" range-key="label" :value="reasonIndex" @change="onReasonChange">
+          <view :class="['reasonPicker', reason ? '' : 'reasonPicker--empty']">
+            <text>{{ selectedReasonLabel || '请选择原因说明' }}</text>
+            <text class="pickerArrow">›</text>
+          </view>
+        </picker>
       </view>
 
-      <view class="reasonCard card">
-        <view class="fieldLabel">原因说明</view>
-        <input class="reasonInput" :value="reason" :placeholder="reasonPlaceholder" @input="onReasonInput" />
+      <view v-if="formType === 'gift'" class="accountCard card">
+        <view class="fieldLabel">绑定记账订单</view>
+        <view class="searchRow">
+          <input class="accountSearchInput" :value="accountKeyword" placeholder="输入订单号 / 会员手机号 / 姓名"
+            @input="onAccountKeywordInput" @confirm="searchAccounts" />
+          <view class="searchBtn" @tap="searchAccounts">搜索</view>
+        </view>
+        <picker mode="selector" :range="accountOptions" range-key="label" :value="accountIndex"
+          @change="onAccountChange">
+          <view :class="['accountPicker', selectedAccountID ? '' : 'accountPicker--empty']">
+            <text>{{ selectedAccountLabel || '请选择要绑定的记账订单' }}</text>
+            <text class="pickerArrow">›</text>
+          </view>
+        </picker>
+        <view class="accountHint">赠送需要绑定对应的记账订单，并使用订单里的会员。</view>
       </view>
 
       <view class="section-head">
@@ -31,7 +50,8 @@
               <view class="categoryName">{{ group.name }}</view>
               <view class="categoryCount">{{ group.items.length }} 个</view>
             </view>
-            <view v-for="p in group.items" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
+            <view v-for="p in group.items" :key="p.id"
+              :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
               <view class="productRowTop">
                 <view class="productRowMain" @tap="toggleSelect(p.id)">
                   <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
@@ -40,7 +60,7 @@
                   <view class="productText">
                     <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
                     <view class="productSub">{{ productMeta(p) }}</view>
-                    <view class="productSub">成本 ¥{{ formatMoney(displayCost(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
+                    <view class="productSub">默认单位 {{ p.unit || '-' }}</view>
                   </view>
                 </view>
                 <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
@@ -51,22 +71,15 @@
               </view>
               <view v-if="isSelected(p.id)" class="unitPills">
                 <view class="unitLabel">规格</view>
-                <view
-                  v-for="u in selectedUnitOptions(p.id)"
-                  :key="u.value"
+                <view v-for="u in selectedUnitOptions(p.id)" :key="u.value"
                   :class="['unitPill', selection[p.id]?.unit === u.value ? 'unitPill--on' : '']"
-                  @tap="selectUnit(p.id, u)"
-                >
+                  @tap="selectUnit(p.id, u)">
                   {{ u.label }}
                 </view>
               </view>
               <view v-if="isSelected(p.id)" class="remarkLine">
-                <input
-                  class="remarkInput"
-                  :value="selection[p.id]?.remark || ''"
-                  placeholder="单品备注，可选"
-                  @input="onLineRemarkInput(p.id, $event)"
-                />
+                <input class="remarkInput" :value="selection[p.id]?.remark || ''" placeholder="单品备注，可选"
+                  @input="onLineRemarkInput(p.id, $event)" />
               </view>
             </view>
           </view>
@@ -77,7 +90,7 @@
       <view class="submitBar">
         <view class="submitMeta">
           <view class="submitCount">{{ selectedCount }} 项商品</view>
-          <view class="submitHint">{{ typeLabel }}只扣库存并计入成本</view>
+          <view class="submitHint">{{ typeLabel }}将扣减库存</view>
         </view>
         <view :class="['btn submitBtn', submitting ? 'btn--disabled' : '']" @tap="submit">
           {{ submitting ? '提交中…' : `提交${typeLabel}` }}
@@ -92,10 +105,14 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { computed, reactive, ref } from 'vue'
 import {
   createInventoryLossOrder,
+  listDictDataByTypeCode,
   listProductUnitSpecs,
+  listStoreAccounts,
   listStoreSupplierProducts,
+  type DictData,
   type InventoryLossType,
   type ProductUnitSpec,
+  type StoreAccount,
   type SupplierProduct
 } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
@@ -111,20 +128,54 @@ type LossSelection = {
 
 const auth = useAuthStore()
 const products = ref<SupplierProduct[]>([])
+const reasonDict = ref<DictData[]>([])
+const accounts = ref<StoreAccount[]>([])
 const loading = ref(false)
 const submitting = ref(false)
-const formType = ref<Exclude<InventoryLossType, 'gift'>>('loss')
+const formType = ref<InventoryLossType>('loss')
 const reason = ref('')
+const accountKeyword = ref('')
+const selectedAccountID = ref(0)
 const selection = reactive<Record<number, LossSelection>>({})
 
-const typeOptions: Array<{ label: string; value: Exclude<InventoryLossType, 'gift'> }> = [
+const typeOptions: Array<{ label: string; value: InventoryLossType }> = [
   { label: '报损', value: 'loss' },
-  { label: '自用', value: 'self_use' }
+  { label: '自用', value: 'self_use' },
+  { label: '赠送', value: 'gift' }
 ]
 
 const selectedCount = computed(() => Object.keys(selection).length)
 const typeLabel = computed(() => typeOptions.find((item) => item.value === formType.value)?.label || '报损')
-const reasonPlaceholder = computed(() => formType.value === 'loss' ? '例如：破损、过期、漏液' : '例如：内部招待、员工自用')
+const typeIndex = computed(() => {
+  const idx = typeOptions.findIndex((item) => item.value === formType.value)
+  return idx >= 0 ? idx : 0
+})
+const reasonOptions = computed(() =>
+  reasonDict.value
+    .filter((item) => item.status !== 0)
+    .map((item) => ({
+      label: String(item.label || item.value || '').trim(),
+      value: String(item.value || item.label || '').trim()
+    }))
+    .filter((item) => item.label && item.value)
+)
+const reasonIndex = computed(() => {
+  const idx = reasonOptions.value.findIndex((item) => item.value === reason.value)
+  return idx >= 0 ? idx : 0
+})
+const selectedReasonLabel = computed(() => reasonOptions.value.find((item) => item.value === reason.value)?.label || '')
+const accountOptions = computed(() =>
+  accounts.value.map((item) => ({
+    label: accountLabel(item),
+    value: Number(item.id || 0)
+  }))
+)
+const accountIndex = computed(() => {
+  const idx = accountOptions.value.findIndex((item) => item.value === selectedAccountID.value)
+  return idx >= 0 ? idx : 0
+})
+const selectedAccount = computed(() => accounts.value.find((item) => Number(item.id || 0) === selectedAccountID.value) || null)
+const selectedAccountLabel = computed(() => selectedAccount.value ? accountLabel(selectedAccount.value) : '')
 const groupedProducts = computed(() => {
   const map = new Map<string, SupplierProduct[]>()
   products.value.forEach((p) => {
@@ -135,12 +186,26 @@ const groupedProducts = computed(() => {
   return Array.from(map.entries()).map(([name, items]) => ({ name, items }))
 })
 
-function selectType(value: Exclude<InventoryLossType, 'gift'>) {
-  formType.value = value
+function onTypeChange(e: any) {
+  const idx = Number(e?.detail?.value || 0)
+  const nextType = typeOptions[idx]?.value || 'loss'
+  if (nextType === formType.value) return
+  formType.value = nextType
+  resetFormData()
 }
 
-function onReasonInput(e: any) {
-  reason.value = String(e?.detail?.value || '')
+function onReasonChange(e: any) {
+  const idx = Number(e?.detail?.value || 0)
+  reason.value = reasonOptions.value[idx]?.value || ''
+}
+
+function onAccountKeywordInput(e: any) {
+  accountKeyword.value = String(e?.detail?.value || '')
+}
+
+function onAccountChange(e: any) {
+  const idx = Number(e?.detail?.value || 0)
+  selectedAccountID.value = accountOptions.value[idx]?.value || 0
 }
 
 function onLineRemarkInput(id: number, e: any) {
@@ -165,14 +230,38 @@ function productMeta(p: SupplierProduct) {
   return [supplierName, categoryName, spec].filter(Boolean).join(' · ') || `商品ID ${p.id}`
 }
 
-function displayCost(p: SupplierProduct) {
-  const cands = [Number(p.bottle_price || 0), Number(p.price || 0), Number(p.case_price || 0)]
-  return cands.find((v) => Number.isFinite(v) && v > 0) || 0
-}
-
 function formatMoney(v: any) {
   const n = Number(v || 0)
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+function formatDate(v?: string) {
+  if (!v) return '-'
+  return String(v).slice(0, 10)
+}
+
+function accountLabel(item: StoreAccount) {
+  const no = String(item.account_no || item.order_no || `记账 #${item.id}`).trim()
+  const member = accountMemberLabel(item)
+  const amount = formatMoney(item.gross_total_amount ?? item.total_amount ?? item.income_amount ?? item.amount)
+  const date = formatDate(item.account_date || item.created_at)
+  return `${no} · ${member} · ¥${amount} · ${date}`
+}
+
+function accountMemberLabel(item: StoreAccount) {
+  const memberName = String(item.member?.name || '').trim()
+  const memberPhone = String(item.member?.phone || '').trim()
+  if (memberName && memberPhone) return `${memberName}/${memberPhone}`
+  return memberName || memberPhone || '散客'
+}
+
+function resetFormData() {
+  reason.value = ''
+  accountKeyword.value = ''
+  selectedAccountID.value = 0
+  Object.keys(selection).forEach((key) => {
+    delete selection[Number(key)]
+  })
 }
 
 function formatQty(n: any) {
@@ -244,9 +333,8 @@ function mapSpecUnits(specs: ProductUnitSpec[]) {
       const unitCode = String(s?.unit_code || '').trim()
       const unitName = String(s?.unit_name || unitCode || '').trim()
       const factor = Number(s?.factor_to_base || 1)
-      const cost = Number(s?.cost_price || 0)
       return {
-        label: [unitName, factor > 1 ? `扣${formatQty(factor)}` : '', cost > 0 ? `成本${formatMoney(cost)}` : '']
+        label: [unitName, factor > 1 ? `扣${formatQty(factor)}` : '']
           .filter(Boolean)
           .join(' / '),
         value: unitName || unitCode
@@ -292,11 +380,65 @@ async function loadProducts() {
   }
 }
 
+async function loadReasonOptions() {
+  if (!auth.token) return
+  try {
+    reasonDict.value = await listDictDataByTypeCode(auth.token, 'EXPENDITURECLASS')
+    if (!reason.value && reasonOptions.value.length === 1) {
+      reason.value = reasonOptions.value[0].value
+    }
+  } catch (err: any) {
+    reasonDict.value = []
+    Taro.showToast({ title: err?.message || '加载原因分类失败', icon: 'none' })
+  }
+}
+
+async function loadAccounts(keyword = '') {
+  if (!auth.token) return
+  try {
+    const kw = String(keyword || '').trim()
+    const baseParams: Parameters<typeof listStoreAccounts>[1] = {
+      store_id: auth.storeId || undefined,
+      page: 1,
+      page_size: 50
+    }
+    let rows: StoreAccount[]
+    if (kw) {
+      rows = await listStoreAccounts(auth.token, { ...baseParams, order_no: kw })
+      if (!rows.length) {
+        rows = await listStoreAccounts(auth.token, { ...baseParams, member_keyword: kw })
+      }
+    } else {
+      rows = await listStoreAccounts(auth.token, baseParams)
+    }
+    accounts.value = rows
+    if (selectedAccountID.value && !rows.some((item) => Number(item.id || 0) === selectedAccountID.value)) {
+      selectedAccountID.value = 0
+    }
+  } catch (err: any) {
+    accounts.value = []
+    selectedAccountID.value = 0
+    Taro.showToast({ title: err?.message || '加载记账订单失败', icon: 'none' })
+  }
+}
+
+function searchAccounts() {
+  void loadAccounts(accountKeyword.value)
+}
+
 async function submit() {
   if (!auth.token || submitting.value) return
+  if (formType.value === 'gift' && !selectedAccountID.value) {
+    Taro.showToast({ title: '请选择绑定的记账订单', icon: 'none' })
+    return
+  }
+  if (formType.value === 'gift' && !Number(selectedAccount.value?.member_id || 0)) {
+    Taro.showToast({ title: '赠送单需绑定有会员的记账订单', icon: 'none' })
+    return
+  }
   const r = reason.value.trim()
   if (!r) {
-    Taro.showToast({ title: '请填写原因说明', icon: 'none' })
+    Taro.showToast({ title: '请选择原因说明', icon: 'none' })
     return
   }
   const items = Object.entries(selection)
@@ -315,7 +457,9 @@ async function submit() {
   try {
     await createInventoryLossOrder(auth.token, {
       store_id: auth.storeId || undefined,
+      account_id: formType.value === 'gift' ? selectedAccountID.value : undefined,
       type: formType.value,
+      member_id: formType.value === 'gift' ? Number(selectedAccount.value?.member_id || 0) || undefined : undefined,
       reason: r,
       items
     })
@@ -332,5 +476,7 @@ async function submit() {
 
 useDidShow(() => {
   void loadProducts()
+  void loadReasonOptions()
+  void loadAccounts(accountKeyword.value)
 })
 </script>

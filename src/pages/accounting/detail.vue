@@ -6,8 +6,7 @@
         <view class="heroTitle">{{ detail?.account_no || detail?.order_no || `记账 #${id}` }}</view>
         <view class="heroSub">{{ detail?.store?.name || '当前门店' }} · {{ formatDate(detail?.account_date ||
           detail?.created_at) }}</view>
-        <view class="heroAmount">¥ {{ formatMoney(detail?.net_income_amount ?? detail?.total_amount ?? detail?.amount)
-        }}</view>
+        <view class="heroAmount">¥ {{ formatMoney(displayTotalAmount) }}</view>
       </view>
 
       <view class="card summary">
@@ -147,7 +146,7 @@ const operatorName = computed(() => {
 const displayTotalAmount = computed(() => {
   const item = detail.value
   if (!item) return 0
-  return item.total_amount ?? item.amount
+  return item.gross_total_amount ?? item.total_amount ?? item.amount
 })
 const consumableAmount = computed(() => {
   return (detail.value?.consumables || []).reduce((sum, c) => sum + Number(c.amount || 0), 0)

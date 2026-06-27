@@ -13,6 +13,7 @@ export default {
     'pages/inventory/product-pricing',
     'pages/inventory/stock-list',
     'pages/inventory-loss/index',
+    'pages/store-expense/index',
     'pages/accounting/index',
     'pages/accounting/create',
     'pages/member/index',

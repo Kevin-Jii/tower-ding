@@ -1,0 +1,229 @@
+.expensePage {
+  background:
+    radial-gradient(circle at 12% -4%, rgba(223, 236, 255, 0.86) 0, rgba(223, 236, 255, 0) 360px),
+    linear-gradient(180deg, #f3f7fc 0%, #f8fafc 100%);
+}
+
+.expenseContainer {
+  padding-bottom: 70px;
+}
+
+.expenseHero,
+.rowTop,
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.heroAction,
+.filterBtn {
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dfe6ef;
+  color: #596579;
+  font-size: 23px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.summaryGrid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+}
+
+.summaryCard {
+  min-height: 132px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(220, 229, 242, 0.92);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
+  box-sizing: border-box;
+}
+
+.summaryCard--main {
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(255, 255, 255, 0) 58%),
+    #fff;
+}
+
+.summaryLabel {
+  color: #687385;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.summaryValue {
+  margin-top: 12px;
+  color: #111827;
+  font-size: 36px;
+  line-height: 1.16;
+  font-weight: 900;
+}
+
+.formCard {
+  margin-top: 18px;
+}
+
+.formTitle {
+  margin-bottom: 18px;
+  color: #111827;
+  font-size: 31px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.fieldLabel {
+  color: #687385;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.fieldLabel--spaced {
+  margin-top: 18px;
+}
+
+.pickerFake {
+  margin-top: 12px;
+  min-height: 76px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: #f7f9fc;
+  border: 1px solid #dce2eb;
+  color: #17202a;
+  font-size: 26px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.pickerFake--empty {
+  color: #97a3b6;
+}
+
+.pickerArrow {
+  color: #8a94a6;
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+.input {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 150px;
+  margin-top: 12px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: #f7f9fc;
+  border: 1px solid #dce2eb;
+  color: #17202a;
+  font-size: 26px;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.btn--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.listHeader {
+  margin-top: 28px;
+}
+
+.listHeader .section-title {
+  margin-top: 0;
+}
+
+.expenseList {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.expenseRow {
+  padding: 24px;
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  color: #111827;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.rowSub {
+  margin-top: 8px;
+  color: #687385;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.rowAmount {
+  color: #e24a5a;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+
+.rowFoot {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tag {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f0f5ff;
+  color: #3d68a8;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.remark {
+  flex: 1;
+  min-width: 180px;
+  color: #596579;
+  font-size: 23px;
+  line-height: 1.38;
+  word-break: break-all;
+}
+
+.empty {
+  padding: 42px 20px;
+  text-align: center;
+  color: #687385;
+  font-size: 25px;
+}

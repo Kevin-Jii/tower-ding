@@ -5,7 +5,7 @@
         <view class="heroTop">
           <view>
             <view class="heroLabel">总销售额</view>
-            <view class="heroMoney">¥ {{ formatMoney(stats?.total_amount) }}</view>
+            <view class="heroMoney">¥ {{ formatMoney(stats?.gross_total_amount) }}</view>
           </view>
           <view class="heroBadge">{{ stats?.count ?? 0 }} 笔</view>
         </view>
@@ -48,14 +48,18 @@
                 <text v-else>{{ channelLabel(item.channel) }}</text>
               </view>
             </view>
-            <view class="amount amount--in">¥ {{ formatMoney(item.total_amount ?? item.amount) }}</view>
+            <view class="amount amount--in">¥ {{ formatMoney(item.gross_total_amount ?? item.total_amount ??
+              item.amount) }}</view>
           </view>
           <view class="rowFoot">
             <view class="rowMeta">{{ item.item_count ?? item.items?.length ?? 0 }} 项商品</view>
             <view class="rowMeta">操作人 {{ operatorLabel(item) }}</view>
-            <view v-if="Number(item.is_errand_order || 0) === 1" class="rowMeta">跑腿 ¥{{ formatMoney(item.errand_fee) }}</view>
-            <view v-if="Number(item.round_amount || 0) > 0" class="rowMeta">抹零 ¥{{ formatMoney(item.round_amount) }}</view>
-            <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{ formatMoney(item.gift_wine_cost_amount) }}</view>
+            <view v-if="Number(item.is_errand_order || 0) === 1" class="rowMeta">跑腿 ¥{{ formatMoney(item.errand_fee) }}
+            </view>
+            <view v-if="Number(item.round_amount || 0) > 0" class="rowMeta">抹零 ¥{{ formatMoney(item.round_amount) }}
+            </view>
+            <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{
+              formatMoney(item.gift_wine_cost_amount) }}</view>
             <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view>
           </view>
           <view class="rowStatus">
@@ -67,10 +71,12 @@
               <view class="statusTag">{{ accountMemberLabel(item) }}</view>
             </view>
             <view class="rowActions" @tap.stop>
-              <view class="miniBtn" @tap="openDetail(item.id)">详情</view>
+              <view v-if="canBindConsumables(item)" class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品
+              </view>
               <template v-if="canOpenMetaSheet(item)">
-                <view class="miniBtn" @tap="openMetaSheet(item)">编辑</view>
-                <view v-if="canModifyAccount(item)" class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品</view>
+                <view class="iconMiniBtn" @tap="openMetaSheet(item)">
+                  <LucideIcon name="settings" color="#17202a" :size="17" :stroke-width="2.25" />
+                </view>
               </template>
             </view>
           </view>
@@ -86,18 +92,14 @@
 
         <view class="editRow">
           <view class="editLabel">会员搜索</view>
-          <input
-            class="filterInput"
-            :value="memberKeyword"
-            placeholder="姓名 / 手机号 / 会员号"
-            confirm-type="search"
-            @input="onMemberKeywordInput"
-          />
+          <input class="filterInput" :value="memberKeyword" placeholder="姓名 / 手机号 / 会员号" confirm-type="search"
+            @input="onMemberKeywordInput" />
         </view>
 
         <view class="editRow">
           <view class="editLabel">支付状态</view>
-          <picker mode="selector" :range="paymentFilterOptions" range-key="label" :value="paymentFilterIndex" @change="onPaymentFilterChange">
+          <picker mode="selector" :range="paymentFilterOptions" range-key="label" :value="paymentFilterIndex"
+            @change="onPaymentFilterChange">
             <view class="pickerFake">{{ paymentFilterLabel }} <text class="pickArrowInline">›</text></view>
           </picker>
         </view>
@@ -133,7 +135,8 @@
 
         <view v-if="editIsErrandOrder === 1" class="editRow">
           <view class="editLabel">跑腿费用</view>
-          <input class="filterInput" type="digit" :value="editErrandFee" placeholder="0.00" @input="onEditErrandFeeInput" />
+          <input class="filterInput" type="digit" :value="editErrandFee" placeholder="0.00"
+            @input="onEditErrandFeeInput" />
         </view>
 
         <view class="switchRow">
@@ -146,7 +149,8 @@
 
         <view v-if="editIsRounding === 1" class="editRow">
           <view class="editLabel">抹零金额</view>
-          <input class="filterInput" type="digit" :value="editRoundingAmount" placeholder="0.00" @input="onEditRoundingAmountInput" />
+          <input class="filterInput" type="digit" :value="editRoundingAmount" placeholder="0.00"
+            @input="onEditRoundingAmountInput" />
         </view>
 
         <view class="switchRow">
@@ -215,30 +219,37 @@
           <view class="editRow">
             <view class="editLabel">类型</view>
             <view class="paySeg">
-              <view :class="['paySegItem', line.kind === 'product' ? 'paySegItem--on' : '']" @tap="setConsumableKind(idx, 'product')">档案</view>
-              <view :class="['paySegItem', line.kind === 'custom' ? 'paySegItem--on' : '']" @tap="setConsumableKind(idx, 'custom')">自定义</view>
+              <view :class="['paySegItem', line.kind === 'product' ? 'paySegItem--on' : '']"
+                @tap="setConsumableKind(idx, 'product')">档案</view>
+              <view :class="['paySegItem', line.kind === 'custom' ? 'paySegItem--on' : '']"
+                @tap="setConsumableKind(idx, 'custom')">自定义</view>
             </view>
           </view>
           <template v-if="line.kind === 'product'">
             <view class="editRow">
               <view class="editLabel">消耗品</view>
-              <picker mode="selector" :range="consumableProductOptions" range-key="label" :value="consumableProductIndex(line)" @change="onConsumableProductChange(idx, $event)">
-                <view class="pickerFake">{{ consumableProductLabel(line) }} <text class="pickArrowInline">›</text></view>
+              <picker mode="selector" :range="consumableProductOptions" range-key="label"
+                :value="consumableProductIndex(line)" @change="onConsumableProductChange(idx, $event)">
+                <view class="pickerFake">{{ consumableProductLabel(line) }} <text class="pickArrowInline">›</text>
+                </view>
               </picker>
             </view>
             <view class="editRow">
               <view class="editLabel">数量</view>
-              <input class="filterInput" type="digit" :value="line.quantity" placeholder="1" @input="onConsumableQtyInput(idx, $event)" />
+              <input class="filterInput" type="digit" :value="line.quantity" placeholder="1"
+                @input="onConsumableQtyInput(idx, $event)" />
             </view>
           </template>
           <template v-else>
             <view class="editRow">
               <view class="editLabel">名称</view>
-              <input class="filterInput" :value="line.name" placeholder="自定义消耗品名称" @input="onConsumableNameInput(idx, $event)" />
+              <input class="filterInput" :value="line.name" placeholder="自定义消耗品名称"
+                @input="onConsumableNameInput(idx, $event)" />
             </view>
             <view class="editRow">
               <view class="editLabel">金额</view>
-              <input class="filterInput" type="digit" :value="line.amount" placeholder="0.00" @input="onConsumableAmountInput(idx, $event)" />
+              <input class="filterInput" type="digit" :value="line.amount" placeholder="0.00"
+                @input="onConsumableAmountInput(idx, $event)" />
             </view>
           </template>
         </view>
@@ -260,8 +271,7 @@
         <view class="sheetTitle">选择赠酒商品</view>
         <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
           <view v-for="tab in productTabs" :key="tab.value"
-            :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']"
-            @tap="productTab = tab.value">
+            :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']" @tap="productTab = tab.value">
             {{ tab.label }}
           </view>
         </scroll-view>
@@ -291,6 +301,7 @@ import miniappIcon from '../../assets/platforms/miniapp.png'
 import storeIcon from '../../assets/platforms/store.png'
 import taobaoIcon from '../../assets/platforms/taobao.png'
 import wechatIcon from '../../assets/platforms/wechat.png'
+import LucideIcon from '../../components/LucideIcon.vue'
 import {
   getStoreAccountStats,
   bindStoreAccountConsumables,
@@ -313,7 +324,7 @@ import './index.less'
 
 const auth = useAuthStore()
 const list = ref<StoreAccount[]>([])
-const stats = ref<{ total_amount?: number; count?: number } | null>(null)
+const stats = ref<{ gross_total_amount?: number; total_amount?: number; count?: number } | null>(null)
 const channelDict = ref<Record<string, string>>({})
 const channelOptions = ref<Array<{ label: string; value: string }>>([])
 const members = ref<Member[]>([])
@@ -640,8 +651,8 @@ function hasConsumables(item: StoreAccount) {
   return (item.consumables?.length || 0) > 0
 }
 
-function canModifyAccount(item: StoreAccount) {
-  return canEditAccount(item) && !hasConsumables(item)
+function canBindConsumables(item: StoreAccount) {
+  return !hasConsumables(item)
 }
 
 function canOpenMetaSheet(item: StoreAccount) {
@@ -1005,8 +1016,8 @@ function makeConsumableLine(kind: 'product' | 'custom' = 'product') {
 }
 
 async function openConsumableSheet(item: StoreAccount) {
-  if (!canModifyAccount(item)) {
-    Taro.showToast({ title: hasConsumables(item) ? '已绑定耗材，不能再次绑定' : '该记录已超过可编辑时间', icon: 'none' })
+  if (hasConsumables(item)) {
+    Taro.showToast({ title: '已绑定耗材，不能再次绑定', icon: 'none' })
     return
   }
   consumableTarget.value = item

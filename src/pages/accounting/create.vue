@@ -36,6 +36,26 @@
         </view>
       </view>
 
+      <view class="card metaCard">
+        <view class="metaHint">补记账</view>
+        <view class="switchRow">
+          <view>
+            <view class="roK">是否补前一天记账</view>
+            <view class="switchHint">{{ supplementEnabled ? `补记日期 ${supplementDate}` : '正常记账，日期由后端按营业日生成' }}</view>
+          </view>
+          <Switch color="#111418" :checked="supplementEnabled" @change="onSupplementSwitch" />
+        </view>
+        <view v-if="supplementEnabled" class="roRow mt">
+          <text class="roK">补记日期</text>
+          <picker mode="date" fields="day" :value="supplementDate" :end="todayDate" @change="onSupplementDateChange">
+            <view class="pickerFake datePickerFake">
+              <text>{{ supplementDate || '请选择日期' }}</text>
+              <text class="pickArrowInline">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
       <view v-if="isTakeawayChannel" class="card takeawayCard">
         <view class="totalLabel">外卖订单</view>
         <view class="takeawayHint">{{ channelLabel }} 实际收入会覆盖商品明细销售额，商品明细只用于扣库存和成本核算</view>
@@ -277,6 +297,8 @@ const paymentStatus = ref(1)
 const otherExpenseAmount = ref('')
 const orderNo = ref('')
 const incomeAmount = ref('')
+const supplementEnabled = ref(false)
+const supplementDate = ref(defaultSupplementDate())
 function newLine() {
   return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, list_price: 0, product_name: '', remark: '', is_custom: false }
 }
@@ -388,6 +410,7 @@ const giftWineSummary = computed(() => {
   const q = Number.isInteger(qty) ? String(qty) : qty.toFixed(2).replace(/\.?0+$/, '')
   return `${giftWineProductName.value || '赠酒商品'} ${q || 0}${giftWineUnit.value || ''}`
 })
+const todayDate = computed(() => dateText(new Date()))
 
 function mapDictOptions(rows) {
   return rows
@@ -401,6 +424,30 @@ function mapDictOptions(rows) {
 function pickDefaultValue(rows) {
   const def = rows.find((r) => r.is_default)
   return String(def?.value || rows[0]?.value || '').trim()
+}
+
+function dateText(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function defaultSupplementDate() {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return dateText(d)
+}
+
+function onSupplementSwitch(e) {
+  supplementEnabled.value = Boolean(e?.detail?.value)
+  if (supplementEnabled.value && !supplementDate.value) {
+    supplementDate.value = defaultSupplementDate()
+  }
+}
+
+function onSupplementDateChange(e) {
+  supplementDate.value = String(e?.detail?.value || '')
 }
 
 function getProductCategoryId(product) {
@@ -915,6 +962,10 @@ async function submit() {
       return
     }
   }
+  if (supplementEnabled.value && !supplementDate.value) {
+    Taro.showToast({ title: '请选择补记账日期', icon: 'none' })
+    return
+  }
   submitting.value = true
   try {
     const payload: Record<string, any> = {
@@ -922,6 +973,7 @@ async function submit() {
       other_expense_amount: Number(otherExpenseAmount.value || 0),
       payment_status: paymentStatus.value,
       member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
+      is_supplement: supplementEnabled.value ? 1 : 0,
       is_gift_wine: giftWineEnabled.value ? 1 : 0,
       gift_wine_product_path: giftWineEnabled.value ? giftWineProductPath.value : [],
       gift_wine_product_id: giftWineEnabled.value ? giftWineProductId.value : 0,
@@ -929,6 +981,9 @@ async function submit() {
       gift_wine_quantity: giftWineEnabled.value ? Number(giftWineQuantity.value || 0) : 0,
       gift_wine_cost_amount: giftWineEnabled.value ? giftWineCostAmount.value : 0,
       items
+    }
+    if (supplementEnabled.value) {
+      payload.account_date = supplementDate.value
     }
     if (isTakeawayChannel.value) {
       if (orderNo.value.trim()) payload.order_no = orderNo.value.trim()

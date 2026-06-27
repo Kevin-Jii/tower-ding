@@ -238,7 +238,7 @@ async function refresh() {
       listAllInventories(auth.token, { store_id: storeID }),
       listStoreReturns(auth.token, { store_id: storeID, start_date: today, end_date: today, page: 1, page_size: 100 })
     ])
-    todayAmount.value = Number(accountStats?.total_amount || 0)
+    todayAmount.value = Number(accountStats?.gross_total_amount || 0)
     unpaidCount.value = countUnpaid(unpaidRows)
     lowStockCount.value = inventories.filter(isLowStock).length
     pendingReturnCount.value = (returnRows as StoreReturn[]).length

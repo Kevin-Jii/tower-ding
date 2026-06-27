@@ -20,8 +20,8 @@
           <view class="loginBrand">
             <image class="brandHeroLogo" src="../../assets/tabbar/home-active.png" mode="aspectFit" />
             <view>
-              <view class="headline">Tower Ding</view>
-              <view class="subtitle">门店经营 ERP 工作台</view>
+              <view class="headline">Tower ERP</view>
+              <view class="subtitle">门店经营管理系统</view>
             </view>
           </view>
 
@@ -125,10 +125,17 @@ function hydratePolicyAccept() {
   }
 }
 
-function redirectAuthedUser() {
+async function redirectAuthedUser() {
   auth.hydrate()
   if (auth.isAuthed) {
     Taro.reLaunch({ url: '/pages/home/index' })
+    return
+  }
+  if (auth.refreshToken) {
+    const ok = await auth.refreshSession()
+    if (ok) {
+      Taro.reLaunch({ url: '/pages/home/index' })
+    }
   }
 }
 
@@ -183,7 +190,7 @@ async function onSubmit() {
 }
 
 useDidShow(() => {
-  redirectAuthedUser()
+  void redirectAuthedUser()
   hydrateRememberForm()
   hydratePolicyAccept()
 })

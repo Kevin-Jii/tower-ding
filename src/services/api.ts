@@ -156,6 +156,8 @@ export type InventoryLossOrder = {
   order_no?: string
   store_id?: number
   type?: InventoryLossType | string
+  account_id?: number
+  account?: StoreAccount
   member_id?: number
   member?: Member
   reason?: string
@@ -210,12 +212,14 @@ export type StoreAccount = {
   title?: string
   channel?: string
   amount?: number
+  gross_total_amount?: number
   total_amount?: number
   income_amount?: number
   other_expense_amount?: number
   is_errand_order?: number
   errand_fee?: number
   round_amount?: number
+  is_supplement?: number
   is_gift_wine?: number
   gift_wine_product_path?: Array<string | number>
   gift_wine_product_id?: number
@@ -298,6 +302,7 @@ export type CreateStoreAccountReq = {
   is_errand_order?: number
   errand_fee?: number
   round_amount?: number
+  is_supplement?: number
   is_gift_wine?: number
   gift_wine_product_path?: Array<string | number>
   gift_wine_product_id?: number
@@ -485,6 +490,28 @@ export type StoreReturnStats = {
   item_count?: number
 }
 
+export type StoreExpense = {
+  id: number
+  expense_no?: string
+  store_id?: number
+  expense_date?: string
+  category_code?: string
+  category_name?: string
+  amount?: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  updated_at?: string
+  store?: { id?: number; name?: string }
+  operator?: { id?: number; nickname?: string; username?: string; phone?: string }
+}
+
+export type StoreExpenseStats = {
+  total_amount?: number
+  count?: number
+}
+
 export type CreateInventoryOrderItemReq = {
   product_id: number
   quantity: number
@@ -619,6 +646,7 @@ export function createInventoryLossOrder(
   authToken: string,
   body: {
     store_id?: number
+    account_id?: number
     type: InventoryLossType
     member_id?: number
     reason: string
@@ -810,7 +838,7 @@ export function getStoreAccountStats(
   authToken: string,
   params: { store_id?: number; start_date?: string; end_date?: string }
 ) {
-  return request<{ total_amount?: number; net_income_amount?: number; count?: number }>('/store-accounts/stats', {
+  return request<{ gross_total_amount?: number; total_amount?: number; net_income_amount?: number; count?: number }>('/store-accounts/stats', {
     method: 'GET',
     data: params,
     authToken
@@ -1053,6 +1081,51 @@ export function listStoreReturnProducts(
     authToken,
     showLoading
   }).then(unwrapList)
+}
+
+export function listStoreExpenses(
+  authToken: string,
+  params: {
+    store_id?: number
+    category_code?: string
+    keyword?: string
+    start_date?: string
+    end_date?: string
+    page?: number
+    page_size?: number
+  } = {}
+) {
+  return request<StoreExpense[] | PaginatedList<StoreExpense>>('/store-expenses', {
+    method: 'GET',
+    data: params,
+    authToken
+  }).then(unwrapList)
+}
+
+export function getStoreExpense(authToken: string, id: number) {
+  return request<StoreExpense>(`/store-expenses/${id}`, { method: 'GET', authToken })
+}
+
+export function getStoreExpenseStats(
+  authToken: string,
+  params: { store_id?: number; category_code?: string; start_date?: string; end_date?: string } = {}
+) {
+  return request<StoreExpenseStats>('/store-expenses/stats', { method: 'GET', data: params, authToken })
+}
+
+export function createStoreExpense(
+  authToken: string,
+  body: { store_id?: number; category_code: string; amount: number; remark?: string }
+) {
+  return request<StoreExpense>('/store-expenses', { method: 'POST', data: body, authToken })
+}
+
+export function updateStoreExpense(
+  authToken: string,
+  id: number,
+  body: { category_code?: string; amount?: number; remark?: string }
+) {
+  return request<StoreExpense>(`/store-expenses/${id}`, { method: 'PUT', data: body, authToken })
 }
 
 /** tower-go model.DictData；门店端用于下拉/标签选择 */

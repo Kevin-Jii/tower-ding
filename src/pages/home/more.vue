@@ -64,9 +64,16 @@ const groups: Array<{ title: string; items: MoreItem[] }> = [
     ]
   },
   {
+    title: '财务支出',
+    items: [
+      { title: '门店支出', desc: '记录门店费用和支出分类', icon: 'wallet', tone: 'blue', color: '#287fe5', url: '/pages/store-expense/index' }
+    ]
+  },
+  {
     title: '常用业务',
     items: [
       { title: '快速记账', desc: '快速记录门店收支订单', icon: 'wallet-cards', tone: 'blue', color: '#287fe5', url: '/pages/accounting/create?mode=quick' },
+      { title: '入库', desc: '商品采购、补货入库登记', icon: 'package-plus', tone: 'green', color: '#35a853', url: '/pages/inventory/form?type=in' },
       { title: '会员存酒', desc: '会员存取酒和流水查询', icon: 'bottle-wine', tone: 'sky', color: '#2f80ed', url: '/pages/member-wine/index' },
       { title: '门店返厂', desc: '返厂记录新增和明细查询', icon: 'shopping-bag', tone: 'orange', color: '#ff8b2c', url: '/pages/store-return/index' },
       { title: 'B2B供货', desc: 'B2B 供货单据管理', icon: 'warehouse', tone: 'green', color: '#35a853', url: '/pages/b2b/supply-orders' }
