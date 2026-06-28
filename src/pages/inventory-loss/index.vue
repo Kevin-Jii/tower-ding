@@ -9,14 +9,6 @@
             <text class="pickerArrow">›</text>
           </view>
         </picker>
-
-        <view class="fieldLabel">原因说明</view>
-        <picker mode="selector" :range="reasonOptions" range-key="label" :value="reasonIndex" @change="onReasonChange">
-          <view :class="['reasonPicker', reason ? '' : 'reasonPicker--empty']">
-            <text>{{ selectedReasonLabel || '请选择原因说明' }}</text>
-            <text class="pickerArrow">›</text>
-          </view>
-        </picker>
       </view>
 
       <view v-if="formType === 'gift'" class="accountCard card">
@@ -133,7 +125,6 @@ const accounts = ref<StoreAccount[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const formType = ref<InventoryLossType>('loss')
-const reason = ref('')
 const accountKeyword = ref('')
 const selectedAccountID = ref(0)
 const selection = reactive<Record<number, LossSelection>>({})
@@ -143,6 +134,11 @@ const typeOptions: Array<{ label: string; value: InventoryLossType }> = [
   { label: '自用', value: 'self_use' },
   { label: '赠送', value: 'gift' }
 ]
+const reasonKeywordMap: Record<InventoryLossType, string[]> = {
+  loss: ['报损', '损耗', '破损', 'loss'],
+  self_use: ['自用', '个人', '自留', 'self'],
+  gift: ['赠送', '赠酒', '赠品', 'gift']
+}
 
 const selectedCount = computed(() => Object.keys(selection).length)
 const typeLabel = computed(() => typeOptions.find((item) => item.value === formType.value)?.label || '报损')
@@ -150,20 +146,6 @@ const typeIndex = computed(() => {
   const idx = typeOptions.findIndex((item) => item.value === formType.value)
   return idx >= 0 ? idx : 0
 })
-const reasonOptions = computed(() =>
-  reasonDict.value
-    .filter((item) => item.status !== 0)
-    .map((item) => ({
-      label: String(item.label || item.value || '').trim(),
-      value: String(item.value || item.label || '').trim()
-    }))
-    .filter((item) => item.label && item.value)
-)
-const reasonIndex = computed(() => {
-  const idx = reasonOptions.value.findIndex((item) => item.value === reason.value)
-  return idx >= 0 ? idx : 0
-})
-const selectedReasonLabel = computed(() => reasonOptions.value.find((item) => item.value === reason.value)?.label || '')
 const accountOptions = computed(() =>
   accounts.value.map((item) => ({
     label: accountLabel(item),
@@ -192,11 +174,6 @@ function onTypeChange(e: any) {
   if (nextType === formType.value) return
   formType.value = nextType
   resetFormData()
-}
-
-function onReasonChange(e: any) {
-  const idx = Number(e?.detail?.value || 0)
-  reason.value = reasonOptions.value[idx]?.value || ''
 }
 
 function onAccountKeywordInput(e: any) {
@@ -256,7 +233,6 @@ function accountMemberLabel(item: StoreAccount) {
 }
 
 function resetFormData() {
-  reason.value = ''
   accountKeyword.value = ''
   selectedAccountID.value = 0
   Object.keys(selection).forEach((key) => {
@@ -380,16 +356,35 @@ async function loadProducts() {
   }
 }
 
+function mapReasonOptions(rows: DictData[]) {
+  return rows
+    .filter((item) => item.status !== 0)
+    .map((item) => ({
+      label: String(item.label || item.value || '').trim(),
+      value: String(item.value || item.label || '').trim(),
+      is_default: Boolean(item.is_default)
+    }))
+    .filter((item) => item.label && item.value)
+}
+
+function resolveReasonValue() {
+  const options = mapReasonOptions(reasonDict.value)
+  if (!options.length) return ''
+  const keywords = reasonKeywordMap[formType.value] || []
+  const matched = options.find((item) => {
+    const text = `${item.label} ${item.value}`.toLowerCase()
+    return keywords.some((keyword) => text.includes(keyword.toLowerCase()))
+  })
+  return matched?.value || options.find((item) => item.is_default)?.value || options[0]?.value || ''
+}
+
 async function loadReasonOptions() {
   if (!auth.token) return
   try {
-    reasonDict.value = await listDictDataByTypeCode(auth.token, 'EXPENDITURECLASS')
-    if (!reason.value && reasonOptions.value.length === 1) {
-      reason.value = reasonOptions.value[0].value
-    }
+    reasonDict.value = await listDictDataByTypeCode(auth.token, 'PERSONALUSE')
   } catch (err: any) {
     reasonDict.value = []
-    Taro.showToast({ title: err?.message || '加载原因分类失败', icon: 'none' })
+    Taro.showToast({ title: err?.message || '加载报损字典失败', icon: 'none' })
   }
 }
 
@@ -436,11 +431,6 @@ async function submit() {
     Taro.showToast({ title: '赠送单需绑定有会员的记账订单', icon: 'none' })
     return
   }
-  const r = reason.value.trim()
-  if (!r) {
-    Taro.showToast({ title: '请选择原因说明', icon: 'none' })
-    return
-  }
   const items = Object.entries(selection)
     .map(([pid, row]) => ({
       product_id: Number(pid),
@@ -453,6 +443,11 @@ async function submit() {
     Taro.showToast({ title: '请先选择商品', icon: 'none' })
     return
   }
+  const reason = resolveReasonValue()
+  if (!reason) {
+    Taro.showToast({ title: '请先维护 PERSONALUSE 字典', icon: 'none' })
+    return
+  }
   submitting.value = true
   try {
     await createInventoryLossOrder(auth.token, {
@@ -460,7 +455,7 @@ async function submit() {
       account_id: formType.value === 'gift' ? selectedAccountID.value : undefined,
       type: formType.value,
       member_id: formType.value === 'gift' ? Number(selectedAccount.value?.member_id || 0) || undefined : undefined,
-      reason: r,
+      reason,
       items
     })
     Taro.showToast({ title: '已提交', icon: 'success' })

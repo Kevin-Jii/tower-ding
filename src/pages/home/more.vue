@@ -73,6 +73,7 @@ const groups: Array<{ title: string; items: MoreItem[] }> = [
     title: '常用业务',
     items: [
       { title: '快速记账', desc: '快速记录门店收支订单', icon: 'wallet-cards', tone: 'blue', color: '#287fe5', url: '/pages/accounting/create?mode=quick' },
+      { title: '补记账单', desc: '补录遗漏订单并选择记账日期', icon: 'receipt-text', tone: 'purple', color: '#7c5ce8', url: '/pages/accounting/create?mode=supplement' },
       { title: '入库', desc: '商品采购、补货入库登记', icon: 'package-plus', tone: 'green', color: '#35a853', url: '/pages/inventory/form?type=in' },
       { title: '会员存酒', desc: '会员存取酒和流水查询', icon: 'bottle-wine', tone: 'sky', color: '#2f80ed', url: '/pages/member-wine/index' },
       { title: '门店返厂', desc: '返厂记录新增和明细查询', icon: 'shopping-bag', tone: 'orange', color: '#ff8b2c', url: '/pages/store-return/index' },

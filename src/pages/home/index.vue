@@ -24,7 +24,7 @@
             </view>
           </view>
 
-          <view class="overviewItem" @tap="go('/pages/accounting/index')">
+          <view class="overviewItem" @tap="go('/pages/accounting/unpaid')">
             <view class="overviewMain">
               <view>
                 <view class="metricLabel">待支付订单</view>
@@ -170,7 +170,7 @@ const todos = computed<HomeTodo[]>(() => [
     icon: 'file-text',
     tone: 'blue',
     color: '#287fe5',
-    url: '/pages/accounting/index'
+    url: '/pages/accounting/unpaid'
   },
   {
     text: lowStockCount.value > 0 ? `有 ${lowStockCount.value} 个商品库存偏低` : '暂无库存预警',
@@ -229,8 +229,6 @@ async function refresh() {
       getStoreAccountStats(auth.token, { store_id: storeID, start_date: today, end_date: today }),
       listStoreAccounts(auth.token, {
         store_id: storeID,
-        start_date: today,
-        end_date: today,
         payment_status: 2,
         page: 1,
         page_size: 100

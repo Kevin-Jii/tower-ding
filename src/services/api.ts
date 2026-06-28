@@ -838,7 +838,15 @@ export function getStoreAccountStats(
   authToken: string,
   params: { store_id?: number; start_date?: string; end_date?: string }
 ) {
-  return request<{ gross_total_amount?: number; total_amount?: number; net_income_amount?: number; count?: number }>('/store-accounts/stats', {
+  return request<{
+    gross_total_amount?: number
+    total_amount?: number
+    store_account_turnover_amount?: number
+    b2b_supply_order_amount?: number
+    total_turnover_amount?: number
+    net_income_amount?: number
+    count?: number
+  }>('/store-accounts/stats', {
     method: 'GET',
     data: params,
     authToken

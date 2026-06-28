@@ -36,16 +36,9 @@
         </view>
       </view>
 
-      <view class="card metaCard">
-        <view class="metaHint">补记账</view>
-        <view class="switchRow">
-          <view>
-            <view class="roK">是否补前一天记账</view>
-            <view class="switchHint">{{ supplementEnabled ? `补记日期 ${supplementDate}` : '正常记账，日期由后端按营业日生成' }}</view>
-          </view>
-          <Switch color="#111418" :checked="supplementEnabled" @change="onSupplementSwitch" />
-        </view>
-        <view v-if="supplementEnabled" class="roRow mt">
+      <view v-if="isSupplementMode" class="card metaCard supplementCard">
+        <view class="metaHint">补记账单</view>
+        <view class="roRow">
           <text class="roK">补记日期</text>
           <picker mode="date" fields="day" :value="supplementDate" :end="todayDate" @change="onSupplementDateChange">
             <view class="pickerFake datePickerFake">
@@ -209,27 +202,16 @@
         </view>
       </view>
 
-      <view v-if="pickerOpen" class="mask" @tap="closePicker">
-        <view class="sheet" @tap.stop>
-          <view class="sheetTitle">{{ pickerTarget === 'gift' ? '选择赠酒商品' : '选择商品' }}</view>
-          <scroll-view scroll-x class="sheetTabs" :show-scrollbar="false">
-            <view v-for="tab in productTabs" :key="tab.value"
-              :class="['sheetTab', productTab === tab.value ? 'sheetTab--on' : '']" @tap="productTab = tab.value">
-              {{ tab.label }}
-            </view>
-          </scroll-view>
-          <view class="sheetList">
-            <view v-if="!filteredProducts.length" class="sheetEmpty">暂无库存商品</view>
-            <view v-for="p in filteredProducts" :key="p.id" class="sheetRow" @tap="pickProduct(p)">
-              <view>
-                <view class="sheetName">{{ p.product_name || `商品 #${p.product_id || ''}` }}</view>
-                <view class="sheetSub">库存 {{ p.quantity ?? 0 }} {{ p.unit || '-' }}</view>
-              </view>
-            </view>
-          </view>
-          <view class="sheetClose btn btn--ghost" @tap="closePicker">关闭</view>
-        </view>
-      </view>
+      <ProductPickerSheet
+        v-if="pickerOpen"
+        :title="pickerTarget === 'gift' ? '选择赠酒商品' : '选择商品'"
+        :tabs="productTabs"
+        :active-category="productTab"
+        :products="filteredProducts"
+        @update:active-category="productTab = $event"
+        @select="pickProduct"
+        @close="closePicker"
+      />
 
       <view v-if="memberSheetOpen" class="mask" @tap="closeMemberSheet">
         <view class="sheet memberSheet" @tap.stop>
@@ -279,6 +261,7 @@ import {
   listAllStoreSupplierProducts,
   type Member
 } from '../../services/api'
+import ProductPickerSheet from '../../components/ProductPickerSheet.vue'
 import { useAuthStore } from '../../stores/auth'
 import './create.less'
 
@@ -297,7 +280,6 @@ const paymentStatus = ref(1)
 const otherExpenseAmount = ref('')
 const orderNo = ref('')
 const incomeAmount = ref('')
-const supplementEnabled = ref(false)
 const supplementDate = ref(defaultSupplementDate())
 function newLine() {
   return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, list_price: 0, product_name: '', remark: '', is_custom: false }
@@ -320,6 +302,7 @@ const giftWineProductId = ref(0)
 const giftWineProductName = ref('')
 const giftWineUnit = ref('')
 const giftWineQuantity = ref('1')
+const isSupplementMode = computed(() => String(router.params?.mode || '') === 'supplement')
 
 const channelLabel = computed(() => {
   const o = channelOptions.value.find((c) => c.value === channel.value)
@@ -437,13 +420,6 @@ function defaultSupplementDate() {
   const d = new Date()
   d.setDate(d.getDate() - 1)
   return dateText(d)
-}
-
-function onSupplementSwitch(e) {
-  supplementEnabled.value = Boolean(e?.detail?.value)
-  if (supplementEnabled.value && !supplementDate.value) {
-    supplementDate.value = defaultSupplementDate()
-  }
 }
 
 function onSupplementDateChange(e) {
@@ -801,6 +777,10 @@ function applyInitialMode() {
   } else if (mode === 'quick') {
     lines.value = [newLine()]
     setLineMode(0, false)
+  } else if (mode === 'supplement') {
+    lines.value = [newLine()]
+    setLineMode(0, false)
+    supplementDate.value = supplementDate.value || defaultSupplementDate()
   }
 }
 
@@ -962,7 +942,7 @@ async function submit() {
       return
     }
   }
-  if (supplementEnabled.value && !supplementDate.value) {
+  if (isSupplementMode.value && !supplementDate.value) {
     Taro.showToast({ title: '请选择补记账日期', icon: 'none' })
     return
   }
@@ -973,7 +953,7 @@ async function submit() {
       other_expense_amount: Number(otherExpenseAmount.value || 0),
       payment_status: paymentStatus.value,
       member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
-      is_supplement: supplementEnabled.value ? 1 : 0,
+      is_supplement: isSupplementMode.value ? 1 : 0,
       is_gift_wine: giftWineEnabled.value ? 1 : 0,
       gift_wine_product_path: giftWineEnabled.value ? giftWineProductPath.value : [],
       gift_wine_product_id: giftWineEnabled.value ? giftWineProductId.value : 0,
@@ -982,7 +962,7 @@ async function submit() {
       gift_wine_cost_amount: giftWineEnabled.value ? giftWineCostAmount.value : 0,
       items
     }
-    if (supplementEnabled.value) {
+    if (isSupplementMode.value) {
       payload.account_date = supplementDate.value
     }
     if (isTakeawayChannel.value) {
