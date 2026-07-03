@@ -45,15 +45,68 @@ export const useAuthStore = defineStore('auth', {
         // ignore
       }
     },
-    async login(phone: string, password: string) {
-      const data = await request<LoginResponse>('/auth/login', {
-        method: 'POST',
-        data: { phone, password }
-      })
+    persistLogin(data: LoginResponse) {
       this.token = data.token
       this.refreshToken = data.refresh_token || ''
       this.user = data.user_info
       Taro.setStorageSync(STORAGE_KEY, { token: this.token, refreshToken: this.refreshToken, user: this.user })
+    },
+    async getWechatCode() {
+      if (process.env.TARO_ENV !== 'weapp') return ''
+      const res = await Taro.login()
+      return String(res.code || '')
+    },
+    async login(phone: string, password: string) {
+      let wechatCode = ''
+      try {
+        wechatCode = await this.getWechatCode()
+      } catch {
+        wechatCode = ''
+      }
+      const data = await request<LoginResponse>('/auth/login', {
+        method: 'POST',
+        data: { phone, password }
+      })
+      this.persistLogin(data)
+      if (wechatCode) {
+        try {
+          await request<null>('/users/wechat-bind', {
+            method: 'POST',
+            data: { code: wechatCode },
+            authToken: this.token,
+            showLoading: false
+          })
+        } catch {
+          // 绑定失败不影响账号密码登录
+        }
+      }
+    },
+    async loginByWechatCode(code?: string) {
+      const loginCode = code || await this.getWechatCode()
+      if (!loginCode) return false
+      try {
+        const data = await request<LoginResponse>('/auth/wechat-login', {
+          method: 'POST',
+          data: { code: loginCode },
+          showLoading: false
+        })
+        this.persistLogin(data)
+        return true
+      } catch {
+        return false
+      }
+    },
+    async bindWechat() {
+      if (!this.token) throw new Error('请先登录')
+      const code = await this.getWechatCode()
+      if (!code) throw new Error('当前环境不支持微信绑定')
+      await request<null>('/users/wechat-bind', {
+        method: 'POST',
+        data: { code },
+        authToken: this.token,
+        showLoading: false
+      })
+      await this.refreshProfile()
     },
     async refreshProfile() {
       if (!this.token) return null

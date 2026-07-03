@@ -185,7 +185,11 @@ async function refresh() {
     ])
     customers.value = cs
     prices.value = ps
-    if (customerId.value && !customers.value.some((c) => Number(c.id) === customerId.value)) {
+    const hasSelectedCustomer = customers.value.some((c) => Number(c.id || 0) === customerId.value)
+    if (customers.value.length && !hasSelectedCustomer) {
+      customerId.value = Number(customers.value[0]?.id || 0)
+      lines.value = [newOrderLine()]
+    } else if (!customers.value.length) {
       customerId.value = 0
     }
   } catch (err: any) {

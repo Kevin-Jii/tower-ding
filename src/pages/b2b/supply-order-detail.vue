@@ -4,18 +4,36 @@
       <view class="hero card">
         <view class="heroLabel">供货单号</view>
         <view class="heroTitle">{{ detail?.order_no || `供货单 #${id}` }}</view>
-        <view class="heroSub">{{ detail?.customer_name || detail?.customer?.name || '-' }} · {{ formatDate(detail?.order_date || detail?.created_at) }}</view>
+        <view class="heroSub">{{ detail?.customer_name || detail?.customer?.name || '-' }} · {{
+          formatDate(detail?.order_date || detail?.created_at) }}</view>
         <view class="heroAmount">¥ {{ formatMoney(detail?.total_amount) }}</view>
       </view>
 
       <view class="card summary">
-        <view class="kv"><view class="k">收款状态</view><view class="v">{{ paymentLabel(detail?.payment_status) }}</view></view>
-        <view class="kv"><view class="k">配送状态</view><view class="v">{{ deliveryLabel(detail?.delivery_status) }}</view></view>
-        <view class="kv"><view class="k">已收金额</view><view class="v">¥ {{ formatMoney(detail?.paid_amount) }}</view></view>
-        <view class="kv"><view class="k">未收金额</view><view class="v">¥ {{ formatMoney(detail?.unpaid_amount) }}</view></view>
-        <view class="kv"><view class="k">毛利金额</view><view class="v">¥ {{ formatMoney(detail?.profit_amount) }}</view></view>
-        <view class="kv"><view class="k">操作人</view><view class="v">{{ detail?.operator_name || '-' }}</view></view>
-        <view class="kv"><view class="k">备注</view><view class="v">{{ detail?.remark || '-' }}</view></view>
+        <view class="kv">
+          <view class="k">收款状态</view>
+          <view class="v">{{ paymentLabel(detail?.payment_status) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">配送状态</view>
+          <view class="v">{{ deliveryLabel(detail?.delivery_status) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">已收金额</view>
+          <view class="v">¥ {{ formatMoney(detail?.paid_amount) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">未收金额</view>
+          <view class="v">¥ {{ formatMoney(detail?.unpaid_amount) }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">操作人</view>
+          <view class="v">{{ detail?.operator_name || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">备注</view>
+          <view class="v">{{ detail?.remark || '-' }}</view>
+        </view>
       </view>
 
       <view class="card">
@@ -28,7 +46,8 @@
             <view class="itemTop">
               <view>
                 <view class="itemTitle">{{ item.product_name || `商品 #${item.product_id}` }}</view>
-                <view class="itemMeta">{{ formatQty(item.quantity) }} {{ item.unit_name || '' }} · 供货价 ¥{{ formatMoney(item.supply_price) }}</view>
+                <view class="itemMeta">{{ formatQty(item.quantity) }} {{ item.unit_name || '' }} · 供货价 ¥{{
+                  formatMoney(item.supply_price) }}</view>
               </view>
               <view class="itemAmount">¥ {{ formatMoney(item.amount) }}</view>
             </view>

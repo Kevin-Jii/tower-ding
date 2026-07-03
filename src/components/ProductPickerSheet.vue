@@ -1,10 +1,12 @@
 <template>
-  <view class="productPickerMask" @tap="emit('close')" @touchmove.stop.prevent="noopTouchMove">
-    <view class="productPickerSheet" @tap.stop @touchmove.stop.prevent="noopTouchMove">
+  <view class="productPickerMask">
+    <view class="productPickerBackdrop" catchMove @tap="emit('close')" @touchmove.stop.prevent="noopTouchMove" />
+    <view class="productPickerSheet" @tap.stop>
       <view class="productPickerTitle">{{ title }}</view>
       <view class="productPickerBody">
         <scroll-view
-          scroll-y
+          :scroll-y="true"
+          :enable-flex="true"
           enhanced
           :bounces="false"
           class="productPickerCategories"
@@ -21,7 +23,8 @@
           </view>
         </scroll-view>
         <scroll-view
-          scroll-y
+          :scroll-y="true"
+          :enable-flex="true"
           enhanced
           :bounces="false"
           class="productPickerProducts"
@@ -73,12 +76,23 @@ function noopTouchMove() {}
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  pointer-events: auto;
+}
+
+.productPickerBackdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   background: rgba(15, 23, 42, 0.46);
 }
 
 .productPickerSheet {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  height: 74vh;
+  height: 900rpx;
   padding: 24px 22px 28px;
   box-sizing: border-box;
   display: flex;
@@ -97,6 +111,7 @@ function noopTouchMove() {}
 }
 
 .productPickerBody {
+  height: 690rpx;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -108,7 +123,7 @@ function noopTouchMove() {}
 
 .productPickerCategories {
   width: 176px;
-  height: 100%;
+  height: 690rpx;
   flex-shrink: 0;
   background: #f6f8fb;
   border-right: 1px solid #eef1f6;
@@ -146,7 +161,7 @@ function noopTouchMove() {}
 .productPickerProducts {
   flex: 1;
   min-width: 0;
-  height: 100%;
+  height: 690rpx;
   background: #fff;
 }
 

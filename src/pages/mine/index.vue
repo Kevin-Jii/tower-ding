@@ -29,6 +29,15 @@
           <view class="k">角色</view>
           <view class="v">{{ auth.user?.role?.name || auth.user?.role?.code || '-' }}</view>
         </view>
+        <view class="kv">
+          <view class="k">微信登录</view>
+          <view class="v">
+            <view v-if="wechatBound" class="wechatStatus">已绑定</view>
+            <view v-else :class="['miniAction', bindingWechat ? 'miniAction--disabled' : '']" @tap="onBindWechat">
+              {{ bindingWechat ? '绑定中...' : '绑定微信' }}
+            </view>
+          </view>
+        </view>
       </view>
 
       <view class="card storeCard">
@@ -76,6 +85,7 @@ const auth = useAuthStore()
 const ADMINISTRATIVE_UNIT_TYPE = 'ADMINISTRATIVEUNIT'
 
 const administrativeUnitDict = ref<DictData[]>([])
+const bindingWechat = ref(false)
 const initials = computed(() => {
   const text = auth.user?.nickname || auth.user?.username || auth.user?.phone || 'TW'
   return String(text).slice(0, 2).toUpperCase()
@@ -94,10 +104,27 @@ const storeCode = computed(() => {
   if (typeof code === 'string' && code.trim()) return code
   return auth.user?.store_id ? `#${auth.user.store_id}` : '-'
 })
+const wechatBound = computed(() => Boolean(auth.user?.wechat_openid))
 
 function onLogout() {
   auth.logout()
   Taro.redirectTo({ url: '/pages/login/index' })
+}
+
+async function onBindWechat() {
+  if (bindingWechat.value || wechatBound.value) return
+  bindingWechat.value = true
+  Taro.showLoading({ title: '绑定中' })
+  try {
+    await auth.bindWechat()
+    Taro.hideLoading()
+    Taro.showToast({ title: '绑定成功', icon: 'success' })
+  } catch (err: any) {
+    Taro.hideLoading()
+    Taro.showToast({ title: err?.message || '绑定失败', icon: 'none' })
+  } finally {
+    bindingWechat.value = false
+  }
 }
 
 async function refreshProfile() {

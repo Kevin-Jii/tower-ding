@@ -224,12 +224,22 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
+}
+
+.dialogBackdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   background: rgba(15, 23, 42, 0.48);
 }
 
 .priceSheet {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  height: 72vh;
+  height: 900rpx;
   padding: 24px 22px 28px;
   box-sizing: border-box;
   display: flex;
@@ -266,7 +276,8 @@
 }
 
 .priceSheetList {
-  flex: 1;
+  flex: none;
+  height: 640rpx;
   min-height: 0;
   margin-top: 18px;
   border: 1px solid #edf0f5;

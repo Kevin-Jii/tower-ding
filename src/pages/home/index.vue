@@ -16,7 +16,7 @@
             <view class="overviewMain">
               <view>
                 <view class="metricLabel">今日销售额</view>
-                <view class="metricValue">¥{{ formatMoney(todayAmount) }}</view>
+                <view class="metricValue">¥{{ formatMoney(totalTurnoverAmount) }}</view>
               </view>
               <view class="metricIcon metricIcon--sales">
                 <LucideIcon name="chart-column-increasing" color="#287fe5" :size="15" />
@@ -134,6 +134,7 @@ type HomeTodo = {
 const auth = useAuthStore()
 const today = businessDateStr()
 const todayAmount = ref(0)
+const totalTurnoverAmount = ref(0)
 const unpaidCount = ref(0)
 const lowStockCount = ref(0)
 const pendingReturnCount = ref(0)
@@ -237,6 +238,7 @@ async function refresh() {
       listStoreReturns(auth.token, { store_id: storeID, start_date: today, end_date: today, page: 1, page_size: 100 })
     ])
     todayAmount.value = Number(accountStats?.gross_total_amount || 0)
+    totalTurnoverAmount.value = Number(accountStats?.total_turnover_amount || 0)
     unpaidCount.value = countUnpaid(unpaidRows)
     lowStockCount.value = inventories.filter(isLowStock).length
     pendingReturnCount.value = (returnRows as StoreReturn[]).length

@@ -69,6 +69,7 @@ export type UserProfile = {
   phone?: string
   nickname?: string
   username?: string
+  wechat_openid?: string
   store_id?: number
   store?: {
     id: number

@@ -1,4 +1,5 @@
 <template>
+  <PageMeta :page-style="modalPageStyle" />
   <view class="page">
     <view class="container">
       <view class="eyebrow">B2B模块</view>
@@ -26,8 +27,9 @@
         </view>
       </view>
 
-      <view v-if="priceDialogOpen" class="dialogMask" @tap="closePriceDialog" @touchmove.stop.prevent="noopTouchMove">
-        <view class="priceSheet" @tap.stop @touchmove.stop.prevent="noopTouchMove">
+      <view v-if="priceDialogOpen" class="dialogMask">
+        <view class="dialogBackdrop" catchMove @tap="closePriceDialog" @touchmove.stop.prevent="noopTouchMove" />
+        <view class="priceSheet" @tap.stop>
           <view class="sheetHead">
             <view>
               <view class="sheetTitle">供货价格列表</view>
@@ -35,7 +37,15 @@
             </view>
             <view class="sheetCloseIcon" @tap="closePriceDialog">×</view>
           </view>
-          <scroll-view scroll-y enhanced :bounces="false" class="priceSheetList" :show-scrollbar="false" @touchmove.stop>
+          <scroll-view
+            :scroll-y="true"
+            :enable-flex="true"
+            enhanced
+            :bounces="false"
+            class="priceSheetList"
+            :show-scrollbar="false"
+            @touchmove.stop
+          >
             <view v-if="priceLoading" class="empty">正在加载供货价…</view>
             <view v-else-if="!activePrices.length" class="empty">暂无供货价</view>
             <view v-for="p in activePrices" :key="p.id" class="priceRow">
@@ -54,8 +64,9 @@
 </template>
 
 <script setup lang="ts">
+import { PageMeta } from '@tarojs/components'
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   listB2BCustomers,
   listB2BPrices,
@@ -72,6 +83,7 @@ const activePrices = ref<B2BPrice[]>([])
 const loading = ref(false)
 const priceLoading = ref(false)
 const priceDialogOpen = ref(false)
+const modalPageStyle = computed(() => (priceDialogOpen.value ? 'overflow: hidden; height: 100vh;' : ''))
 
 function formatMoney(v: any) {
   const n = Number(v || 0)

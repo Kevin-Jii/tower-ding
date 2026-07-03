@@ -15,14 +15,15 @@
           <view class="rowTop">
             <view>
               <view class="rowTitle">{{ o.order_no || `供货单 #${o.id}` }}</view>
-              <view class="rowSub">{{ o.customer_name || o.customer?.name || '-' }} · {{ formatDate(o.order_date || o.created_at) }}</view>
+              <view class="rowSub">{{ o.customer_name || o.customer?.name || '-' }} · {{ formatDate(o.order_date ||
+                o.created_at) }}</view>
             </view>
             <view class="amount">¥{{ formatMoney(o.total_amount) }}</view>
           </view>
           <view class="rowFoot">
             <view class="tag">{{ paymentLabel(o.payment_status) }}</view>
             <view class="tag">{{ deliveryLabel(o.delivery_status) }}</view>
-            <view class="tag">利润 ¥{{ formatMoney(o.profit_amount) }}</view>
+            <!-- <view class="miniBtn miniBtn--ghost" @tap.stop="openDetail(o.id)">查看明细</view> -->
           </view>
           <view v-if="canEditToday(o)" class="actions" @tap.stop>
             <view class="miniBtn" @tap="markDelivered(o)">已配送</view>

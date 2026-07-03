@@ -1,5 +1,13 @@
 <template>
-  <view class="page">
+  <PageMeta :page-style="modalPageStyle" />
+  <scroll-view
+    :class="['page', 'accountCreatePageScroll', modalOpen ? 'accountCreatePageScroll--locked' : '']"
+    :scroll-y="!modalOpen"
+    :enhanced="true"
+    :bounces="false"
+    :show-scrollbar="false"
+    :enable-flex="true"
+  >
     <view class="container">
       <view class="card metaCard">
         <view class="metaHint">销售渠道（字典名称）</view>
@@ -227,7 +235,15 @@
             />
             <view class="memberSearchBtn" @tap="searchMembers">搜索</view>
           </view>
-          <view class="sheetList memberList">
+          <scroll-view
+            :scroll-y="true"
+            :enable-flex="true"
+            enhanced
+            :bounces="false"
+            :show-scrollbar="false"
+            class="sheetList memberList"
+            @touchmove.stop
+          >
             <view v-if="!members.length" class="sheetEmpty">暂无会员</view>
             <view
               v-for="member in members"
@@ -240,16 +256,16 @@
                 <view class="sheetSub">会员 #{{ member.id }}</view>
               </view>
             </view>
-          </view>
+          </scroll-view>
           <view class="sheetClose btn btn--ghost" @tap="closeMemberSheet">关闭</view>
         </view>
       </view>
     </view>
-  </view>
+  </scroll-view>
 </template>
 
 <script setup lang="ts">
-import { Switch } from '@tarojs/components'
+import { PageMeta, Switch } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 import {
@@ -303,6 +319,8 @@ const giftWineProductName = ref('')
 const giftWineUnit = ref('')
 const giftWineQuantity = ref('1')
 const isSupplementMode = computed(() => String(router.params?.mode || '') === 'supplement')
+const modalOpen = computed(() => pickerOpen.value || memberSheetOpen.value)
+const modalPageStyle = computed(() => (modalOpen.value ? 'overflow: hidden; height: 100vh;' : ''))
 
 const channelLabel = computed(() => {
   const o = channelOptions.value.find((c) => c.value === channel.value)

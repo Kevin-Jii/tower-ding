@@ -57,9 +57,9 @@
             </view>
             <view v-if="Number(item.round_amount || 0) > 0" class="rowMeta">抹零 ¥{{ formatMoney(item.round_amount) }}
             </view>
-            <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{
-              formatMoney(item.gift_wine_cost_amount) }}</view>
-            <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view>
+            <!-- <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{
+              formatMoney(item.gift_wine_cost_amount) }}</view> -->
+            <!-- <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view> -->
           </view>
           <view class="rowStatus">
             <view class="statusTags">
@@ -67,7 +67,7 @@
               <view :class="['statusTag', paymentStatusValue(item) === 2 ? 'statusTag--warn' : 'statusTag--ok']">
                 {{ paymentStatusLabel(paymentStatusValue(item)) }}
               </view>
-              <view class="statusTag">{{ accountMemberLabel(item) }}</view>
+              <!-- <view class="statusTag">{{ accountMemberLabel(item) }}</view> -->
             </view>
             <view class="rowActions" @tap.stop>
               <view v-if="canBindConsumables(item)" class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品
@@ -359,9 +359,9 @@ function formatMoney(v: any) {
 
 function displayAccountAmount(item: StoreAccount) {
   const total = Number(item.gross_total_amount ?? item.total_amount ?? item.amount ?? 0)
-  const errandFee = Number(item.errand_fee || 0)
+  // const errandFee = Number(item.errand_fee || 0)
   const roundAmount = Number(item.round_amount || 0)
-  return Math.max(0, Math.round((total - errandFee - roundAmount) * 100) / 100)
+  return Math.max(0, Math.round((total - roundAmount) * 100) / 100)
 }
 
 function mapDict(rows: DictData[]) {
