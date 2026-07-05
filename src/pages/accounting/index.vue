@@ -39,6 +39,10 @@
       <view class="list">
         <view v-if="!list.length" class="empty card">暂无记账数据</view>
         <view v-for="item in list" :key="item.id" class="row card" @tap="openDetail(item.id)">
+          <view
+            :class="['paymentStamp', paymentStatusValue(item) === 2 ? 'paymentStamp--unpaid' : 'paymentStamp--paid']">
+            {{ paymentStatusLabel(paymentStatusValue(item)) }}
+          </view>
           <view class="rowTop">
             <image v-if="platformIcon(item)" class="platformIcon" :src="platformIcon(item)" mode="aspectFit" />
             <view class="rowMain">
@@ -50,25 +54,26 @@
             </view>
             <view class="amount amount--in">¥ {{ formatMoney(displayAccountAmount(item)) }}</view>
           </view>
-          <view class="rowFoot">
-            <view class="rowMeta">{{ item.item_count ?? item.items?.length ?? 0 }} 项商品</view>
-            <view class="rowMeta">操作人 {{ operatorLabel(item) }}</view>
-            <view v-if="Number(item.is_errand_order || 0) === 1" class="rowMeta">跑腿 ¥{{ formatMoney(item.errand_fee) }}
-            </view>
-            <view v-if="Number(item.round_amount || 0) > 0" class="rowMeta">抹零 ¥{{ formatMoney(item.round_amount) }}
-            </view>
-            <!-- <view v-if="Number(item.is_gift_wine || 0) === 1" class="rowMeta">赠酒 ¥{{
-              formatMoney(item.gift_wine_cost_amount) }}</view> -->
-            <!-- <view v-if="hasConsumables(item)" class="rowMeta rowMeta--locked">已绑定耗材</view> -->
-          </view>
-          <view class="rowStatus">
-            <view class="statusTags">
-              <view class="statusTag">{{ channelLabel(item.channel) }}</view>
-              <view :class="['statusTag', paymentStatusValue(item) === 2 ? 'statusTag--warn' : 'statusTag--ok']">
-                {{ paymentStatusLabel(paymentStatusValue(item)) }}
+
+          <view class="itemDetails">
+            <view v-if="accountItems(item).length">
+              <view v-for="line in accountItems(item)" :key="line.id || `${line.product_id}-${line.product_name}`"
+                class="itemDetailLine">
+                <view class="itemDetailMain">
+                  <view class="itemDetailName">{{ line.product_name || `商品 #${line.product_id || ''}` }}
+                    <text class="itemDetailMeta">（{{ formatQty(line.quantity) }}<text v-if="line.spec"> * {{ line.spec
+                    }}</text>）
+                    </text>
+                  </view>
+
+                </view>
               </view>
-              <!-- <view class="statusTag">{{ accountMemberLabel(item) }}</view> -->
             </view>
+            <view v-else class="itemDetailEmpty">暂无商品明细</view>
+          </view>
+
+          <view class="rowBottom">
+            <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
             <view class="rowActions" @tap.stop>
               <view v-if="canBindConsumables(item)" class="miniBtn miniBtn--dark" @tap="openConsumableSheet(item)">绑定消耗品
               </view>
@@ -357,6 +362,16 @@ function formatMoney(v: any) {
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
+function formatQty(v: any) {
+  const n = Number(v || 0)
+  if (!Number.isFinite(n)) return '0'
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function accountItems(item: StoreAccount) {
+  return Array.isArray(item.items) ? item.items : []
+}
+
 function displayAccountAmount(item: StoreAccount) {
   const total = Number(item.gross_total_amount ?? item.total_amount ?? item.amount ?? 0)
   // const errandFee = Number(item.errand_fee || 0)
@@ -620,7 +635,8 @@ async function refresh(reset = true) {
         end_date: q.end_date
       })
     ])
-    list.value = reset ? accounts : [...list.value, ...accounts]
+    const filledAccounts = await fillAccountItems(accounts)
+    list.value = reset ? filledAccounts : [...list.value, ...filledAccounts]
     hasMore.value = accounts.length >= pageSize
     if (hasMore.value) page.value = currentPage + 1
     stats.value = accountStats
@@ -629,6 +645,23 @@ async function refresh(reset = true) {
   } finally {
     loadingMore.value = false
   }
+}
+
+async function fillAccountItems(accounts: StoreAccount[]) {
+  if (!auth.token) return accounts
+  return Promise.all(accounts.map(async (item) => {
+    if (Array.isArray(item.items) && item.items.length) return item
+    try {
+      const detail = await getStoreAccountDetail(auth.token, item.id)
+      return {
+        ...item,
+        items: detail.items || item.items || [],
+        consumables: detail.consumables || item.consumables || []
+      }
+    } catch {
+      return item
+    }
+  }))
 }
 
 function openDetail(id: number) {

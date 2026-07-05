@@ -62,6 +62,10 @@ function isAuthExpiredResponse(statusCode: number, body?: ApiResponse<unknown>) 
   return statusCode === 401 || body?.code === 401
 }
 
+function isAuthPublicPath(path: string) {
+  return ['/auth/login', '/auth/refresh', '/auth/wechat-login'].includes(path)
+}
+
 async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
@@ -104,6 +108,8 @@ async function refreshAccessToken(): Promise<string> {
 
 function redirectToLogin() {
   clearAuthStorage()
+  const route = Taro.getCurrentPages()?.slice(-1)?.[0]?.route
+  if (route === 'pages/login/index') return
   Taro.redirectTo({ url: '/pages/login/index' })
 }
 
@@ -144,7 +150,7 @@ export async function request<T>(
 
     const body = res.data
     if (isAuthExpiredResponse(res.statusCode, body)) {
-      if (!_retry && path !== '/auth/login' && path !== '/auth/refresh') {
+      if (!_retry && !isAuthPublicPath(path)) {
         try {
           const nextToken = await refreshAccessToken()
           return request<T>(path, { ...options, authToken: nextToken, showLoading: false, _retry: true })
@@ -153,7 +159,6 @@ export async function request<T>(
           throw err
         }
       }
-      redirectToLogin()
       throw new Error(body?.message || body?.error || '登录已过期，请重新登录')
     }
     if (!body) throw new Error('接口返回为空')

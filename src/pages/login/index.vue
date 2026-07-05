@@ -85,7 +85,6 @@ const LOGIN_FORM_KEY = 'tower.login.form'
 const POLICY_VERSION = '2026-05-10'
 const POLICY_ACCEPT_KEY = 'tower.login.policyAcceptedVersion'
 const WECHAT_SILENT_FAIL_KEY = 'tower.login.wechatSilentFailedAt'
-const WECHAT_SILENT_COOLDOWN = 10 * 60 * 1000
 
 const auth = useAuthStore()
 const phone = ref('')
@@ -148,16 +147,16 @@ async function redirectAuthedUser() {
     }
   }
   try {
-    const failedAt = Number(Taro.getStorageSync(WECHAT_SILENT_FAIL_KEY) || 0)
-    if (failedAt && Date.now() - failedAt < WECHAT_SILENT_COOLDOWN) return
+    const silentLoginDisabled = Boolean(Taro.getStorageSync(WECHAT_SILENT_FAIL_KEY))
+    if (silentLoginDisabled) return
 
+    Taro.setStorageSync(WECHAT_SILENT_FAIL_KEY, Date.now())
     const wxOk = await auth.loginByWechatCode()
     if (wxOk) {
       Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
       Taro.reLaunch({ url: '/pages/home/index' })
       return
     }
-    Taro.setStorageSync(WECHAT_SILENT_FAIL_KEY, Date.now())
   } finally {
     autoLoginRunning.value = false
   }
@@ -193,8 +192,8 @@ async function onSubmit() {
   loading.value = true
   Taro.showLoading({ title: '登录中' })
   try {
-    await auth.login(phone.value.trim(), password.value)
-    Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
+    const wechatBound = await auth.login(phone.value.trim(), password.value)
+    if (wechatBound) Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
     Taro.setStorageSync(POLICY_ACCEPT_KEY, POLICY_VERSION)
     if (rememberPwd.value) {
       Taro.setStorageSync(LOGIN_FORM_KEY, {

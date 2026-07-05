@@ -1,3 +1,6 @@
+packages:
+  - .
+
 allowBuilds:
   '@parcel/watcher': set this to true or false
   '@swc/core': set this to true or false
@@ -7,3 +10,13 @@ allowBuilds:
   core-js-pure: set this to true or false
   esbuild: set this to true or false
   vue-demi: set this to true or false
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - '@tarojs/binding'
+  - '@tarojs/cli'
+  - core-js
+  - core-js-pure
+  - esbuild
+  - vue-demi

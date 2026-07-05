@@ -21,6 +21,7 @@ type LoginResponse = {
 }
 
 const STORAGE_KEY = 'tower.auth'
+const WECHAT_SILENT_FAIL_KEY = 'tower.login.wechatSilentFailedAt'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -58,6 +59,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(phone: string, password: string) {
       let wechatCode = ''
+      let wechatBound = false
       try {
         wechatCode = await this.getWechatCode()
       } catch {
@@ -76,10 +78,13 @@ export const useAuthStore = defineStore('auth', {
             authToken: this.token,
             showLoading: false
           })
+          wechatBound = true
+          Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
         } catch {
           // 绑定失败不影响账号密码登录
         }
       }
+      return Boolean(this.user?.wechat_openid) || wechatBound
     },
     async loginByWechatCode(code?: string) {
       const loginCode = code || await this.getWechatCode()
@@ -106,6 +111,7 @@ export const useAuthStore = defineStore('auth', {
         authToken: this.token,
         showLoading: false
       })
+      Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
       await this.refreshProfile()
     },
     async refreshProfile() {
