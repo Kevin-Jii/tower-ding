@@ -1,0 +1,19 @@
+<view class="page morePage">
+  <view class="moreContainer">
+    <view v-for="group in groups" :key="group.title" class="panel">
+      <view class="panelTitle">{{ group.title }}</view>
+      <view class="featureList">
+        <view v-for="item in group.items" :key="item.title" class="featureRow" @tap="go(item.url)">
+          <view :class="['featureIcon', `featureIcon--${item.tone}`]">
+            <LucideIcon :name="item.icon" :color="item.color" :size="32" :stroke-width="2.15" />
+          </view>
+          <view class="featureText">
+            <view class="featureTitle">{{ item.title }}</view>
+            <view class="featureDesc">{{ item.desc }}</view>
+          </view>
+          <view class="featureArrow">›</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

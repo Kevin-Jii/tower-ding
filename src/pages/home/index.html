@@ -1,0 +1,98 @@
+<view class="page">
+    <view class="home">
+      <view class="hero">
+        <view class="heroText">
+          <view class="greeting">{{ greeting }}，{{ userName }}</view>
+          <view class="brand">Tower 中台</view>
+        </view>
+        <view class="avatarBtn" @tap="go('/pages/mine/index')">{{ initials }}</view>
+      </view>
+
+      <view class="panel overviewPanel">
+        <view class="panelTitle">经营数据概览</view>
+        <view class="overviewGrid">
+          <view class="overviewItem" @tap="go('/pages/accounting/index')">
+            <view class="overviewMain">
+              <view>
+                <view class="metricLabel">今日销售额</view>
+                <view class="metricValue">¥{{ formatMoney(totalTurnoverAmount) }}</view>
+              </view>
+              <view class="metricIcon metricIcon--sales">
+                <LucideIcon name="chart-column-increasing" color="#287fe5" :size="15" />
+              </view>
+            </view>
+          </view>
+
+          <view class="overviewItem" @tap="go('/pages/accounting/unpaid')">
+            <view class="overviewMain">
+              <view>
+                <view class="metricLabel">待支付订单</view>
+                <view class="metricValue">{{ unpaidCount }}</view>
+              </view>
+              <view class="metricIcon metricIcon--payment">
+                <LucideIcon name="receipt-text" color="#697789" :size="15" />
+              </view>
+            </view>
+          </view>
+
+          <view class="overviewItem" @tap="go('/pages/inventory/stock-list')">
+            <view class="overviewMain">
+              <view>
+                <view class="metricLabel warningLabel">
+                  库存预警
+                  <text v-if="lowStockCount > 0" class="warningDot" />
+                </view>
+                <view class="metricValue metricValue--danger">{{ lowStockCount }}</view>
+              </view>
+              <view class="metricIcon metricIcon--stock">
+                <LucideIcon name="bell-ring" color="#ff3f48" :size="15" />
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="panel">
+        <view class="panelTitle">快捷操作</view>
+        <view class="actionGrid">
+          <view v-for="item in quickActions" :key="item.title" class="actionCard" @tap="go(item.url)">
+            <view :class="['actionIcon', `actionIcon--${item.tone}`]">
+              <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+            </view>
+            <view class="actionTitle">{{ item.title }}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="panel">
+        <view class="panelHead">
+          <view class="panelTitle">业务管理</view>
+          <view class="moreLink" @tap="go('/pages/home/more')">
+            查看更多
+            <text class="moreArrow">›</text>
+          </view>
+        </view>
+        <view class="actionGrid">
+          <view v-for="item in businessActions" :key="item.title" class="actionCard" @tap="go(item.url)">
+            <view :class="['actionIcon', `actionIcon--${item.tone}`]">
+              <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+            </view>
+            <view class="actionTitle">{{ item.title }}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="panel todoPanel">
+        <view class="panelTitle">待办提醒</view>
+        <view class="todoList">
+          <view v-for="todo in todos" :key="todo.text" class="todoRow" @tap="go(todo.url)">
+            <view :class="['todoIcon', `todoIcon--${todo.tone}`]">
+              <LucideIcon :name="todo.icon" :color="todo.color" :size="22" />
+            </view>
+            <view class="todoText">{{ todo.text }}</view>
+            <view class="chevron">›</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>

@@ -1,0 +1,48 @@
+<view class="page">
+    <view class="container">
+      <view class="eyebrow">库存 · 门店</view>
+      <view class="title">供应商</view>
+      <view class="subtitle">已绑定列表与从全库添加绑定（tower-go `store-suppliers`）</view>
+
+      <view class="section-title">已绑定</view>
+      <view class="list">
+        <view v-if="!bound.length" class="empty card">尚未绑定供应商，请在下方搜索并添加</view>
+        <view v-for="b in bound" :key="b.id || `${b.store_id}-${b.supplier_id}`" class="row card">
+          <view class="rowTop">
+            <view>
+              <view class="rowTitle">{{ b.supplier?.supplier_name || `供应商 #${b.supplier_id}` }}</view>
+              <view class="rowSub">{{ b.supplier?.contact_person || '—' }} · {{ b.supplier?.contact_phone || '—' }}</view>
+            </view>
+            <view class="btnUnbind" @tap.stop="confirmUnbind(b)">解绑</view>
+          </view>
+          <view class="rowMeta">编码 {{ b.supplier?.supplier_code || '—' }}</view>
+        </view>
+      </view>
+
+      <view class="section-title">添加绑定</view>
+      <input
+        class="input search"
+        placeholder="搜索供应商名称或编码"
+        :value="keyword"
+        confirm-type="search"
+        @input="onKw"
+        @confirm="searchCatalog"
+      />
+      <view class="hint">仅展示启用中的供应商；绑定后可在出入库/记账中选对应商品</view>
+
+      <view class="list">
+        <view v-if="searching" class="empty card">搜索中…</view>
+        <view v-else-if="searched && !catalog.length" class="empty card">无匹配供应商</view>
+        <view v-for="s in catalog" :key="s.id" class="row card">
+          <view class="rowTop">
+            <view>
+              <view class="rowTitle">{{ s.supplier_name || `供应商 #${s.id}` }}</view>
+              <view class="rowSub">{{ s.contact_person || '—' }} · {{ s.contact_phone || '—' }}</view>
+            </view>
+            <view v-if="isBound(s.id)" class="tagMuted">已绑定</view>
+            <view v-else class="btnDark" @tap="doBind(s.id)">绑定</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>

@@ -1,0 +1,62 @@
+<PageMeta :page-style="modalPageStyle" />
+  <view class="page">
+    <view class="container">
+      <view class="eyebrow">B2B模块</view>
+      <view class="title">供货客户</view>
+
+      <view v-if="loading" class="empty card">正在加载供货客户…</view>
+      <view v-else-if="!customers.length" class="empty card">暂无供货客户</view>
+      <view v-else class="customerList">
+        <view v-for="customer in customers" :key="customer.id" class="customerCard card" @tap="openCustomerOrders(customer)">
+          <view class="customerTop">
+            <view>
+              <view class="customerName">{{ customer.name || `客户 #${customer.id}` }}</view>
+              <view class="customerSub">{{ customer.contact_person || '-' }} · {{ customer.phone || '-' }}</view>
+            </view>
+            <view class="customerAmount">¥{{ formatMoney(customer.receivable) }}</view>
+          </view>
+          <view class="customerMeta">
+            <view class="tag">{{ customer.price_level || '默认等级' }}</view>
+            <view class="tag">{{ customer.settlement || '默认结算' }}</view>
+          </view>
+          <view class="customerActions" @tap.stop>
+            <view class="miniBtn miniBtn--ghost" @tap="openPriceDialog(customer)">供货价格列表</view>
+            <view class="miniBtn" @tap="openCreate(customer)">新增供货单</view>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="priceDialogOpen" class="dialogMask">
+        <view class="dialogBackdrop" catchMove @tap="closePriceDialog" @touchmove.stop.prevent="noopTouchMove" />
+        <view class="priceSheet" @tap.stop>
+          <view class="sheetHead">
+            <view>
+              <view class="sheetTitle">供货价格列表</view>
+              <view class="sheetSub">{{ activeCustomer?.name || '-' }}</view>
+            </view>
+            <view class="sheetCloseIcon" @tap="closePriceDialog">×</view>
+          </view>
+          <scroll-view
+            :scroll-y="true"
+            :enable-flex="true"
+            enhanced
+            :bounces="false"
+            class="priceSheetList"
+            :show-scrollbar="false"
+            @touchmove.stop
+          >
+            <view v-if="priceLoading" class="empty">正在加载供货价…</view>
+            <view v-else-if="!activePrices.length" class="empty">暂无供货价</view>
+            <view v-for="p in activePrices" :key="p.id" class="priceRow">
+              <view>
+                <view class="priceTitle">{{ productName(p) }}</view>
+                <view class="priceSub">{{ p.unit_name || p.unit_spec?.unit_name || '-' }} · 起订 {{ p.min_quantity ?? 1 }}</view>
+              </view>
+              <view class="priceAmount">¥{{ formatMoney(p.supply_price) }}</view>
+            </view>
+          </scroll-view>
+          <view class="sheetCloseBtn" @tap="closePriceDialog">关闭</view>
+        </view>
+      </view>
+    </view>
+  </view>

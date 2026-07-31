@@ -1,0 +1,72 @@
+<view class="page">
+    <view class="container">
+      <view class="profile card">
+        <view class="avatar">{{ initials }}</view>
+        <view class="profileMeta">
+          <view class="profileName">{{ auth.user?.nickname || auth.user?.username || auth.user?.phone || '未登录用户' }}
+          </view>
+          <view class="profileStore">{{ auth.user?.store?.name || `门店 #${auth.user?.store_id || '-'}` }}</view>
+        </view>
+        <view :class="['statusBadge', auth.token ? 'statusBadge--on' : '']">{{ auth.token ? '在线' : '离线' }}</view>
+      </view>
+
+      <view class="card infoCard">
+        <view class="panelTitle">账号信息</view>
+        <view class="kv">
+          <view class="k">用户</view>
+          <view class="v">{{ auth.user?.nickname || auth.user?.username || auth.user?.phone || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">门店</view>
+          <view class="v">{{ auth.user?.store?.name || auth.user?.store_id || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">手机号</view>
+          <view class="v">{{ auth.user?.phone || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">角色</view>
+          <view class="v">{{ auth.user?.role?.name || auth.user?.role?.code || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">微信登录</view>
+          <view class="v">
+            <view v-if="wechatBound" class="wechatStatus">已绑定</view>
+            <view v-else :class="['miniAction', bindingWechat ? 'miniAction--disabled' : '']" @tap="onBindWechat">
+              {{ bindingWechat ? '绑定中...' : '绑定微信' }}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card storeCard">
+        <view class="panelTitle">门店信息</view>
+        <view class="kv">
+          <view class="k">门店编号</view>
+          <view class="v">{{ storeCode }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">联系人</view>
+          <view class="v">{{ storeInfo?.contact_person || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">联系电话</view>
+          <view class="v">{{ storeInfo?.phone || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">营业时间</view>
+          <view class="v">{{ storeInfo?.business_hours || '-' }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">归属区域</view>
+          <view class="v">{{ administrativeUnitDisplay }}</view>
+        </view>
+        <view class="kv">
+          <view class="k">门店地址</view>
+          <view class="v">{{ storeInfo?.address || '-' }}</view>
+        </view>
+      </view>
+
+      <view class="btn danger" @tap="onLogout">退出登录</view>
+    </view>
+  </view>

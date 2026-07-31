@@ -1,0 +1,22 @@
+<view class="page">
+    <view class="container">
+      <view class="toolbar">
+        <input class="input kwInput" :value="keyword" placeholder="搜索商品名" @input="onKwInput" />
+      </view>
+
+      <view class="list">
+        <view v-if="loading" class="card empty">加载中…</view>
+        <view v-else-if="!filteredRows.length" class="card empty">暂无商品</view>
+        <product-unit-card v-for="row in filteredRows" :key="row.id" :row="row" :draft="ensureDraft(row.id)"
+          :unit-options="unitOptions" :big-options="bigUnitOptions(row.id)" :base-index="baseIndex(row.id)"
+          :big-index="bigIndex(row.id)" :saving="savingId === row.id"
+          :on-toggle-big="(enabled) => toggleBig(row.id, enabled)"
+          :on-select-base="(idx) => onSelectUnit(row.id, 'base', idx)"
+          :on-select-big="(idx) => onSelectUnit(row.id, 'big', idx)"
+          :on-base-number="(key, value) => onUnitNum(row.id, 'base', key, value)"
+          :on-big-number="(key, value) => onUnitNum(row.id, 'big', key, value)"
+          :on-base-precision="(value) => onPrecision(row.id, 'base', value)"
+          :on-big-precision="(value) => onPrecision(row.id, 'big', value)" :on-save="() => saveRow(row.id)" />
+      </view>
+    </view>
+  </view>

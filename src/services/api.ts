@@ -253,6 +253,9 @@ export type StoreAccount = {
     remark?: string
   }>
   consumables?: StoreAccountConsumable[]
+  can_edit?: boolean
+  can_bind_consumables?: boolean
+  can_cancel?: boolean
   created_at?: string
 }
 
@@ -333,6 +336,7 @@ export type UpdateStoreAccountReq = {
   gift_wine_unit?: string
   gift_wine_quantity?: number
   gift_wine_cost_amount?: number
+  items?: CreateStoreAccountItemReq[]
 }
 
 export type Member = {
@@ -833,6 +837,14 @@ export function getStoreAccountDetail(authToken: string, id: number) {
 
 export function updateStoreAccount(authToken: string, id: number, body: UpdateStoreAccountReq) {
   return request<null>(`/store-accounts/${id}`, { method: 'PUT', data: body, authToken })
+}
+
+export function cancelStoreAccount(authToken: string, id: number, body?: { remark?: string }) {
+  return request<null>(`/store-accounts/${id}/cancel`, {
+    method: 'POST',
+    data: body,
+    authToken
+  })
 }
 
 export function getStoreAccountStats(

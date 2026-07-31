@@ -1,0 +1,36 @@
+<view class="page">
+    <view class="container">
+      <view class="eyebrow">会员模块</view>
+      <view class="title">会员管理</view>
+      <view class="subtitle">会员资料查询与新增</view>
+
+      <view class="card formCard">
+        <view class="formTitle">新增会员</view>
+        <input class="input mt" :value="form.name" placeholder="姓名" @input="onNameInput" />
+        <input class="input mt" :value="form.phone" type="number" placeholder="手机号" @input="onPhoneInput" />
+        <view class="btn mt" @tap="submitMember">保存会员</view>
+      </view>
+
+      <view class="searchRow">
+        <input class="searchInput" :value="keyword" placeholder="搜索姓名 / 手机号 / 会员号" confirm-type="search" @input="onKeywordInput" @confirm="refresh" />
+        <view class="searchBtn" @tap="refresh">搜索</view>
+      </view>
+
+      <view class="list">
+        <view v-if="!members.length" class="empty card">暂无会员</view>
+        <view v-for="m in members" :key="m.id" class="row card">
+          <view class="rowTop">
+            <view>
+              <view class="rowTitle">{{ memberName(m) }}</view>
+              <view class="rowSub">{{ m.phone || '-' }}</view>
+            </view>
+            <view class="statusTag">等级 {{ m.level ?? 0 }}</view>
+          </view>
+          <view class="rowFoot">
+            <view class="rowMeta">余额 ¥{{ formatMoney(m.balance) }}</view>
+            <view class="rowMeta">积分 {{ m.points ?? 0 }}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>

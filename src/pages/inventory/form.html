@@ -1,0 +1,109 @@
+<view class="page formPage">
+    <view class="container formContainer">
+      <view class="formTopbar">
+        <view class="typeSwitch">
+          <view
+            v-for="item in typeOptions"
+            :key="item.value"
+            :class="['typeOption', type === item.value ? 'typeOption--on' : '']"
+            @tap="selectType(item.value)"
+          >
+            {{ item.label }}单
+          </view>
+        </view>
+        <view class="selectedBadge">已选 {{ selectedCount }}</view>
+      </view>
+
+      <view class="section-head">
+        <view class="section-title">选择商品</view>
+        <view class="section-meta">已选 {{ selectedCount }} 项 · 共 {{ products.length }} 个</view>
+      </view>
+
+      <view v-if="loading" class="card hintCard">正在加载商品…</view>
+      <view v-else-if="!products.length" class="card hintCard">
+        暂无可登记商品，请先在后台维护商品后再创建出入库单。
+      </view>
+      <view v-else class="productList">
+        <view class="productScrollInner">
+          <view v-for="group in groupedProducts" :key="group.name" class="categoryGroup">
+            <view class="categoryHead">
+              <view class="categoryName">{{ group.name }}</view>
+              <view class="categoryCount">{{ group.items.length }} 个</view>
+            </view>
+            <view v-for="p in group.items" :key="p.id" :class="['productRow', isSelected(p.id) ? 'productRow--on' : '']">
+              <view class="productRowTop">
+                <view class="productRowMain" @tap="toggleSelect(p.id)">
+                  <view :class="['check', isSelected(p.id) ? 'check--on' : '']">
+                    <text v-if="isSelected(p.id)" class="checkMark">✓</text>
+                  </view>
+                  <view class="productText">
+                    <view class="productName">{{ p.name || `商品 #${p.id}` }}</view>
+                    <view class="productSub">{{ productMeta(p) }}</view>
+                    <view class="productSub">¥{{ formatMoney(displayPrice(p)) }} · 默认单位 {{ p.unit || '-' }}</view>
+                  </view>
+                </view>
+                <view v-if="isSelected(p.id)" class="stepper" @tap.stop>
+                  <view class="stepBtn" @tap="decQty(p.id)">−</view>
+                  <view class="stepVal">{{ formatQty(selection[p.id]?.quantity) }} {{ selectedUnitLabel(p.id) }}</view>
+                  <view class="stepBtn" @tap="incQty(p.id)">+</view>
+                </view>
+              </view>
+              <view v-if="isSelected(p.id)" class="unitPills">
+                <view class="unitLabel">单位</view>
+                <view
+                  v-for="u in selectedUnitOptions(p.id)"
+                  :key="u.value"
+                  :class="['unitPill', selection[p.id]?.unit === u.value ? 'unitPill--on' : '']"
+                  @tap="selectUnit(p.id, u)"
+                >
+                  {{ u.label }}
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="bottomSpacer" />
+      <view class="submitBar">
+        <view class="submitMeta">
+          <view class="submitCount">{{ selectedCount }} 项商品</view>
+          <view class="submitHint">选择商品后填写单据信息并提交</view>
+        </view>
+        <view :class="['btn submitBtn', submitting ? 'btn--disabled' : '']" @tap="openSubmitSheet">{{ submitting ? '提交中…' : '提交单据' }}
+        </view>
+      </view>
+
+      <view v-if="submitSheetOpen" class="submitMask" @tap="closeSubmitSheet">
+        <view class="submitSheet" @tap.stop>
+          <view class="sheetHandle" />
+          <view class="sheetTitle">提交单据</view>
+          <view class="sheetSub">当前为{{ typeLabel }}单，请补全单据信息后提交</view>
+
+          <view class="sheetField">
+            <view class="fieldLabel">原因</view>
+            <view v-if="reasonDictLoading" class="reasonHint">正在加载原因选项...</view>
+            <view v-else-if="!reasonOptions.length" class="reasonHint reasonHint--warn">
+              未配置出入库原因字典，请联系管理员维护
+            </view>
+            <picker v-else mode="selector" :range="reasonOptions" range-key="label" :value="reasonIndex" @change="onReasonChange">
+              <view class="pickerRow">
+                <text>{{ reasonLabel }}</text>
+                <text class="pickerArrow">›</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="sheetField">
+            <view class="fieldLabel">整单备注</view>
+            <textarea class="textarea" :value="remark" placeholder="必填，例如盘点修正、日常销售出库" @input="onRemark" />
+          </view>
+
+          <view class="sheetActions">
+            <view class="btn btn--ghost sheetBtn" @tap="closeSubmitSheet">取消</view>
+            <view :class="['btn', 'sheetBtn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中...' : '确认提交' }}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>

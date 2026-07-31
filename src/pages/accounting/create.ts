@@ -1,0 +1,1170 @@
+import { PageMeta, Switch } from '@tarojs/components'
+
+
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
+
+
+import { computed, ref } from 'vue'
+
+
+import {
+  createStoreAccount,
+  getStoreAccountDetail,
+  listAllInventories,
+  listDictDataByTypeCode,
+  listMembers,
+  listProductUnitSpecs,
+  listAllStoreSupplierProducts,
+  updateStoreAccount,
+  type Member,
+  type StoreAccount
+} from '../../services/api'
+
+
+import ProductPickerSheet from '../../components/ProductPickerSheet.vue'
+
+
+import { useAuthStore } from '../../stores/auth'
+
+export default {
+  components: { ProductPickerSheet },
+  setup() {
+    const auth = useAuthStore()
+    
+    
+    const router = useRouter()
+
+
+    const editAccountId = Number(router.params?.id || 0)
+
+
+    const isEditMode = computed(() => String(router.params?.mode || '') === 'edit' && editAccountId > 0)
+
+
+    const editLoaded = ref(false)
+    
+    
+    
+    const channelOptions = ref<any[]>([])
+    
+    
+    const channelDictLoading = ref(false)
+    
+    
+    const channel = ref('')
+    
+    
+    const members = ref<Member[]>([])
+    
+    
+    const memberSearchKeyword = ref('')
+    
+    
+    const selectedMemberId = ref(0)
+    
+    
+    const bindMemberEnabled = ref(false)
+    
+    
+    const memberSheetOpen = ref(false)
+    
+    
+    const paymentStatus = ref(1)
+    
+    
+    const otherExpenseAmount = ref('')
+    
+    
+    const orderNo = ref('')
+    
+    
+    const incomeAmount = ref('')
+    
+    
+    const supplementDate = ref(defaultSupplementDate())
+    
+    
+    function newLine() {
+      return { product_id: 0, quantity: 1, unit: '', spec: '', price: 0, amount: 0, list_price: 0, product_name: '', remark: '', is_custom: false }
+    }
+    
+    
+    
+    const lines = ref<any[]>([newLine()])
+    
+    
+    const submitting = ref(false)
+    
+    
+    
+    const pickerOpen = ref(false)
+    
+    
+    const pickerLine = ref(0)
+    
+    
+    const pickerTarget = ref<'line' | 'gift'>('line')
+    
+    
+    const products = ref<any[]>([])
+    
+    
+    const categorySource = ref<any[]>([])
+    
+    
+    const productTab = ref('all')
+    
+    
+    const unitOptionsMap = ref({})
+    
+    
+    const initialModeApplied = ref(false)
+    
+    
+    const giftWineEnabled = ref(false)
+    
+    
+    const giftWineProductPath = ref<Array<string | number>>([])
+    
+    
+    const giftWineProductId = ref(0)
+    
+    
+    const giftWineProductName = ref('')
+    
+    
+    const giftWineUnit = ref('')
+    
+    
+    const giftWineQuantity = ref('1')
+    
+    
+    const isSupplementMode = computed(() => String(router.params?.mode || '') === 'supplement')
+    
+    
+    const modalOpen = computed(() => pickerOpen.value || memberSheetOpen.value)
+    
+    
+    const modalPageStyle = computed(() => (modalOpen.value ? 'overflow: hidden; height: 100vh;' : ''))
+    
+    
+    
+    const channelLabel = computed(() => {
+      const o = channelOptions.value.find((c) => c.value === channel.value)
+      return o?.label || channel.value || '—'
+    })
+    
+    
+    
+    const channelIndex = computed(() => {
+      const i = channelOptions.value.findIndex((c) => c.value === channel.value)
+      return i >= 0 ? i : 0
+    })
+    
+    
+    const memberOptions = computed(() => [
+      { label: '不绑定会员', value: 0 },
+      ...members.value.map((m) => ({ label: memberLabel(m), value: Number(m.id || 0) }))
+    ])
+    
+    
+    const memberIndex = computed(() => {
+      const i = memberOptions.value.findIndex((m) => m.value === selectedMemberId.value)
+      return i >= 0 ? i : 0
+    })
+    
+    
+    const selectedMemberLabel = computed(() => memberOptions.value[memberIndex.value]?.label || '不绑定会员')
+    
+    
+    const isTakeawayChannel = computed(() => {
+      const text = `${channel.value} ${channelLabel.value}`.toLowerCase()
+      return [
+        '外卖',
+        '美团',
+        '饿了么',
+        '淘宝',
+        '闪购',
+        '京东',
+        '商城',
+        '小程序',
+        'waimai',
+        'takeaway',
+        'delivery',
+        'meituan',
+        'eleme',
+        'elm',
+        'taobao',
+        'shangou',
+        'jingdong',
+        'jd',
+        'mall',
+        'miniapp'
+      ].some((keyword) => text.includes(keyword))
+    })
+    
+    
+    const productTabs = computed(() => {
+      const seen = new Map()
+      categorySource.value.forEach((p) => {
+        const id = Number(p?.category_id || 0)
+        const name = String(p?.category_name || '').trim()
+        if (id > 0 && name && !seen.has(id)) seen.set(id, name)
+      })
+      const tabs = [{ label: '全部分类', value: 'all' }]
+      seen.forEach((label, id) => {
+        tabs.push({ label, value: String(id) })
+      })
+      return tabs
+    })
+    
+    
+    const filteredProducts = computed(() => {
+      if (productTab.value !== 'all') {
+        return products.value.filter((p) => String(Number(p?.category_id || 0)) === productTab.value)
+      }
+      return products.value
+    })
+    
+    
+    const markedAmount = computed(() => {
+      return lines.value.reduce((sum, line) => sum + lineMarkedAmount(line), 0)
+    })
+    
+    
+    const estimatedNetIncome = computed(() => {
+      if (!isTakeawayChannel.value) return 0
+      return Number(incomeAmount.value || 0) - Number(otherExpenseAmount.value || 0)
+    })
+    
+    
+    const giftWineUnitOptions = computed(() => {
+      const pid = Number(giftWineProductId.value || 0)
+      if (!pid) return []
+      return unitOptionsMap.value[pid] || []
+    })
+    
+    
+    const selectedGiftWineUnit = computed(() => {
+      return giftWineUnitOptions.value.find((u) => u.value === giftWineUnit.value) || giftWineUnitOptions.value[0] || null
+    })
+    
+    
+    const giftWineCostAmount = computed(() => {
+      if (!giftWineEnabled.value) return 0
+      const qty = Number(giftWineQuantity.value || 0)
+      const cost = Number(selectedGiftWineUnit.value?.cost_price || 0)
+      return qty > 0 && cost > 0 ? Math.round(qty * cost * 100) / 100 : 0
+    })
+    
+    
+    const giftWineSummary = computed(() => {
+      if (!giftWineProductId.value) return '请选择赠酒商品'
+      const qty = Number(giftWineQuantity.value || 0)
+      const q = Number.isInteger(qty) ? String(qty) : qty.toFixed(2).replace(/\.?0+$/, '')
+      return `${giftWineProductName.value || '赠酒商品'} ${q || 0}${giftWineUnit.value || ''}`
+    })
+    
+    
+    const todayDate = computed(() => dateText(new Date()))
+    
+    
+    
+    function mapDictOptions(rows) {
+      return rows
+        .map((r) => ({
+          label: String(r.label || r.value || '').trim() || String(r.value || ''),
+          value: String(r.value || '').trim()
+        }))
+        .filter((o) => o.value)
+    }
+    
+    
+    
+    function pickDefaultValue(rows) {
+      const def = rows.find((r) => r.is_default)
+      return String(def?.value || rows[0]?.value || '').trim()
+    }
+    
+    
+    
+    function dateText(date) {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
+    
+    
+    
+    function defaultSupplementDate() {
+      const d = new Date()
+      d.setDate(d.getDate() - 1)
+      return dateText(d)
+    }
+    
+    
+    
+    function onSupplementDateChange(e) {
+      supplementDate.value = String(e?.detail?.value || '')
+    }
+    
+    
+    
+    function getProductCategoryId(product) {
+      return Number(product?.category_id || product?.category?.id || product?.product?.category_id || product?.product?.category?.id || 0)
+    }
+    
+    
+    
+    function getProductCategoryName(product) {
+      return String(product?.category?.name || product?.category_name || product?.product?.category?.name || product?.product?.category_name || '').trim()
+    }
+    
+    
+    
+    function getSupplierProductId(product) {
+      return Number(product?.product_id || product?.product?.id || product?.id || 0)
+    }
+    
+    
+    
+    function getSupplierProductName(product, fallback) {
+      return String(product?.product_name || product?.name || product?.product?.product_name || product?.product?.name || fallback || '').trim()
+    }
+    
+    
+    
+    function getSupplierProductUnit(product, fallback) {
+      return String(product?.unit || product?.product?.unit || fallback || '').trim()
+    }
+    
+    
+    
+    function getSupplierProductPrice(product) {
+      const n = Number(product?.sale_price || product?.price || product?.bottle_price || product?.product?.sale_price || product?.product?.price || 0)
+      return Number.isFinite(n) && n > 0 ? n : 0
+    }
+    
+    
+    
+    function productPathOf(product) {
+      const categoryId = getProductCategoryId(product)
+      const productId = Number(product?.product_id || product?.id || 0)
+      return categoryId > 0 ? [categoryId, productId] : [productId]
+    }
+    
+    
+    
+    async function loadChannelDict() {
+      if (!auth.token) return
+      channelDictLoading.value = true
+      try {
+        const rows = await listDictDataByTypeCode(auth.token, 'sales_channel')
+        channelOptions.value = mapDictOptions(rows)
+        const allowed = new Set(channelOptions.value.map((o) => o.value))
+        if (!channel.value || !allowed.has(channel.value)) {
+          channel.value = pickDefaultValue(rows) || ''
+        }
+      } catch (err) {
+        channelOptions.value = []
+        Taro.showToast({ title: err?.message || '加载销售渠道失败', icon: 'none' })
+      } finally {
+        channelDictLoading.value = false
+      }
+    }
+    
+    
+    
+    function memberLabel(member) {
+      const name = String(member?.name || '').trim()
+      const phone = String(member?.phone || '').trim()
+      if (name && phone) return `${name}(${phone})`
+      return name || phone || `会员 #${member?.id || ''}`
+    }
+    
+    
+    
+    function onMemberSearchInput(e) {
+      memberSearchKeyword.value = String(e?.detail?.value || '')
+    }
+    
+    
+    
+    function searchMembers() {
+      void loadMembers(memberSearchKeyword.value.trim())
+    }
+    
+    
+    
+    function onBindMemberSwitch(e) {
+      bindMemberEnabled.value = Boolean(e?.detail?.value)
+      if (bindMemberEnabled.value) {
+        memberSheetOpen.value = true
+        void loadMembers(memberSearchKeyword.value.trim())
+        return
+      }
+      selectedMemberId.value = 0
+      memberSheetOpen.value = false
+    }
+    
+    
+    
+    function pickMember(member) {
+      selectedMemberId.value = Number(member?.id || 0)
+      bindMemberEnabled.value = selectedMemberId.value > 0
+      memberSheetOpen.value = false
+    }
+    
+    
+    
+    function closeMemberSheet() {
+      memberSheetOpen.value = false
+      if (!selectedMemberId.value) bindMemberEnabled.value = false
+    }
+    
+    
+    
+    function addLine() {
+      lines.value.push(newLine())
+    }
+    
+    
+    
+    function removeLine(i) {
+      lines.value.splice(i, 1)
+    }
+    
+    
+    
+    function qtyStr(line) {
+      const n = Number(line.quantity || 1)
+      if (!Number.isFinite(n)) return '1'
+      return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
+    }
+    
+    
+    
+    function moneyInputValue(e) {
+      const raw = String(e?.detail?.value || '').replace(/[^\d.]/g, '')
+      const [head, ...tail] = raw.split('.')
+      return tail.length ? `${head}.${tail.join('').slice(0, 2)}` : head
+    }
+    
+    
+    
+    function onOtherExpenseInput(e) {
+      otherExpenseAmount.value = moneyInputValue(e)
+    }
+    
+    
+    
+    function onOrderNoInput(e) {
+      orderNo.value = String(e?.detail?.value || '')
+    }
+    
+    
+    
+    function onIncomeAmountInput(e) {
+      incomeAmount.value = moneyInputValue(e)
+    }
+    
+    
+    
+    function onChannelChange(e) {
+      const idx = Number(e?.detail?.value ?? -1)
+      if (!Number.isInteger(idx) || idx < 0 || idx >= channelOptions.value.length) return
+      channel.value = channelOptions.value[idx]?.value || ''
+    }
+    
+    
+    
+    function setLineMode(i, isCustom) {
+      const line = lines.value[i]
+      if (!line) return
+      line.is_custom = Boolean(isCustom)
+      line.product_id = 0
+      line.product_name = ''
+      line.unit = ''
+      line.spec = ''
+      line.price = 0
+      line.amount = 0
+      line.list_price = 0
+      line.remark = ''
+    }
+    
+    
+    
+    function onCustomNameInput(i, e) {
+      const line = lines.value[i]
+      if (!line) return
+      line.product_name = String(e?.detail?.value || '')
+    }
+    
+    
+    
+    function onCustomUnitInput(i, e) {
+      const line = lines.value[i]
+      if (!line) return
+      line.unit = String(e?.detail?.value || '')
+      line.spec = line.unit
+    }
+    
+    
+    
+    function onCustomPriceInput(i, e) {
+      const line = lines.value[i]
+      if (!line) return
+      const n = Number(String(e?.detail?.value || '').replace(/[^\d.]/g, ''))
+      line.price = Number.isFinite(n) && n >= 0 ? n : 0
+    }
+    
+    
+    
+    function onLineRemarkInput(i, e) {
+      const line = lines.value[i]
+      if (!line) return
+      line.remark = String(e?.detail?.value || '')
+    }
+    
+    
+    
+    function setLineUnit(i, unit, spec) {
+      const line = lines.value[i]
+      if (!line) return
+      line.unit = unit
+      line.spec = spec
+      const opt = lineUnitOptions(line).find((o) => o.value === unit)
+      if (opt?.sale_price > 0) line.list_price = opt.sale_price
+    }
+    
+    
+    
+    function setGiftWineUnit(unit) {
+      giftWineUnit.value = String(unit || '').trim()
+    }
+    
+    
+    
+    function lineUnitOptions(line) {
+      const pid = Number(line?.product_id || 0)
+      if (!pid) return []
+      return unitOptionsMap.value[pid] || []
+    }
+    
+    
+    
+    function buildUnitOptions(specs) {
+      const enabled = specs
+        .filter((s) => s?.is_enabled !== false)
+        .map((s) => {
+          const label = String(s?.unit_name || s?.unit_code || '').trim()
+          const factor = Number(s?.factor_to_base || 1)
+          return {
+            label,
+            value: label,
+            spec: label,
+            factor,
+            cost_price: Number(s?.cost_price || 0),
+            sale_price: Number(s?.sale_price || 0)
+          }
+        })
+        .filter((o) => o.value)
+    
+      const dedup: any[] = []
+      const seen = new Set()
+      enabled
+        .sort((a, b) => a.factor - b.factor)
+        .forEach((o) => {
+          if (seen.has(o.value)) return
+          seen.add(o.value)
+          dedup.push({ label: o.label, value: o.value, spec: o.spec, cost_price: o.cost_price, sale_price: o.sale_price })
+        })
+      return dedup
+    }
+    
+    
+    
+    async function loadUnitOptionsForProduct(productId, fallbackUnit) {
+      if (!auth.token || !productId) return
+      try {
+        const specs = await listProductUnitSpecs(auth.token, productId)
+        const opts = buildUnitOptions(specs)
+        if (opts.length) {
+          unitOptionsMap.value[productId] = opts
+          for (const line of lines.value) {
+            if (Number(line?.product_id || 0) !== productId) continue
+            const exists = opts.some((o) => o.value === line.unit)
+            if (!exists) {
+              line.unit = opts[0].value
+              line.spec = opts[0].spec
+              if (opts[0]?.sale_price > 0) line.list_price = opts[0].sale_price
+            } else {
+              const current = opts.find((o) => o.value === line.unit)
+              if (current?.sale_price > 0) line.list_price = current.sale_price
+            }
+          }
+          if (Number(giftWineProductId.value || 0) === productId && !opts.some((o) => o.value === giftWineUnit.value)) {
+            giftWineUnit.value = opts[0].value
+          }
+          return
+        }
+      } catch {
+        // ignore and fallback
+      }
+      unitOptionsMap.value[productId] = fallbackUnit ? [{ label: fallbackUnit, value: fallbackUnit, spec: fallbackUnit }] : []
+    }
+    
+    
+    
+    function incQty(i) {
+      const line = lines.value[i]
+      if (!line) return
+      const q = Number(line.quantity || 1)
+      line.quantity = Math.round((q + 1) * 100) / 100
+    }
+    
+    
+    
+    function decQty(i) {
+      const line = lines.value[i]
+      if (!line) return
+      const q = Number(line.quantity || 1)
+      line.quantity = Math.max(1, Math.round((q - 1) * 100) / 100)
+    }
+    
+    
+    
+    function openPicker(lineIdx) {
+      pickerTarget.value = 'line'
+      pickerLine.value = lineIdx
+      productTab.value = 'all'
+      pickerOpen.value = true
+      void loadProducts()
+    }
+    
+    
+    
+    function openGiftWinePicker() {
+      pickerTarget.value = 'gift'
+      productTab.value = 'all'
+      pickerOpen.value = true
+      void loadProducts()
+    }
+    
+    
+    
+    function closePicker() {
+      pickerOpen.value = false
+    }
+    
+    
+    
+    async function loadProducts() {
+      if (!auth.token) return
+      try {
+        const storeId = auth.storeId || undefined
+        const [inventories, supplierProducts] = await Promise.all([
+          listAllInventories(auth.token, { store_id: storeId }),
+          listAllStoreSupplierProducts(auth.token, { store_id: storeId })
+        ])
+        const inventoryByProductId = new Map()
+        categorySource.value = supplierProducts.map((p) => ({
+          category_id: getProductCategoryId(p),
+          category_name: getProductCategoryName(p)
+        }))
+        inventories.forEach((inv) => {
+          const pid = Number(inv?.product_id || 0)
+          if (pid > 0) inventoryByProductId.set(pid, inv)
+        })
+        const rows: any[] = []
+        const supplierProductIds = new Set()
+        supplierProducts.forEach((p) => {
+          const pid = getSupplierProductId(p)
+          if (pid <= 0) return
+          supplierProductIds.add(pid)
+          const inv = inventoryByProductId.get(pid)
+          rows.push({
+            id: pid,
+            product_id: pid,
+            product_name: getSupplierProductName(p, inv?.product_name || `商品 #${pid}`),
+            quantity: inv?.quantity ?? 0,
+            unit: inv?.unit || getSupplierProductUnit(p, ''),
+            list_price: getSupplierProductPrice(p),
+            category_id: getProductCategoryId(p),
+            category_name: getProductCategoryName(p)
+          })
+        })
+        inventories.forEach((inv) => {
+          const pid = Number(inv?.product_id || 0)
+          if (pid <= 0 || supplierProductIds.has(pid)) return
+          rows.push({
+            ...inv,
+            category_id: 0,
+            category_name: ''
+          })
+        })
+        products.value = rows
+        if (!productTabs.value.some((tab) => tab.value === productTab.value)) {
+          productTab.value = 'all'
+        }
+      } catch (err) {
+        Taro.showToast({ title: err?.message || '加载库存商品失败', icon: 'none' })
+      }
+    }
+    
+    
+    
+    async function loadMembers(keyword = '') {
+      if (!auth.token) return
+      try {
+        members.value = await listMembers(auth.token, {
+          keyword: keyword || undefined,
+          page: 1,
+          page_size: 100
+        })
+      } catch {
+        members.value = []
+      }
+    }
+    
+    
+    
+    function applyInitialMode() {
+      if (initialModeApplied.value) return
+      initialModeApplied.value = true
+      const mode = String(router.params?.mode || '')
+      if (mode === 'edit') {
+        return
+      }
+      if (mode === 'custom') {
+        lines.value = [newLine()]
+        setLineMode(0, true)
+      } else if (mode === 'quick') {
+        lines.value = [newLine()]
+        setLineMode(0, false)
+      } else if (mode === 'supplement') {
+        lines.value = [newLine()]
+        setLineMode(0, false)
+        supplementDate.value = supplementDate.value || defaultSupplementDate()
+      }
+    }
+
+
+
+    function accountItemToLine(item: any) {
+      const productId = Number(item?.product_id || 0)
+      const unit = String(item?.unit || item?.spec || '').trim()
+      return {
+        product_id: productId,
+        product_name: String(item?.product_name || '').trim(),
+        quantity: Number(item?.quantity || 1),
+        unit,
+        spec: String(item?.spec || unit).trim(),
+        price: Number(item?.price || 0),
+        amount: Number(item?.amount || 0),
+        list_price: Number(item?.price || 0),
+        remark: String(item?.remark || ''),
+        is_custom: productId === 0
+      }
+    }
+
+
+
+    async function loadEditAccount() {
+      if (!auth.token || !isEditMode.value || editLoaded.value) return
+      const account = await getStoreAccountDetail(auth.token, editAccountId) as StoreAccount
+      channel.value = String(account.channel || '')
+      paymentStatus.value = Number(account.payment_status || 1) === 2 ? 2 : 1
+      selectedMemberId.value = Number(account.member_id || 0)
+      bindMemberEnabled.value = selectedMemberId.value > 0
+      if (account.member && !members.value.some((member) => Number(member.id) === selectedMemberId.value)) {
+        members.value = [account.member, ...members.value]
+      }
+      otherExpenseAmount.value = String(account.other_expense_amount ?? '')
+      orderNo.value = String(account.order_no || '')
+      incomeAmount.value = String(account.total_amount ?? account.income_amount ?? '')
+      giftWineEnabled.value = Number(account.is_gift_wine || 0) === 1
+      giftWineProductId.value = Number(account.gift_wine_product_id || 0)
+      giftWineProductName.value = String(account.gift_wine_product_name || '')
+      giftWineProductPath.value = giftWineProductId.value > 0 ? [giftWineProductId.value] : []
+      giftWineUnit.value = String(account.gift_wine_unit || '')
+      giftWineQuantity.value = String(account.gift_wine_quantity || 1)
+      lines.value = Array.isArray(account.items) && account.items.length
+        ? account.items.map(accountItemToLine)
+        : [newLine()]
+      editLoaded.value = true
+      Taro.setNavigationBarTitle({ title: '编辑记账' })
+      await Promise.all(lines.value
+        .filter((line) => !line.is_custom && Number(line.product_id || 0) > 0)
+        .map((line) => loadUnitOptionsForProduct(Number(line.product_id), String(line.unit || ''))))
+    }
+
+
+
+    async function initializePage() {
+      applyInitialMode()
+      await Promise.all([loadChannelDict(), loadProducts(), loadMembers()])
+      await loadEditAccount()
+    }
+    
+    
+    
+    function pickProduct(p) {
+      if (pickerTarget.value === 'gift') {
+        pickGiftWineProduct(p)
+        return
+      }
+      const i = pickerLine.value
+      const row = lines.value[i]
+      const pid = Number(p.product_id || 0)
+      if (!pid) return
+      row.product_id = pid
+      row.product_name = p.product_name || `商品 #${pid}`
+      const fallback = String(p.unit || '').trim() || '件'
+      row.unit = fallback
+      row.spec = fallback
+      row.list_price = Number(p.list_price || 0)
+      row.price = undefined
+      row.amount = undefined
+      void loadUnitOptionsForProduct(pid, fallback)
+      closePicker()
+    }
+    
+    
+    
+    function pickGiftWineProduct(p) {
+      const pid = Number(p.product_id || 0)
+      if (!pid) return
+      giftWineProductId.value = pid
+      giftWineProductName.value = p.product_name || `商品 #${pid}`
+      giftWineProductPath.value = productPathOf(p)
+      const fallback = String(p.unit || '').trim() || '件'
+      giftWineUnit.value = fallback
+      if (!(Number(giftWineQuantity.value || 0) > 0)) giftWineQuantity.value = '1'
+      void loadUnitOptionsForProduct(pid, fallback)
+      closePicker()
+    }
+    
+    
+    
+    function onGiftWineSwitch(e) {
+      giftWineEnabled.value = Boolean(e?.detail?.value)
+      if (giftWineEnabled.value) {
+        if (!giftWineQuantity.value) giftWineQuantity.value = '1'
+        return
+      }
+      giftWineProductPath.value = []
+      giftWineProductId.value = 0
+      giftWineProductName.value = ''
+      giftWineUnit.value = ''
+      giftWineQuantity.value = '1'
+    }
+    
+    
+    
+    function onGiftWineQuantityInput(e) {
+      giftWineQuantity.value = moneyInputValue(e)
+    }
+    
+    
+    
+    function incGiftWineQty() {
+      const q = Number(giftWineQuantity.value || 1)
+      giftWineQuantity.value = String(Math.round((q + 1) * 100) / 100)
+    }
+    
+    
+    
+    function decGiftWineQty() {
+      const q = Number(giftWineQuantity.value || 1)
+      giftWineQuantity.value = String(Math.max(1, Math.round((q - 1) * 100) / 100))
+    }
+    
+    
+    
+    function lineMarkedAmount(line) {
+      const qty = Number(line?.quantity || 0)
+      if (!(qty > 0)) return 0
+      if (line?.is_custom) {
+        const price = Number(line?.price || 0)
+        return price > 0 ? Math.round(qty * price * 100) / 100 : 0
+      }
+      const price = Number(line?.list_price || 0)
+      return price > 0 ? Math.round(qty * price * 100) / 100 : 0
+    }
+    
+    
+    
+    function formatMoney(v) {
+      const n = Number(v || 0)
+      return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+    }
+    
+    
+    
+    async function submit() {
+      if (!auth.token) return
+      if (!channel.value) {
+        Taro.showToast({ title: channelOptions.value.length ? '请选择销售渠道' : '销售渠道字典未配置', icon: 'none' })
+        return
+      }
+      const items: any[] = []
+      let hasMissingUnit = false
+      for (const line of lines.value) {
+        if (line.is_custom) {
+          const name = String(line.product_name || '').trim()
+          const unit = String(line.unit || '').trim()
+          const qty = Number(line.quantity)
+          const price = Number(line.price || 0)
+          if (!name && !unit && !price) continue
+          if (!name) {
+            Taro.showToast({ title: '请填写自定义记账内容', icon: 'none' })
+            return
+          }
+          if (!unit) {
+            Taro.showToast({ title: `请填写「${name}」单位`, icon: 'none' })
+            return
+          }
+          if (!(qty > 0) || !(price > 0)) {
+            Taro.showToast({ title: `请填写「${name}」数量和单价`, icon: 'none' })
+            return
+          }
+          items.push({
+            product_id: 0,
+            product_name: name,
+            quantity: qty,
+            unit,
+            price,
+            amount: Math.round(qty * price * 100) / 100,
+            remark: line.remark || undefined
+          })
+          continue
+        }
+        if (!line.product_id) continue
+        const qty = Number(line.quantity)
+        if (!(qty > 0)) continue
+        const unit = String(line.unit || '').trim()
+        if (!unit) {
+          hasMissingUnit = true
+          continue
+        }
+        items.push({
+          product_id: line.product_id,
+          quantity: qty,
+          unit,
+          spec: line.spec || undefined,
+          // 不传 price/amount，后端按单位自动取 bottle_price/case_price 并计算小计
+          remark: line.remark || undefined
+        })
+      }
+      if (hasMissingUnit) {
+        Taro.showToast({ title: '请为商品选择单位', icon: 'none' })
+        return
+      }
+      if (!items.length) {
+        Taro.showToast({ title: '请完善至少一行商品（含单位）', icon: 'none' })
+        return
+      }
+      if (giftWineEnabled.value) {
+        if (!giftWineProductId.value) {
+          Taro.showToast({ title: '请选择赠酒商品', icon: 'none' })
+          return
+        }
+        if (!giftWineUnit.value) {
+          Taro.showToast({ title: '请选择赠酒规格单位', icon: 'none' })
+          return
+        }
+        if (!(Number(giftWineQuantity.value || 0) > 0)) {
+          Taro.showToast({ title: '请填写赠酒数量', icon: 'none' })
+          return
+        }
+        if (!(giftWineCostAmount.value > 0)) {
+          Taro.showToast({ title: '赠酒商品未维护规格成本价', icon: 'none' })
+          return
+        }
+      }
+      if (isSupplementMode.value && !supplementDate.value) {
+        Taro.showToast({ title: '请选择补记账日期', icon: 'none' })
+        return
+      }
+      submitting.value = true
+      try {
+        let targetAccountId = editAccountId
+        const payload: any = {
+          channel: channel.value,
+          other_expense_amount: Number(otherExpenseAmount.value || 0),
+          payment_status: paymentStatus.value,
+          member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
+          is_supplement: isSupplementMode.value ? 1 : 0,
+          is_gift_wine: giftWineEnabled.value ? 1 : 0,
+          gift_wine_product_path: giftWineEnabled.value ? giftWineProductPath.value : [],
+          gift_wine_product_id: giftWineEnabled.value ? giftWineProductId.value : 0,
+          gift_wine_unit: giftWineEnabled.value ? giftWineUnit.value : '',
+          gift_wine_quantity: giftWineEnabled.value ? Number(giftWineQuantity.value || 0) : 0,
+          gift_wine_cost_amount: giftWineEnabled.value ? giftWineCostAmount.value : 0,
+          items
+        }
+        if (isSupplementMode.value) {
+          payload.account_date = supplementDate.value
+        }
+        if (isTakeawayChannel.value) {
+          if (orderNo.value.trim()) payload.order_no = orderNo.value.trim()
+          if (incomeAmount.value !== '') payload.income_amount = Number(incomeAmount.value || 0)
+          payload.remark = `${channelLabel.value}外卖订单`
+        }
+        if (isEditMode.value) {
+          await updateStoreAccount(auth.token, editAccountId, payload)
+          Taro.showToast({ title: '已更新', icon: 'success' })
+        } else {
+          const account = await createStoreAccount(auth.token, payload)
+          targetAccountId = account.id
+          Taro.showToast({ title: '已创建', icon: 'success' })
+        }
+        setTimeout(() => {
+          Taro.redirectTo({ url: `/pages/accounting/detail?id=${targetAccountId}` })
+        }, 400)
+      } catch (err) {
+        Taro.showToast({ title: err?.message || '提交失败', icon: 'none' })
+      } finally {
+        submitting.value = false
+      }
+    }
+    
+    
+    
+    useDidShow(() => {
+      void initializePage()
+    })
+
+    return {
+      PageMeta,
+      Switch,
+      Taro,
+      useDidShow,
+      useRouter,
+      computed,
+      ref,
+      createStoreAccount,
+      getStoreAccountDetail,
+      listAllInventories,
+      listDictDataByTypeCode,
+      listMembers,
+      listProductUnitSpecs,
+      listAllStoreSupplierProducts,
+      updateStoreAccount,
+      ProductPickerSheet,
+      useAuthStore,
+      auth,
+      router,
+      editAccountId,
+      isEditMode,
+      editLoaded,
+      channelOptions,
+      channelDictLoading,
+      channel,
+      members,
+      memberSearchKeyword,
+      selectedMemberId,
+      bindMemberEnabled,
+      memberSheetOpen,
+      paymentStatus,
+      otherExpenseAmount,
+      orderNo,
+      incomeAmount,
+      supplementDate,
+      newLine,
+      lines,
+      submitting,
+      pickerOpen,
+      pickerLine,
+      pickerTarget,
+      products,
+      categorySource,
+      productTab,
+      unitOptionsMap,
+      initialModeApplied,
+      giftWineEnabled,
+      giftWineProductPath,
+      giftWineProductId,
+      giftWineProductName,
+      giftWineUnit,
+      giftWineQuantity,
+      isSupplementMode,
+      modalOpen,
+      modalPageStyle,
+      channelLabel,
+      channelIndex,
+      memberOptions,
+      memberIndex,
+      selectedMemberLabel,
+      isTakeawayChannel,
+      productTabs,
+      filteredProducts,
+      markedAmount,
+      estimatedNetIncome,
+      giftWineUnitOptions,
+      selectedGiftWineUnit,
+      giftWineCostAmount,
+      giftWineSummary,
+      todayDate,
+      mapDictOptions,
+      pickDefaultValue,
+      dateText,
+      defaultSupplementDate,
+      onSupplementDateChange,
+      getProductCategoryId,
+      getProductCategoryName,
+      getSupplierProductId,
+      getSupplierProductName,
+      getSupplierProductUnit,
+      getSupplierProductPrice,
+      productPathOf,
+      loadChannelDict,
+      memberLabel,
+      onMemberSearchInput,
+      searchMembers,
+      onBindMemberSwitch,
+      pickMember,
+      closeMemberSheet,
+      addLine,
+      removeLine,
+      qtyStr,
+      moneyInputValue,
+      onOtherExpenseInput,
+      onOrderNoInput,
+      onIncomeAmountInput,
+      onChannelChange,
+      setLineMode,
+      onCustomNameInput,
+      onCustomUnitInput,
+      onCustomPriceInput,
+      onLineRemarkInput,
+      setLineUnit,
+      setGiftWineUnit,
+      lineUnitOptions,
+      buildUnitOptions,
+      loadUnitOptionsForProduct,
+      incQty,
+      decQty,
+      openPicker,
+      openGiftWinePicker,
+      closePicker,
+      loadProducts,
+      loadMembers,
+      applyInitialMode,
+      accountItemToLine,
+      loadEditAccount,
+      initializePage,
+      pickProduct,
+      pickGiftWineProduct,
+      onGiftWineSwitch,
+      onGiftWineQuantityInput,
+      incGiftWineQty,
+      decGiftWineQty,
+      lineMarkedAmount,
+      formatMoney,
+      submit,
+    }
+  }
+}

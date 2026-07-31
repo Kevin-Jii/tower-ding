@@ -1,0 +1,70 @@
+<view class="page expensePage">
+    <view class="container expenseContainer">
+      <view class="expenseHero">
+        <view>
+          <view class="eyebrow">门店支出</view>
+          <view class="title">支出记录</view>
+        </view>
+        <view class="heroAction" @tap="refresh">刷新</view>
+      </view>
+
+      <view class="summaryGrid">
+        <view class="summaryCard summaryCard--main">
+          <view class="summaryLabel">支出总额</view>
+          <view class="summaryValue">¥{{ formatMoney(stats?.total_amount) }}</view>
+        </view>
+        <view class="summaryCard">
+          <view class="summaryLabel">支出记录</view>
+          <view class="summaryValue">{{ stats?.count || 0 }} 笔</view>
+        </view>
+      </view>
+
+      <view class="card formCard">
+        <view class="formTitle">新增支出</view>
+        <view class="fieldLabel">支出分类</view>
+        <picker mode="selector" :range="categoryOptions" range-key="label" :value="categoryIndex" @change="onCategoryChange">
+          <view :class="['pickerFake', form.category_code ? '' : 'pickerFake--empty']">
+            <text>{{ selectedCategoryLabel || '请选择支出分类' }}</text>
+            <text class="pickerArrow">›</text>
+          </view>
+        </picker>
+
+        <view class="fieldLabel fieldLabel--spaced">支出金额</view>
+        <input class="input" type="digit" :value="amountText" placeholder="请输入支出金额" @input="onAmountInput" />
+
+        <view class="fieldLabel fieldLabel--spaced">备注说明</view>
+        <textarea class="textarea" :value="form.remark" placeholder="例如：平台费用、维修维护、推广支出" maxlength="500" @input="onRemarkInput" />
+
+        <view :class="['btn', 'submitBtn', saving ? 'btn--disabled' : '']" @tap="submit">
+          {{ saving ? '保存中…' : '保存支出' }}
+        </view>
+      </view>
+
+      <view class="listHeader">
+        <view class="section-title">最近支出</view>
+        <picker mode="selector" :range="filterOptions" range-key="label" :value="filterIndex" @change="onFilterChange">
+          <view class="filterBtn">{{ selectedFilterLabel }} <text>›</text></view>
+        </picker>
+      </view>
+
+      <view class="expenseList">
+        <view v-if="loading" class="empty card">正在加载支出记录…</view>
+        <view v-else-if="!expenses.length" class="empty card">暂无支出记录</view>
+        <block v-else>
+          <view v-for="row in expenses" :key="row.id" class="expenseRow card">
+            <view class="rowTop">
+              <view class="rowMain">
+                <view class="rowTitle">{{ row.category_name || categoryLabel(row.category_code) || '门店支出' }}</view>
+                <view class="rowSub">{{ row.expense_no || `支出 #${row.id}` }} · {{ formatDate(row.expense_date || row.created_at) }}</view>
+              </view>
+              <view class="rowAmount">¥{{ formatMoney(row.amount) }}</view>
+            </view>
+            <view class="rowFoot">
+              <view class="tag">{{ row.operator_name || '当前操作人' }}</view>
+              <view v-if="row.remark" class="remark">{{ row.remark }}</view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>

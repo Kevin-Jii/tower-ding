@@ -1,0 +1,267 @@
+<PageMeta :page-style="modalPageStyle" />
+  <scroll-view
+    :class="['page', 'accountCreatePageScroll', modalOpen ? 'accountCreatePageScroll--locked' : '']"
+    :scroll-y="!modalOpen"
+    :enhanced="true"
+    :bounces="false"
+    :show-scrollbar="false"
+    :enable-flex="true"
+  >
+    <view class="container">
+      <view v-if="isEditMode" class="card editModeCard">
+        <view class="editModeTitle">编辑已记账账单</view>
+        <view class="editModeHint">商品、规格或数量变化后，售价、销售额和库存会同步更新</view>
+      </view>
+      <view class="card metaCard">
+        <view class="metaHint">销售渠道（字典名称）</view>
+        <view v-if="channelDictLoading" class="dictHint">正在加载渠道选项…</view>
+        <view v-else-if="!channelOptions.length" class="dictHint dictHint--warn">未配置「销售渠道」字典，无法提交，请联系管理员</view>
+        <template v-else>
+          <view class="roRow">
+            <text class="roK">销售渠道</text>
+            <picker mode="selector" :range="channelOptions" range-key="label" :value="channelIndex"
+              @change="onChannelChange">
+              <view class="pickerFake">{{ channelLabel }} <text class="pickArrowInline">›</text></view>
+            </picker>
+          </view>
+        </template>
+      </view>
+
+      <view class="card metaCard">
+        <view class="metaHint">会员与支付</view>
+        <view class="switchRow">
+          <view>
+            <view class="roK">是否绑定会员</view>
+            <view class="switchHint">{{ bindMemberEnabled ? selectedMemberLabel : '不绑定会员' }}</view>
+          </view>
+          <Switch color="#111418" :checked="bindMemberEnabled" @change="onBindMemberSwitch" />
+        </view>
+        <view class="roRow mt">
+          <text class="roK">支付状态</text>
+          <view class="paySeg">
+            <view :class="['paySegItem', paymentStatus === 1 ? 'paySegItem--on' : '']" @tap="paymentStatus = 1">已支付
+            </view>
+            <view :class="['paySegItem', paymentStatus === 2 ? 'paySegItem--on' : '']" @tap="paymentStatus = 2">未支付
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="isSupplementMode" class="card metaCard supplementCard">
+        <view class="metaHint">补记账单</view>
+        <view class="roRow">
+          <text class="roK">补记日期</text>
+          <picker mode="date" fields="day" :value="supplementDate" :end="todayDate" @change="onSupplementDateChange">
+            <view class="pickerFake datePickerFake">
+              <text>{{ supplementDate || '请选择日期' }}</text>
+              <text class="pickArrowInline">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <view v-if="isTakeawayChannel" class="card takeawayCard">
+        <view class="totalLabel">外卖订单</view>
+        <view class="takeawayHint">{{ channelLabel }} 实际收入会覆盖商品明细销售额，商品明细只用于扣库存和成本核算</view>
+        <view class="fieldLabel mt">外卖订单号</view>
+        <input class="input" :value="orderNo" placeholder="如：美团1号 / 淘宝闪购1号" @input="onOrderNoInput" />
+        <view class="fieldLabel mt">平台收入金额</view>
+        <input class="input" type="digit" :value="incomeAmount" placeholder="0.00" @input="onIncomeAmountInput" />
+      </view>
+
+      <view class="section-title">商品明细</view>
+      <view class="list">
+        <view v-for="(line, idx) in lines" :key="idx" class="line card">
+          <view class="lineHead">
+            <view class="lineTitle">第 {{ idx + 1 }} 行</view>
+            <view v-if="lines.length > 1" class="lineRemove" @tap="removeLine(idx)">删除</view>
+          </view>
+          <view class="lineMode">
+            <view :class="['modePill', !line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, false)">库存商品
+            </view>
+            <view :class="['modePill', line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, true)">自定义内容</view>
+          </view>
+          <view v-if="!line.is_custom" class="pickRow" @tap="openPicker(idx)">
+            <view v-if="line.product_id" class="pickMain">
+              <view class="pickName">{{ line.product_name }}</view>
+              <view class="pickSub">ID {{ line.product_id }}</view>
+            </view>
+            <view v-else class="pickPlaceholder">点击选择商品</view>
+            <view class="pickArrow">›</view>
+          </view>
+          <view v-else class="customBox">
+            <view class="fieldLabel">记账内容</view>
+            <input class="input compactInput" :value="line.product_name" placeholder="如：临时服务费 / 手工收入"
+              @input="onCustomNameInput(idx, $event)" />
+            <view class="row2">
+              <view class="col">
+                <view class="fieldLabel mt">单位</view>
+                <input class="input compactInput" :value="line.unit" placeholder="次/份/项"
+                  @input="onCustomUnitInput(idx, $event)" />
+              </view>
+              <view class="col">
+                <view class="fieldLabel mt">单价</view>
+                <input class="input compactInput" type="digit" :value="line.price || ''" placeholder="0.00"
+                  @input="onCustomPriceInput(idx, $event)" />
+              </view>
+            </view>
+            <view class="fieldLabel mt">备注</view>
+            <input class="input compactInput" :value="line.remark || ''" placeholder="选填"
+              @input="onLineRemarkInput(idx, $event)" />
+          </view>
+          <view v-if="line.product_id" class="lineReadRow">
+            <view class="lrItem lrItem--wide">
+              <view class="fieldLabel">规格单位</view>
+              <view class="unitPills">
+                <view v-for="u in lineUnitOptions(line)" :key="u.value"
+                  :class="['unitPill', line.unit === u.value ? 'unitPill--on' : '']"
+                  @tap="setLineUnit(idx, u.value, u.spec)">
+                  {{ u.label }}
+                </view>
+              </view>
+              <view v-if="lineUnitOptions(line).length < 2" class="lrVal lrVal--hint">
+                暂无大规格可选，请先到「库存 → 商品单位与价格配置」启用大规格
+              </view>
+              <view class="lrVal lrVal--hint">单价与小计由后端自动计算</view>
+            </view>
+          </view>
+          <view class="fieldLabel mt">数量</view>
+          <view class="stepper" @tap.stop>
+            <view class="stepBtn" @tap="decQty(idx)">−</view>
+            <view class="stepVal">{{ qtyStr(line) }}</view>
+            <view class="stepBtn" @tap="incQty(idx)">+</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="btnRow">
+        <view class="btn btn--ghost" @tap="addLine">+ 添加一行</view>
+      </view>
+
+      <view class="card totalCard">
+        <view class="totalLabel">金额设置</view>
+        <view v-if="isTakeawayChannel" class="amountSummary">
+          <view class="amountLine">
+            <text>商品标价合计</text>
+            <text>¥ {{ formatMoney(markedAmount) }}</text>
+          </view>
+          <view class="amountLine">
+            <text>平台收入金额</text>
+            <text>¥ {{ formatMoney(incomeAmount) }}</text>
+          </view>
+        </view>
+        <view v-else class="totalHint">商品单价与每行小计由后端按单位自动取价并计算</view>
+        <view class="fieldLabel mt">其他支出</view>
+        <input class="input" type="digit" :value="otherExpenseAmount" placeholder="0.00" @input="onOtherExpenseInput" />
+
+        <view class="switchRow mt">
+          <view>
+            <view class="roK">是否赠酒</view>
+            <view class="switchHint">{{ giftWineEnabled ? giftWineSummary : '不赠酒' }}</view>
+          </view>
+          <Switch color="#111418" :checked="giftWineEnabled" @change="onGiftWineSwitch" />
+        </view>
+        <view v-if="giftWineEnabled" class="giftWineBox">
+          <view class="pickRow" @tap="openGiftWinePicker">
+            <view v-if="giftWineProductId" class="pickMain">
+              <view class="pickName">{{ giftWineProductName }}</view>
+              <view class="pickSub">ID {{ giftWineProductId }}</view>
+            </view>
+            <view v-else class="pickPlaceholder">点击选择赠酒商品</view>
+            <view class="pickArrow">›</view>
+          </view>
+          <view v-if="giftWineProductId" class="lineReadRow">
+            <view class="lrItem lrItem--wide">
+              <view class="fieldLabel">规格单位</view>
+              <view class="unitPills">
+                <view v-for="u in giftWineUnitOptions" :key="u.value"
+                  :class="['unitPill', giftWineUnit === u.value ? 'unitPill--on' : '']"
+                  @tap="setGiftWineUnit(u.value)">
+                  {{ u.label }}
+                </view>
+              </view>
+              <view v-if="giftWineUnitOptions.length < 2" class="lrVal lrVal--hint">
+                暂无更多规格，成本按当前单位计算
+              </view>
+            </view>
+          </view>
+          <view class="giftWineFoot">
+            <view class="giftQty">
+              <view class="fieldLabel">赠酒数量</view>
+              <view class="stepper" @tap.stop>
+                <view class="stepBtn" @tap="decGiftWineQty">−</view>
+                <input class="stepInput" type="digit" :value="giftWineQuantity" @input="onGiftWineQuantityInput" />
+                <view class="stepBtn" @tap="incGiftWineQty">+</view>
+              </view>
+            </view>
+            <view class="giftCost">
+              <view class="fieldLabel">赠酒成本</view>
+              <view class="netValue">¥ {{ formatMoney(giftWineCostAmount) }}</view>
+            </view>
+          </view>
+        </view>
+
+        <view v-if="isTakeawayChannel" class="netPreview">
+          <view class="netLabel">预计净收入</view>
+          <view class="netValue">¥ {{ formatMoney(estimatedNetIncome) }}</view>
+        </view>
+        <view v-if="isTakeawayChannel" class="totalHint">预计值未扣商品成本和消耗品成本，最终以后端计算为准</view>
+      </view>
+
+      <view class="btnRow">
+        <view :class="['btn', submitting ? 'btn--disabled' : '']" @tap="submit">{{ submitting ? '提交中…' : isEditMode ? '保存账单' : '提交记账' }}
+        </view>
+      </view>
+
+      <ProductPickerSheet
+        v-if="pickerOpen"
+        :title="pickerTarget === 'gift' ? '选择赠酒商品' : '选择商品'"
+        :tabs="productTabs"
+        :active-category="productTab"
+        :products="filteredProducts"
+        @update:active-category="productTab = $event"
+        @select="pickProduct"
+        @close="closePicker"
+      />
+
+      <view v-if="memberSheetOpen" class="mask" @tap="closeMemberSheet">
+        <view class="sheet memberSheet" @tap.stop>
+          <view class="sheetTitle">选择会员</view>
+          <view class="memberSearchRow">
+            <input
+              class="memberSearchInput"
+              :value="memberSearchKeyword"
+              placeholder="姓名 / 手机号 / 会员号"
+              confirm-type="search"
+              @input="onMemberSearchInput"
+              @confirm="searchMembers"
+            />
+            <view class="memberSearchBtn" @tap="searchMembers">搜索</view>
+          </view>
+          <scroll-view
+            :scroll-y="true"
+            :enable-flex="true"
+            enhanced
+            :bounces="false"
+            :show-scrollbar="false"
+            class="sheetList memberList"
+            @touchmove.stop
+          >
+            <view v-if="!members.length" class="sheetEmpty">暂无会员</view>
+            <view
+              v-for="member in members"
+              :key="member.id"
+              :class="['sheetRow', selectedMemberId === Number(member.id || 0) ? 'sheetRow--on' : '']"
+              @tap="pickMember(member)"
+            >
+              <view>
+                <view class="sheetName">{{ memberLabel(member) }}</view>
+                <view class="sheetSub">会员 #{{ member.id }}</view>
+              </view>
+            </view>
+          </scroll-view>
+          <view class="sheetClose btn btn--ghost" @tap="closeMemberSheet">关闭</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>

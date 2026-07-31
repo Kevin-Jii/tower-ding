@@ -1,0 +1,66 @@
+<view class="page stockPage">
+    <view class="container stockContainer">
+      <view v-if="lowStockCount > 0" class="banner banner--warn">
+        <view class="bannerIcon">⚠</view>
+        <view class="bannerText">
+          <view class="bannerTitle">库存偏低提醒</view>
+          <view class="bannerSub">有 {{ lowStockCount }} 个 SKU 数量 &lt; 3，建议优先补货或登记入库</view>
+        </view>
+      </view>
+
+      <view class="summary card">
+        <view class="sumItem">
+          <view class="sumLabel">SKU 数</view>
+          <view class="sumVal">{{ filteredList.length }}</view>
+        </view>
+        <view class="sumDivider" />
+        <view class="sumItem">
+          <view class="sumLabel">数量合计</view>
+          <view class="sumVal">{{ formatQty(totalQty) }}</view>
+        </view>
+        <view class="sumDivider" />
+        <view class="sumItem">
+          <view class="sumLabel">&lt;3 预警</view>
+          <view class="sumVal sumVal--warn">{{ lowStockCount }}</view>
+        </view>
+      </view>
+
+      <view
+        v-if="categoryTabs.length > 1"
+        class="categoryTabs"
+      >
+        <view
+          v-for="tab in categoryTabs"
+          :key="tab.value"
+          :class="['categoryTab', activeCategory === tab.value ? 'categoryTab--on' : '']"
+          @tap="activeCategory = tab.value"
+        >
+          {{ tab.label }}
+        </view>
+      </view>
+
+      <view class="stockListPanel">
+        <view class="section-title">{{ activeCategoryLabel }}列表</view>
+        <view v-if="loading" class="hint card">加载中…</view>
+        <view v-else-if="!sortedList.length" class="hint card">当前分类暂无库存数据</view>
+        <view v-else class="stockList">
+          <view v-for="inv in sortedList" :key="inv.id" :class="['stockRow', isLowStock(inv) ? 'stockRow--warn' : '']">
+            <view class="stockRowInner">
+              <view v-if="isLowStock(inv)" class="stockAccent" />
+              <view class="stockMain">
+                <view class="stockName">{{ inv.product_name || `商品 #${inv.product_id || ''}` }}</view>
+                <view class="stockMeta">{{ inv.store_name || '—' }} · ID {{ inv.product_id || '-' }}</view>
+              </view>
+              <view class="stockRight">
+                <view v-if="isLowStock(inv)" class="pillWarn">偏低</view>
+                <view :class="['stockQty', isLowStock(inv) ? 'stockQty--warn' : '']">
+                  {{ formatQty(inv.quantity) }}
+                  <text class="stockUnit">{{ inv.unit || '' }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
