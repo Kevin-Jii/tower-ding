@@ -37,15 +37,23 @@
       </view>
       <view class="list">
         <view v-if="!list.length" class="empty card">暂无记账数据</view>
-        <view v-for="item in list" :key="item.id" class="swipeCell">
-          <view :class="['swipeDelete', cancelingId === item.id ? 'swipeDelete--loading' : '']"
+        <view v-for="item in list" :key="item.id"
+          :class="['swipeCell', isCanceledAccount(item) ? 'swipeCell--canceled' : '']">
+          <view v-if="canCancelAccount(item)"
+            :class="['swipeDelete', cancelingId === item.id ? 'swipeDelete--loading' : '']"
             @tap.stop="confirmCancelAccount(item)">
             {{ cancelingId === item.id ? '作废中' : '作废' }}
           </view>
           <view class="swipeContent" :style="rowTranslateX(item)" @touchstart="onRowTouchStart(item, $event)"
             @touchmove="onRowTouchMove(item, $event)" @touchend="onRowTouchEnd(item)"
             @touchcancel="onRowTouchEnd(item)">
-            <view class="row card" @tap="handleRowTap(item)">
+            <view :class="['row', 'card', isCanceledAccount(item) ? 'row--canceled' : '']"
+              @tap="handleRowTap(item)">
+              <view v-if="isCanceledAccount(item)" class="canceledNotice">
+                <view class="canceledNoticeDot" />
+                <text>订单已作废</text>
+                <text class="canceledNoticeHint">不可编辑</text>
+              </view>
               <view class="rowTop">
                 <image v-if="platformIcon(item)" class="platformIcon" :src="platformIcon(item)" mode="aspectFit" />
                 <view class="rowMain">
@@ -56,8 +64,10 @@
                   </view>
                 </view>
                 <view class="rowAside">
-                  <view class="amount amount--in">¥ {{ formatMoney(displayAccountAmount(item)) }}</view>
+                  <view :class="['amount', isCanceledAccount(item) ? 'amount--canceled' : 'amount--in']">¥ {{
+                    formatMoney(displayAccountAmount(item)) }}</view>
                   <view
+                    v-if="!isCanceledAccount(item)"
                     :class="['paymentStatus', paymentStatusValue(item) === 2 ? 'paymentStatus--unpaid' : 'paymentStatus--paid']">
                     {{ paymentStatusLabel(paymentStatusValue(item)) }}
                   </view>
@@ -84,7 +94,7 @@
 
               <view class="rowBottom">
                 <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
-                <view class="rowActions" @tap.stop>
+                <view v-if="!isCanceledAccount(item)" class="rowActions" @tap.stop>
                   <view v-if="canBindConsumables(item)" class="miniBtn" @tap="openConsumableSheet(item)">
                     <LucideIcon name="package-plus" :size="16" />
                     <text>消耗品</text>
@@ -98,6 +108,7 @@
                     </view>
                   </template>
                 </view>
+                <view v-else class="canceledLock">已锁定</view>
               </view>
             </view>
           </view>

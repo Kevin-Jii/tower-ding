@@ -1,4 +1,4 @@
-import { PageMeta, Switch } from '@tarojs/components'
+import { Switch } from '@tarojs/components'
 
 
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
@@ -42,6 +42,9 @@ export default {
 
 
     const editLoaded = ref(false)
+
+
+    const editAccountCanceled = ref(false)
     
     
     
@@ -140,13 +143,6 @@ export default {
     
     
     const isSupplementMode = computed(() => String(router.params?.mode || '') === 'supplement')
-    
-    
-    const modalOpen = computed(() => pickerOpen.value || memberSheetOpen.value)
-    
-    
-    const modalPageStyle = computed(() => (modalOpen.value ? 'overflow: hidden; height: 100vh;' : ''))
-    
     
     
     const channelLabel = computed(() => {
@@ -774,6 +770,15 @@ export default {
     async function loadEditAccount() {
       if (!auth.token || !isEditMode.value || editLoaded.value) return
       const account = await getStoreAccountDetail(auth.token, editAccountId) as StoreAccount
+      if (account.is_canceled) {
+        editAccountCanceled.value = true
+        editLoaded.value = true
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        setTimeout(() => {
+          Taro.redirectTo({ url: `/pages/accounting/detail?id=${editAccountId}` })
+        }, 300)
+        return
+      }
       channel.value = String(account.channel || '')
       paymentStatus.value = Number(account.payment_status || 1) === 2 ? 2 : 1
       selectedMemberId.value = Number(account.member_id || 0)
@@ -905,6 +910,10 @@ export default {
     
     async function submit() {
       if (!auth.token) return
+      if (isEditMode.value && editAccountCanceled.value) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        return
+      }
       if (!channel.value) {
         Taro.showToast({ title: channelOptions.value.length ? '请选择销售渠道' : '销售渠道字典未配置', icon: 'none' })
         return
@@ -1038,7 +1047,6 @@ export default {
     })
 
     return {
-      PageMeta,
       Switch,
       Taro,
       useDidShow,
@@ -1060,6 +1068,7 @@ export default {
       editAccountId,
       isEditMode,
       editLoaded,
+      editAccountCanceled,
       channelOptions,
       channelDictLoading,
       channel,
@@ -1091,8 +1100,6 @@ export default {
       giftWineUnit,
       giftWineQuantity,
       isSupplementMode,
-      modalOpen,
-      modalPageStyle,
       channelLabel,
       channelIndex,
       memberOptions,

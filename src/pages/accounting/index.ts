@@ -168,7 +168,7 @@ export default {
     const cancelingId = ref(0)
 
 
-    const cancelActionWidth = 150
+    const cancelActionWidth = 132
     
     
     const paymentFilterOptions = [
@@ -413,10 +413,25 @@ export default {
     function paymentStatusLabel(v?: number) {
       return Number(v || 1) === 2 ? '未支付' : '已支付'
     }
+
+
+
+    function isCanceledAccount(item?: StoreAccount | null) {
+      return item?.is_canceled === true
+    }
+
+
+
+    function canCancelAccount(item: StoreAccount) {
+      if (isCanceledAccount(item)) return false
+      if (typeof item.can_cancel === 'boolean') return item.can_cancel
+      return true
+    }
     
     
     
     function canEditAccount(item: StoreAccount) {
+      if (isCanceledAccount(item)) return false
       if (typeof item.can_edit === 'boolean') return item.can_edit
       const d = accountCreatedAt(item)
       if (!d) return false
@@ -437,6 +452,7 @@ export default {
     
     
     function canEditPaymentStatus(item: StoreAccount) {
+      if (isCanceledAccount(item)) return false
       const d = accountCreatedAt(item)
       if (!d) return false
       const now = new Date()
@@ -452,12 +468,15 @@ export default {
     
     
     function canBindConsumables(item: StoreAccount) {
+      if (isCanceledAccount(item)) return false
+      if (typeof item.can_bind_consumables === 'boolean') return item.can_bind_consumables
       return !hasConsumables(item)
     }
     
     
     
     function canOpenMetaSheet(item: StoreAccount) {
+      if (isCanceledAccount(item)) return false
       return !hasConsumables(item) && canEditPaymentStatus(item)
     }
     
@@ -628,7 +647,11 @@ export default {
           return {
             ...item,
             items: detail.items || item.items || [],
-            consumables: detail.consumables || item.consumables || []
+            consumables: detail.consumables || item.consumables || [],
+            is_canceled: detail.is_canceled ?? item.is_canceled,
+            can_edit: detail.can_edit ?? item.can_edit,
+            can_bind_consumables: detail.can_bind_consumables ?? item.can_bind_consumables,
+            can_cancel: detail.can_cancel ?? item.can_cancel
           }
         } catch {
           return item
@@ -665,6 +688,7 @@ export default {
 
 
     function rowTranslateX(item: StoreAccount) {
+      if (!canCancelAccount(item)) return ''
       if (swipeMovingId.value === item.id) {
         const x = Math.max(-cancelActionWidth, Math.min(0, swipeDeltaX.value))
         return `transform: translateX(${x}rpx); transition: none;`
@@ -676,7 +700,7 @@ export default {
 
 
     function onRowTouchStart(item: StoreAccount, e: any) {
-      if (cancelingId.value) return
+      if (cancelingId.value || !canCancelAccount(item)) return
       const touch = e?.touches?.[0]
       if (!touch) return
       swipeStartX.value = Number(touch.pageX || 0)
@@ -690,6 +714,7 @@ export default {
 
 
     function onRowTouchMove(item: StoreAccount, e: any) {
+      if (!canCancelAccount(item)) return
       if (swipeMovingId.value !== item.id) return
       const touch = e?.touches?.[0]
       if (!touch) return
@@ -705,6 +730,7 @@ export default {
 
 
     function onRowTouchEnd(item: StoreAccount) {
+      if (!canCancelAccount(item)) return
       if (swipeMovingId.value !== item.id) return
       const shouldOpen = swipeDeltaX.value <= -cancelActionWidth * 0.45
       swipeOpenId.value = shouldOpen ? item.id : 0
@@ -726,7 +752,7 @@ export default {
 
 
     function confirmCancelAccount(item: StoreAccount) {
-      if (cancelingId.value) return
+      if (cancelingId.value || !canCancelAccount(item)) return
       Taro.showModal({
         title: '确认作废',
         content: '作废后账单不再计入销售额，系统商品库存将自动恢复。确定继续吗？',
@@ -741,7 +767,7 @@ export default {
 
 
     async function cancelAccount(item: StoreAccount) {
-      if (!auth.token || cancelingId.value) return
+      if (!auth.token || cancelingId.value || !canCancelAccount(item)) return
       cancelingId.value = item.id
       try {
         await cancelStoreAccount(auth.token, item.id, { remark: '小程序作废账单' })
@@ -758,6 +784,10 @@ export default {
     
     
     function openMetaSheet(item: StoreAccount) {
+      if (isCanceledAccount(item)) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        return
+      }
       if (!canOpenMetaSheet(item)) {
         Taro.showToast({ title: hasConsumables(item) ? '已绑定耗材，不能修改' : '该记录已超过支付状态可修改时间', icon: 'none' })
         return
@@ -781,7 +811,12 @@ export default {
 
 
     function goEditAccountProducts(item?: StoreAccount) {
-      const id = Number(item?.id || editingAccount.value?.id || 0)
+      const target = item || editingAccount.value
+      if (isCanceledAccount(target)) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        return
+      }
+      const id = Number(target?.id || 0)
       if (!id) return
       metaSheetOpen.value = false
       Taro.navigateTo({ url: `/pages/accounting/create?mode=edit&id=${id}` })
@@ -791,6 +826,11 @@ export default {
     
     async function saveAccountMeta() {
       if (!auth.token || !editingAccount.value?.id || savingMeta.value) return
+      if (isCanceledAccount(editingAccount.value)) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        metaSheetOpen.value = false
+        return
+      }
       savingMeta.value = true
       try {
         await updateStoreAccount(auth.token, editingAccount.value.id, {
@@ -864,6 +904,10 @@ export default {
     
     
     async function openConsumableSheet(item: StoreAccount) {
+      if (isCanceledAccount(item)) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        return
+      }
       if (hasConsumables(item)) {
         Taro.showToast({ title: '已绑定耗材，不能再次绑定', icon: 'none' })
         return
@@ -874,6 +918,10 @@ export default {
       try {
         if (auth.token) {
           const full = await getStoreAccountDetail(auth.token, item.id)
+          if (isCanceledAccount(full)) {
+            Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+            return
+          }
           if (full.consumables?.length) {
             consumableLines.value = full.consumables.map((c) => {
               const pid = Number(c.product_id || 0)
@@ -963,6 +1011,11 @@ export default {
     
     async function saveConsumables() {
       if (!auth.token || !consumableTarget.value || consumableSaving.value) return
+      if (isCanceledAccount(consumableTarget.value)) {
+        Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
+        consumableSheetOpen.value = false
+        return
+      }
       const consumables: Array<Record<string, unknown>> = []
       for (const line of consumableLines.value) {
         if (line.kind === 'custom') {
@@ -1113,6 +1166,8 @@ export default {
       isOnlinePaidChannel,
       paymentStatusValue,
       paymentStatusLabel,
+      isCanceledAccount,
+      canCancelAccount,
       canEditAccount,
       accountCreatedAt,
       canEditPaymentStatus,

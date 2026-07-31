@@ -4,6 +4,9 @@ import Taro, { useDidShow, usePullDownRefresh, useRouter } from '@tarojs/taro'
 import { ref } from 'vue'
 
 
+import LucideIcon from '../../components/LucideIcon.vue'
+
+
 import {
   listB2BSupplyOrders,
   updateB2BSupplyOrderDeliveryStatus,
@@ -15,6 +18,7 @@ import {
 import { useAuthStore } from '../../stores/auth'
 
 export default {
+  components: { LucideIcon },
   setup() {
     const auth = useAuthStore()
     
@@ -32,6 +36,9 @@ export default {
     
     
     const loading = ref(false)
+
+
+    const actionLoading = ref('')
     
     
     
@@ -62,6 +69,22 @@ export default {
       if (Number(v) === 3) return '已取消'
       return '待配送'
     }
+
+
+
+    function paymentTone(v?: number) {
+      if (Number(v) === 3) return 'success'
+      if (Number(v) === 2) return 'warning'
+      return 'pending'
+    }
+
+
+
+    function deliveryTone(v?: number) {
+      if (Number(v) === 2) return 'success'
+      if (Number(v) === 3) return 'cancelled'
+      return 'pending'
+    }
     
     
     
@@ -72,6 +95,30 @@ export default {
       if (Number.isNaN(d.getTime())) return false
       const now = new Date()
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+    }
+
+
+
+    function canMarkDelivered(row: B2BSupplyOrder) {
+      return canEditToday(row) && Number(row.delivery_status) !== 2 && Number(row.delivery_status) !== 3
+    }
+
+
+
+    function canMarkPaid(row: B2BSupplyOrder) {
+      return canEditToday(row) && Number(row.payment_status) !== 3
+    }
+
+
+
+    function hasAvailableActions(row: B2BSupplyOrder) {
+      return canMarkDelivered(row) || canMarkPaid(row)
+    }
+
+
+
+    function isActionLoading(row: B2BSupplyOrder, action: 'delivery' | 'payment') {
+      return actionLoading.value === `${action}:${row.id}`
     }
     
     
@@ -100,19 +147,23 @@ export default {
     
     
     async function markDelivered(row: B2BSupplyOrder) {
-      if (!auth.token) return
+      if (!auth.token || actionLoading.value || !canMarkDelivered(row)) return
+      actionLoading.value = `delivery:${row.id}`
       try {
         await updateB2BSupplyOrderDeliveryStatus(auth.token, row.id, { delivery_status: 2 })
         await refresh()
       } catch (err: any) {
         Taro.showToast({ title: err?.message || '操作失败', icon: 'none' })
+      } finally {
+        actionLoading.value = ''
       }
     }
     
     
     
     async function markPaid(row: B2BSupplyOrder) {
-      if (!auth.token) return
+      if (!auth.token || actionLoading.value || !canMarkPaid(row)) return
+      actionLoading.value = `payment:${row.id}`
       try {
         await updateB2BSupplyOrderPaymentStatus(auth.token, row.id, {
           payment_status: 3,
@@ -121,6 +172,8 @@ export default {
         await refresh()
       } catch (err: any) {
         Taro.showToast({ title: err?.message || '操作失败', icon: 'none' })
+      } finally {
+        actionLoading.value = ''
       }
     }
     
@@ -153,6 +206,7 @@ export default {
       usePullDownRefresh,
       useRouter,
       ref,
+      LucideIcon,
       listB2BSupplyOrders,
       updateB2BSupplyOrderDeliveryStatus,
       updateB2BSupplyOrderPaymentStatus,
@@ -163,11 +217,18 @@ export default {
       customerName,
       orders,
       loading,
+      actionLoading,
       formatMoney,
       formatDate,
       paymentLabel,
       deliveryLabel,
+      paymentTone,
+      deliveryTone,
       canEditToday,
+      canMarkDelivered,
+      canMarkPaid,
+      hasAvailableActions,
+      isActionLoading,
       refresh,
       markDelivered,
       markPaid,

@@ -1,10 +1,7 @@
-import { PageMeta } from '@tarojs/components'
-
-
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 
 
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 
 import {
@@ -38,10 +35,6 @@ export default {
     
     
     const priceDialogOpen = ref(false)
-    
-    
-    const modalPageStyle = computed(() => (priceDialogOpen.value ? 'overflow: hidden; height: 100vh;' : ''))
-    
     
     
     function formatMoney(v: any) {
@@ -142,11 +135,9 @@ export default {
     })
 
     return {
-      PageMeta,
       Taro,
       useDidShow,
       usePullDownRefresh,
-      computed,
       ref,
       listB2BCustomers,
       listB2BPrices,
@@ -158,7 +149,6 @@ export default {
       loading,
       priceLoading,
       priceDialogOpen,
-      modalPageStyle,
       formatMoney,
       productName,
       priceMatchesCustomer,

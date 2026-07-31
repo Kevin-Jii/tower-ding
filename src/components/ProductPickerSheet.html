@@ -1,17 +1,9 @@
 <view class="productPickerMask">
   <view class="productPickerBackdrop" catchMove @tap="emit('close')" @touchmove.stop.prevent="noopTouchMove" />
-  <view class="productPickerSheet" @tap.stop>
+  <view class="productPickerSheet" @tap.stop @touchmove.stop>
     <view class="productPickerTitle">{{ title }}</view>
     <view class="productPickerBody">
-      <scroll-view
-        :scroll-y="true"
-        :enable-flex="true"
-        enhanced
-        :bounces="false"
-        class="productPickerCategories"
-        :show-scrollbar="false"
-        @touchmove.stop
-      >
+      <view class="productPickerCategories" @touchmove.stop>
         <view
           v-for="tab in tabs"
           :key="tab.value"
@@ -20,22 +12,14 @@
         >
           {{ tab.label }}
         </view>
-      </scroll-view>
-      <scroll-view
-        :scroll-y="true"
-        :enable-flex="true"
-        enhanced
-        :bounces="false"
-        class="productPickerProducts"
-        :show-scrollbar="false"
-        @touchmove.stop
-      >
+      </view>
+      <view class="productPickerProducts" @touchmove.stop>
         <view v-if="!products.length" class="productPickerEmpty">暂无库存商品</view>
         <view v-for="p in products" :key="p.id || p.product_id" class="productPickerItem" @tap="emit('select', p)">
           <view class="productPickerName">{{ p.product_name || `商品 #${p.product_id || ''}` }}</view>
           <view class="productPickerMeta">库存 {{ p.quantity ?? 0 }} {{ p.unit || '-' }}</view>
         </view>
-      </scroll-view>
+      </view>
     </view>
     <view class="productPickerClose" @tap="emit('close')">关闭</view>
   </view>

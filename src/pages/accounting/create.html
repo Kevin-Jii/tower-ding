@@ -1,12 +1,4 @@
-<PageMeta :page-style="modalPageStyle" />
-  <scroll-view
-    :class="['page', 'accountCreatePageScroll', modalOpen ? 'accountCreatePageScroll--locked' : '']"
-    :scroll-y="!modalOpen"
-    :enhanced="true"
-    :bounces="false"
-    :show-scrollbar="false"
-    :enable-flex="true"
-  >
+<view class="page">
     <view class="container">
       <view v-if="isEditMode" class="card editModeCard">
         <view class="editModeTitle">编辑已记账账单</view>
@@ -225,7 +217,7 @@
       />
 
       <view v-if="memberSheetOpen" class="mask" @tap="closeMemberSheet">
-        <view class="sheet memberSheet" @tap.stop>
+        <view class="sheet memberSheet" @tap.stop @touchmove.stop>
           <view class="sheetTitle">选择会员</view>
           <view class="memberSearchRow">
             <input
@@ -238,15 +230,7 @@
             />
             <view class="memberSearchBtn" @tap="searchMembers">搜索</view>
           </view>
-          <scroll-view
-            :scroll-y="true"
-            :enable-flex="true"
-            enhanced
-            :bounces="false"
-            :show-scrollbar="false"
-            class="sheetList memberList"
-            @touchmove.stop
-          >
+          <view class="sheetList memberList" @touchmove.stop>
             <view v-if="!members.length" class="sheetEmpty">暂无会员</view>
             <view
               v-for="member in members"
@@ -259,9 +243,9 @@
                 <view class="sheetSub">会员 #{{ member.id }}</view>
               </view>
             </view>
-          </scroll-view>
+          </view>
           <view class="sheetClose btn btn--ghost" @tap="closeMemberSheet">关闭</view>
         </view>
       </view>
     </view>
-  </scroll-view>
+</view>

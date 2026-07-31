@@ -128,7 +128,7 @@ export default {
         rows.push(...pageRows)
         if (pageRows.length < pageSize) break
       }
-      return rows
+      return rows.filter((item) => !item.is_canceled)
     }
     
     
@@ -154,6 +154,11 @@ export default {
     
     async function markPaid(item: StoreAccount) {
       if (!auth.token || savingId.value) return
+      if (item.is_canceled) {
+        Taro.showToast({ title: '已作废订单不可修改', icon: 'none' })
+        list.value = list.value.filter((row) => row.id !== item.id)
+        return
+      }
       savingId.value = item.id
       try {
         await updateStoreAccount(auth.token, item.id, { payment_status: 1 })

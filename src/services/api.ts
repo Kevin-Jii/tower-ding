@@ -253,6 +253,10 @@ export type StoreAccount = {
     remark?: string
   }>
   consumables?: StoreAccountConsumable[]
+  is_canceled?: boolean
+  canceled_at?: string
+  canceled_by_id?: number
+  cancel_remark?: string
   can_edit?: boolean
   can_bind_consumables?: boolean
   can_cancel?: boolean

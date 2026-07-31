@@ -227,6 +227,10 @@
   border-radius: 16px;
 }
 
+.swipeCell--canceled {
+  border-radius: 16px;
+}
+
 .swipeContent {
   position: relative;
   z-index: 1;
@@ -269,6 +273,59 @@
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.row--canceled {
+  background: #f4f6f8;
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+.canceledNotice {
+  min-height: 42px;
+  margin: -20px -20px 18px;
+  padding: 0 20px;
+  background: #e8ebef;
+  border-bottom: 1px solid #d4d9e0;
+  color: #475569;
+  font-size: 21px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-sizing: border-box;
+}
+
+.canceledNoticeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #dc2626;
+  flex-shrink: 0;
+}
+
+.canceledNoticeHint {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.row--canceled .platformIcon {
+  filter: grayscale(1);
+  opacity: 0.58;
+}
+
+.row--canceled .rowTitle,
+.row--canceled .platformName,
+.row--canceled .itemDetailName {
+  color: #64748b;
+}
+
+.row--canceled .rowSub,
+.row--canceled .itemDetailMeta,
+.row--canceled .operatorLine {
+  color: #94a3b8;
 }
 
 .rowTop {
@@ -326,6 +383,11 @@
 
 .amount--out {
   color: #d97706;
+}
+
+.amount--canceled {
+  color: #64748b;
+  text-decoration: line-through;
 }
 
 .rowSub {
@@ -619,6 +681,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+.canceledLock {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 38px;
+  flex-shrink: 0;
   box-sizing: border-box;
 }
 

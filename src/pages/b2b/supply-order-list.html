@@ -1,34 +1,92 @@
-<view class="page">
-    <view class="container">
-      <view class="eyebrow">供货单列表</view>
-      <view class="title">{{ customerName || '全部客户' }}</view>
+<view class="page supplyOrderPage">
+  <view class="container supplyOrderContainer">
+    <view class="pageHeader">
+      <view class="pageHeading">
+        <view class="title">{{ customerName || '全部客户' }}</view>
+        <view class="pageSummary">
+          <text>供货单</text>
+          <text v-if="!loading"> · 共 {{ orders.length }} 笔</text>
+        </view>
+      </view>
+      <view class="createButton" hover-class="createButton--pressed" @tap="openCreate">
+        <LucideIcon name="package-plus" color="#ffffff" :size="18" :stroke-width="2" />
+        <text>新增</text>
+      </view>
+    </view>
 
-      <view class="toolbar">
-        <view class="btn" @tap="openCreate">新增供货单</view>
+    <view class="orderList">
+      <template v-if="loading">
+        <view v-for="i in 3" :key="i" class="orderSkeleton" aria-hidden="true">
+          <view class="skeletonLine skeletonLine--title" />
+          <view class="skeletonLine skeletonLine--amount" />
+          <view class="skeletonLine skeletonLine--meta" />
+          <view class="skeletonStatusRow">
+            <view class="skeletonPill" />
+            <view class="skeletonPill" />
+          </view>
+        </view>
+      </template>
+
+      <view v-else-if="!orders.length" class="emptyState">
+        <view class="emptyIcon">
+          <LucideIcon name="file-text" color="#596579" :size="28" :stroke-width="1.8" />
+        </view>
+        <view class="emptyTitle">暂无供货单</view>
+        <view class="emptyDescription">创建第一笔供货记录后，可在这里跟进配送和收款状态。</view>
+        <view class="emptyButton" hover-class="emptyButton--pressed" @tap="openCreate">新增供货单</view>
       </view>
 
-      <view class="list">
-        <view v-if="loading" class="empty card">正在加载供货单…</view>
-        <view v-else-if="!orders.length" class="empty card">暂无供货单</view>
-        <view v-for="o in orders" :key="o.id" class="row card" @tap="openDetail(o.id)">
-          <view class="rowTop">
-            <view>
-              <view class="rowTitle">{{ o.order_no || `供货单 #${o.id}` }}</view>
-              <view class="rowSub">{{ o.customer_name || o.customer?.name || '-' }} · {{ formatDate(o.order_date ||
-                o.created_at) }}</view>
+      <view
+        v-for="o in orders"
+        v-else
+        :key="o.id"
+        class="orderCard"
+        hover-class="orderCard--pressed"
+        :hover-stay-time="80"
+        @tap="openDetail(o.id)"
+      >
+        <view class="orderTop">
+          <view class="orderIdentity">
+            <view class="orderNumber">{{ o.order_no || `供货单 #${o.id}` }}</view>
+            <view class="orderMeta">
+              <text v-if="!customerName">{{ o.customer_name || o.customer?.name || '-' }} · </text>
+              <text>{{ formatDate(o.order_date || o.created_at) }}</text>
             </view>
-            <view class="amount">¥{{ formatMoney(o.total_amount) }}</view>
           </view>
-          <view class="rowFoot">
-            <view class="tag">{{ paymentLabel(o.payment_status) }}</view>
-            <view class="tag">{{ deliveryLabel(o.delivery_status) }}</view>
-            <!-- <view class="miniBtn miniBtn--ghost" @tap.stop="openDetail(o.id)">查看明细</view> -->
+          <view class="orderAmount">¥{{ formatMoney(o.total_amount) }}</view>
+        </view>
+
+        <view class="orderStatusRow">
+          <view class="statusGroup">
+            <view :class="['statusTag', `statusTag--${paymentTone(o.payment_status)}`]">
+              {{ paymentLabel(o.payment_status) }}
+            </view>
+            <view :class="['statusTag', `statusTag--${deliveryTone(o.delivery_status)}`]">
+              {{ deliveryLabel(o.delivery_status) }}
+            </view>
           </view>
-          <view v-if="canEditToday(o)" class="actions" @tap.stop>
-            <view class="miniBtn" @tap="markDelivered(o)">已配送</view>
-            <view class="miniBtn" @tap="markPaid(o)">已收款</view>
+          <view class="detailLink">明细 <text class="detailArrow">›</text></view>
+        </view>
+
+        <view v-if="hasAvailableActions(o)" class="orderActions" @tap.stop>
+          <view
+            v-if="canMarkDelivered(o)"
+            :class="['actionButton', 'actionButton--primary', actionLoading ? 'actionButton--disabled' : '']"
+            hover-class="actionButton--pressed"
+            @tap="markDelivered(o)"
+          >
+            {{ isActionLoading(o, 'delivery') ? '处理中…' : '确认配送' }}
+          </view>
+          <view
+            v-if="canMarkPaid(o)"
+            :class="['actionButton', 'actionButton--secondary', actionLoading ? 'actionButton--disabled' : '']"
+            hover-class="actionButton--pressed"
+            @tap="markPaid(o)"
+          >
+            {{ isActionLoading(o, 'payment') ? '处理中…' : '确认收款' }}
           </view>
         </view>
       </view>
     </view>
   </view>
+</view>
