@@ -281,6 +281,11 @@
   box-shadow: none;
 }
 
+.row--readonly {
+  border-color: #d8e2ee;
+  box-shadow: none;
+}
+
 .canceledNotice {
   min-height: 42px;
   margin: -20px -20px 18px;
@@ -307,6 +312,36 @@
 .canceledNoticeHint {
   margin-left: auto;
   color: #64748b;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.readOnlyNotice {
+  min-height: 42px;
+  margin: -20px -20px 18px;
+  padding: 0 20px;
+  border-bottom: 1px solid #dce6f1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #f0f5fa;
+  color: #31557b;
+  font-size: 21px;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.readOnlyNoticeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #3b82f6;
+}
+
+.readOnlyNoticeHint {
+  margin-left: auto;
+  color: #527091;
   font-size: 19px;
   font-weight: 800;
 }

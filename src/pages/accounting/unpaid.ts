@@ -81,6 +81,18 @@ export default {
       if (!code) return '未知渠道'
       return channelDict.value[code] || code
     }
+
+
+
+    function isReadOnlyAccount(item: StoreAccount) {
+      return item.is_read_only === true || item.source_type === 'b2b_supply_order'
+    }
+
+
+
+    function openDetail(item: StoreAccount) {
+      Taro.navigateTo({ url: `/pages/accounting/detail?id=${item.id}` })
+    }
     
     
     
@@ -154,6 +166,10 @@ export default {
     
     async function markPaid(item: StoreAccount) {
       if (!auth.token || savingId.value) return
+      if (isReadOnlyAccount(item)) {
+        Taro.showToast({ title: '请在B2B供货单中确认收款', icon: 'none' })
+        return
+      }
       if (item.is_canceled) {
         Taro.showToast({ title: '已作废订单不可修改', icon: 'none' })
         list.value = list.value.filter((row) => row.id !== item.id)
@@ -205,6 +221,8 @@ export default {
       accountMemberLabel,
       rowDisplayNo,
       channelText,
+      isReadOnlyAccount,
+      openDetail,
       mapDict,
       onKeywordInput,
       loadChannelDict,

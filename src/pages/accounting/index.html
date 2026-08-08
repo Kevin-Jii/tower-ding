@@ -47,12 +47,17 @@
           <view class="swipeContent" :style="rowTranslateX(item)" @touchstart="onRowTouchStart(item, $event)"
             @touchmove="onRowTouchMove(item, $event)" @touchend="onRowTouchEnd(item)"
             @touchcancel="onRowTouchEnd(item)">
-            <view :class="['row', 'card', isCanceledAccount(item) ? 'row--canceled' : '']"
+            <view :class="['row', 'card', isCanceledAccount(item) ? 'row--canceled' : '', isReadOnlyAccount(item) ? 'row--readonly' : '']"
               @tap="handleRowTap(item)">
               <view v-if="isCanceledAccount(item)" class="canceledNotice">
                 <view class="canceledNoticeDot" />
                 <text>订单已作废</text>
                 <text class="canceledNoticeHint">不可编辑</text>
+              </view>
+              <view v-else-if="isReadOnlyAccount(item)" class="readOnlyNotice">
+                <view class="readOnlyNoticeDot" />
+                <text>B2B 供货账单</text>
+                <text class="readOnlyNoticeHint">仅供查看</text>
               </view>
               <view class="rowTop">
                 <image v-if="platformIcon(item)" class="platformIcon" :src="platformIcon(item)" mode="aspectFit" />
@@ -94,7 +99,7 @@
 
               <view class="rowBottom">
                 <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
-                <view v-if="!isCanceledAccount(item)" class="rowActions" @tap.stop>
+                <view v-if="!isCanceledAccount(item) && !isReadOnlyAccount(item)" class="rowActions" @tap.stop>
                   <view v-if="canBindConsumables(item)" class="miniBtn" @tap="openConsumableSheet(item)">
                     <LucideIcon name="package-plus" :size="16" />
                     <text>消耗品</text>
@@ -108,7 +113,7 @@
                     </view>
                   </template>
                 </view>
-                <view v-else class="canceledLock">已锁定</view>
+                <view v-else class="canceledLock">{{ isReadOnlyAccount(item) ? '仅供查看' : '已锁定' }}</view>
               </view>
             </view>
           </view>

@@ -64,7 +64,6 @@ export default {
       total_amount?: number
       total_turnover_amount?: number
       store_account_turnover_amount?: number
-      b2b_supply_order_amount?: number
       count?: number
     } | null>(null)
     
@@ -422,8 +421,14 @@ export default {
 
 
 
+    function isReadOnlyAccount(item?: StoreAccount | null) {
+      return item?.is_read_only === true || item?.source_type === 'b2b_supply_order'
+    }
+
+
+
     function canCancelAccount(item: StoreAccount) {
-      if (isCanceledAccount(item)) return false
+      if (isCanceledAccount(item) || isReadOnlyAccount(item)) return false
       if (typeof item.can_cancel === 'boolean') return item.can_cancel
       return true
     }
@@ -431,7 +436,7 @@ export default {
     
     
     function canEditAccount(item: StoreAccount) {
-      if (isCanceledAccount(item)) return false
+      if (isCanceledAccount(item) || isReadOnlyAccount(item)) return false
       if (typeof item.can_edit === 'boolean') return item.can_edit
       const d = accountCreatedAt(item)
       if (!d) return false
@@ -452,7 +457,7 @@ export default {
     
     
     function canEditPaymentStatus(item: StoreAccount) {
-      if (isCanceledAccount(item)) return false
+      if (isCanceledAccount(item) || isReadOnlyAccount(item)) return false
       const d = accountCreatedAt(item)
       if (!d) return false
       const now = new Date()
@@ -468,7 +473,7 @@ export default {
     
     
     function canBindConsumables(item: StoreAccount) {
-      if (isCanceledAccount(item)) return false
+      if (isCanceledAccount(item) || isReadOnlyAccount(item)) return false
       if (typeof item.can_bind_consumables === 'boolean') return item.can_bind_consumables
       return !hasConsumables(item)
     }
@@ -476,7 +481,7 @@ export default {
     
     
     function canOpenMetaSheet(item: StoreAccount) {
-      if (isCanceledAccount(item)) return false
+      if (isCanceledAccount(item) || isReadOnlyAccount(item)) return false
       return !hasConsumables(item) && canEditPaymentStatus(item)
     }
     
@@ -649,6 +654,9 @@ export default {
             items: detail.items || item.items || [],
             consumables: detail.consumables || item.consumables || [],
             is_canceled: detail.is_canceled ?? item.is_canceled,
+            source_type: detail.source_type ?? item.source_type,
+            source_id: detail.source_id ?? item.source_id,
+            is_read_only: detail.is_read_only ?? item.is_read_only,
             can_edit: detail.can_edit ?? item.can_edit,
             can_bind_consumables: detail.can_bind_consumables ?? item.can_bind_consumables,
             can_cancel: detail.can_cancel ?? item.can_cancel
@@ -784,6 +792,10 @@ export default {
     
     
     function openMetaSheet(item: StoreAccount) {
+      if (isReadOnlyAccount(item)) {
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        return
+      }
       if (isCanceledAccount(item)) {
         Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
         return
@@ -812,6 +824,10 @@ export default {
 
     function goEditAccountProducts(item?: StoreAccount) {
       const target = item || editingAccount.value
+      if (isReadOnlyAccount(target)) {
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        return
+      }
       if (isCanceledAccount(target)) {
         Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
         return
@@ -826,6 +842,11 @@ export default {
     
     async function saveAccountMeta() {
       if (!auth.token || !editingAccount.value?.id || savingMeta.value) return
+      if (isReadOnlyAccount(editingAccount.value)) {
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        metaSheetOpen.value = false
+        return
+      }
       if (isCanceledAccount(editingAccount.value)) {
         Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
         metaSheetOpen.value = false
@@ -904,6 +925,10 @@ export default {
     
     
     async function openConsumableSheet(item: StoreAccount) {
+      if (isReadOnlyAccount(item)) {
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        return
+      }
       if (isCanceledAccount(item)) {
         Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
         return
@@ -1011,6 +1036,11 @@ export default {
     
     async function saveConsumables() {
       if (!auth.token || !consumableTarget.value || consumableSaving.value) return
+      if (isReadOnlyAccount(consumableTarget.value)) {
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        consumableSheetOpen.value = false
+        return
+      }
       if (isCanceledAccount(consumableTarget.value)) {
         Taro.showToast({ title: '已作废订单不可编辑', icon: 'none' })
         consumableSheetOpen.value = false
@@ -1167,6 +1197,7 @@ export default {
       paymentStatusValue,
       paymentStatusLabel,
       isCanceledAccount,
+      isReadOnlyAccount,
       canCancelAccount,
       canEditAccount,
       accountCreatedAt,

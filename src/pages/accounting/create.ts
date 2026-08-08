@@ -770,6 +770,14 @@ export default {
     async function loadEditAccount() {
       if (!auth.token || !isEditMode.value || editLoaded.value) return
       const account = await getStoreAccountDetail(auth.token, editAccountId) as StoreAccount
+      if (account.is_read_only || account.source_type === 'b2b_supply_order') {
+        editLoaded.value = true
+        Taro.showToast({ title: 'B2B账单仅供查看', icon: 'none' })
+        setTimeout(() => {
+          Taro.redirectTo({ url: `/pages/accounting/detail?id=${editAccountId}` })
+        }, 300)
+        return
+      }
       if (account.is_canceled) {
         editAccountCanceled.value = true
         editLoaded.value = true

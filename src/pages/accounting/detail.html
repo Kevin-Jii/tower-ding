@@ -1,6 +1,7 @@
 <view class="page">
     <view class="container">
       <view class="hero card">
+        <view v-if="detail?.is_read_only || detail?.source_type === 'b2b_supply_order'" class="sourceBadge">B2B 供货 · 只读账单</view>
         <view class="heroLabel">记账编号</view>
         <view class="heroTitle">{{ detail?.account_no || detail?.order_no || `记账 #${id}` }}</view>
         <view class="heroSub">{{ detail?.store?.name || '当前门店' }} · {{ formatDate(detail?.account_date ||

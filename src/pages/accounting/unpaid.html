@@ -23,7 +23,7 @@
       <view class="list">
         <view v-if="loading" class="empty card">正在加载未支付订单…</view>
         <view v-else-if="!list.length" class="empty card">暂无未支付订单</view>
-        <view v-for="item in list" :key="item.id" class="row card">
+        <view v-for="item in list" :key="item.id" class="row card" @tap="openDetail(item)">
           <view class="rowTop">
             <view class="rowMain">
               <view class="rowTitle">{{ rowDisplayNo(item) }}</view>
@@ -35,12 +35,14 @@
             <view class="rowMeta">会员 {{ accountMemberLabel(item) }}</view>
             <view class="rowMeta">商品 {{ item.item_count ?? item.items?.length ?? 0 }} 项</view>
             <view class="rowMeta rowMeta--warn">未支付</view>
+            <view v-if="isReadOnlyAccount(item)" class="rowMeta rowMeta--readonly">B2B只读</view>
           </view>
-          <view class="rowActions rowActions--right">
+          <view v-if="!isReadOnlyAccount(item)" class="rowActions rowActions--right" @tap.stop>
             <view :class="['miniBtn', 'miniBtn--dark', savingId === item.id ? 'miniBtn--disabled' : '']" @tap="markPaid(item)">
               {{ savingId === item.id ? '处理中…' : '标记已支付' }}
             </view>
           </view>
+          <view v-else class="readOnlyHint">仅供查看</view>
         </view>
       </view>
     </view>

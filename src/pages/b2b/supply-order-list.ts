@@ -88,25 +88,14 @@ export default {
     
     
     
-    function canEditToday(row: B2BSupplyOrder) {
-      const s = String(row.created_at || '').trim()
-      if (!s) return false
-      const d = new Date(s)
-      if (Number.isNaN(d.getTime())) return false
-      const now = new Date()
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
-    }
-
-
-
     function canMarkDelivered(row: B2BSupplyOrder) {
-      return canEditToday(row) && Number(row.delivery_status) !== 2 && Number(row.delivery_status) !== 3
+      return Number(row.delivery_status) !== 2 && Number(row.delivery_status) !== 3
     }
 
 
 
     function canMarkPaid(row: B2BSupplyOrder) {
-      return canEditToday(row) && Number(row.payment_status) !== 3
+      return Number(row.payment_status) !== 3
     }
 
 
@@ -224,7 +213,6 @@ export default {
       deliveryLabel,
       paymentTone,
       deliveryTone,
-      canEditToday,
       canMarkDelivered,
       canMarkPaid,
       hasAvailableActions,

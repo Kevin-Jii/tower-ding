@@ -233,6 +233,8 @@ export type StoreAccount = {
   member_id?: number
   order_no?: string
   account_no?: string
+  source_type?: string
+  source_id?: number
   item_count?: number
   tag_code?: string
   tag_name?: string
@@ -260,6 +262,7 @@ export type StoreAccount = {
   can_edit?: boolean
   can_bind_consumables?: boolean
   can_cancel?: boolean
+  is_read_only?: boolean
   created_at?: string
 }
 
@@ -859,7 +862,6 @@ export function getStoreAccountStats(
     gross_total_amount?: number
     total_amount?: number
     store_account_turnover_amount?: number
-    b2b_supply_order_amount?: number
     total_turnover_amount?: number
     net_income_amount?: number
     count?: number
