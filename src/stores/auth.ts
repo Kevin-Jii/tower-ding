@@ -21,7 +21,6 @@ type LoginResponse = {
 }
 
 const STORAGE_KEY = 'tower.auth'
-const WECHAT_SILENT_FAIL_KEY = 'tower.login.wechatSilentFailedAt'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -41,9 +40,15 @@ export const useAuthStore = defineStore('auth', {
           this.token = v.token
           this.refreshToken = v.refreshToken || v.refresh_token || ''
           this.user = v.user || null
+        } else {
+          this.token = ''
+          this.refreshToken = ''
+          this.user = null
         }
       } catch {
-        // ignore
+        this.token = ''
+        this.refreshToken = ''
+        this.user = null
       }
     },
     persistLogin(data: LoginResponse) {
@@ -58,48 +63,11 @@ export const useAuthStore = defineStore('auth', {
       return String(res.code || '')
     },
     async login(phone: string, password: string) {
-      let wechatCode = ''
-      let wechatBound = false
-      try {
-        wechatCode = await this.getWechatCode()
-      } catch {
-        wechatCode = ''
-      }
       const data = await request<LoginResponse>('/auth/login', {
         method: 'POST',
         data: { phone, password }
       })
       this.persistLogin(data)
-      if (wechatCode) {
-        try {
-          await request<null>('/users/wechat-bind', {
-            method: 'POST',
-            data: { code: wechatCode },
-            authToken: this.token,
-            showLoading: false
-          })
-          wechatBound = true
-          Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
-        } catch {
-          // 绑定失败不影响账号密码登录
-        }
-      }
-      return Boolean(this.user?.wechat_openid) || wechatBound
-    },
-    async loginByWechatCode(code?: string) {
-      const loginCode = code || await this.getWechatCode()
-      if (!loginCode) return false
-      try {
-        const data = await request<LoginResponse>('/auth/wechat-login', {
-          method: 'POST',
-          data: { code: loginCode },
-          showLoading: false
-        })
-        this.persistLogin(data)
-        return true
-      } catch {
-        return false
-      }
     },
     async bindWechat() {
       if (!this.token) throw new Error('请先登录')
@@ -111,7 +79,6 @@ export const useAuthStore = defineStore('auth', {
         authToken: this.token,
         showLoading: false
       })
-      Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
       await this.refreshProfile()
     },
     async refreshProfile() {

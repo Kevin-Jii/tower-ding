@@ -50,6 +50,9 @@ import {
 
 import { useAuthStore } from '../../stores/auth'
 
+
+import { formatDateTime } from '../../shared/format'
+
 export default {
   components: { LucideIcon },
   setup() {
@@ -1182,6 +1185,7 @@ export default {
       onAccountDateChange,
       formatMoney,
       formatQty,
+      formatDateTime,
       accountItems,
       displayAccountAmount,
       mapDict,

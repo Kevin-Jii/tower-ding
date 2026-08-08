@@ -228,12 +228,6 @@ export default {
     })
     
     
-    const estimatedNetIncome = computed(() => {
-      if (!isTakeawayChannel.value) return 0
-      return Number(incomeAmount.value || 0) - Number(otherExpenseAmount.value || 0)
-    })
-    
-    
     const giftWineUnitOptions = computed(() => {
       const pid = Number(giftWineProductId.value || 0)
       if (!pid) return []
@@ -446,6 +440,12 @@ export default {
       const [head, ...tail] = raw.split('.')
       return tail.length ? `${head}.${tail.join('').slice(0, 2)}` : head
     }
+
+
+
+    function numericOrderNo(value) {
+      return String(value || '').replace(/\D/g, '').slice(0, 32)
+    }
     
     
     
@@ -456,7 +456,7 @@ export default {
     
     
     function onOrderNoInput(e) {
-      orderNo.value = String(e?.detail?.value || '')
+      orderNo.value = numericOrderNo(e?.detail?.value)
     }
     
     
@@ -471,6 +471,7 @@ export default {
       const idx = Number(e?.detail?.value ?? -1)
       if (!Number.isInteger(idx) || idx < 0 || idx >= channelOptions.value.length) return
       channel.value = channelOptions.value[idx]?.value || ''
+      if (isTakeawayChannel.value) orderNo.value = numericOrderNo(orderNo.value)
     }
     
     
@@ -795,7 +796,7 @@ export default {
         members.value = [account.member, ...members.value]
       }
       otherExpenseAmount.value = String(account.other_expense_amount ?? '')
-      orderNo.value = String(account.order_no || '')
+      orderNo.value = isTakeawayChannel.value ? numericOrderNo(account.order_no) : String(account.order_no || '')
       incomeAmount.value = String(account.total_amount ?? account.income_amount ?? '')
       giftWineEnabled.value = Number(account.is_gift_wine || 0) === 1
       giftWineProductId.value = Number(account.gift_wine_product_id || 0)
@@ -924,6 +925,10 @@ export default {
       }
       if (!channel.value) {
         Taro.showToast({ title: channelOptions.value.length ? '请选择销售渠道' : '销售渠道字典未配置', icon: 'none' })
+        return
+      }
+      if (isTakeawayChannel.value && !orderNo.value) {
+        Taro.showToast({ title: '请输入纯数字外卖订单号', icon: 'none' })
         return
       }
       const items: any[] = []
@@ -1117,7 +1122,6 @@ export default {
       productTabs,
       filteredProducts,
       markedAmount,
-      estimatedNetIncome,
       giftWineUnitOptions,
       selectedGiftWineUnit,
       giftWineCostAmount,

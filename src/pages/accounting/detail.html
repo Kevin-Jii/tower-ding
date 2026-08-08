@@ -58,6 +58,10 @@
           <view class="v">{{ operatorName }}</view>
         </view>
         <view class="kv">
+          <view class="k">操作时间</view>
+          <view class="v">{{ formatDateTime(detail?.created_at) }}</view>
+        </view>
+        <view class="kv">
           <view class="k">记账日期</view>
           <view class="v">{{ formatDate(detail?.account_date || detail?.created_at) }}</view>
         </view>

@@ -98,7 +98,10 @@
               </view>
 
               <view class="rowBottom">
-                <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
+                <view class="operatorInfo">
+                  <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
+                  <view class="operatorTime">操作时间：{{ formatDateTime(item.created_at) }}</view>
+                </view>
                 <view v-if="!isCanceledAccount(item) && !isReadOnlyAccount(item)" class="rowActions" @tap.stop>
                   <view v-if="canBindConsumables(item)" class="miniBtn" @tap="openConsumableSheet(item)">
                     <LucideIcon name="package-plus" :size="16" />

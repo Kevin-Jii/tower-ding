@@ -4,7 +4,7 @@ import { CLIENT_SOURCE_HEADER, getClientSource } from './client-source'
 const DEFAULT_BASE_URL = 'http://47.120.27.64:5713/api/v1'
 const AUTH_STORAGE_KEY = 'tower.auth'
 let loadingCount = 0
-let refreshPromise: Promise<string> | null = null
+let redirectingToLogin = false
 
 export type ApiResponse<T> = {
   code: number
@@ -50,67 +50,28 @@ function readAuthStorage(): { token?: string; refreshToken?: string; user?: unkn
   }
 }
 
-function writeAuthStorage(next: { token: string; refreshToken?: string; user?: unknown }) {
-  Taro.setStorageSync(AUTH_STORAGE_KEY, next)
-}
-
 function clearAuthStorage() {
   Taro.removeStorageSync(AUTH_STORAGE_KEY)
 }
 
 function isAuthExpiredResponse(statusCode: number, body?: ApiResponse<unknown>) {
-  return statusCode === 401 || body?.code === 401
+  const code = Number(body?.code || 0)
+  return statusCode === 401 || code === 401 || Math.floor(code / 100) === 401
 }
 
 function isAuthPublicPath(path: string) {
   return ['/auth/login', '/auth/refresh', '/auth/wechat-login'].includes(path)
 }
 
-async function refreshAccessToken(): Promise<string> {
-  if (refreshPromise) return refreshPromise
-  refreshPromise = (async () => {
-    const current = readAuthStorage()
-    const refreshToken = String(current.refreshToken || '')
-    if (!refreshToken) throw new Error('登录已过期，请重新登录')
-
-    const res = await Taro.request<ApiResponse<{
-      token: string
-      refresh_token?: string
-      user_info?: unknown
-    }>>({
-      url: `${getBaseUrl()}/auth/refresh`,
-      method: 'POST',
-      data: { refresh_token: refreshToken },
-      header: {
-        'content-type': 'application/json',
-        [CLIENT_SOURCE_HEADER]: getClientSource()
-      }
-    })
-
-    const body = res.data
-    if (!body || isAuthExpiredResponse(res.statusCode, body) || (body.code !== 0 && body.code !== 200)) {
-      throw new Error(body?.message || body?.error || '登录已过期，请重新登录')
-    }
-    const data = body.data
-    if (!data?.token) throw new Error('刷新登录态失败')
-
-    writeAuthStorage({
-      token: data.token,
-      refreshToken: data.refresh_token || refreshToken,
-      user: data.user_info || current.user
-    })
-    return data.token
-  })().finally(() => {
-    refreshPromise = null
-  })
-  return refreshPromise
-}
-
 function redirectToLogin() {
   clearAuthStorage()
   const route = Taro.getCurrentPages()?.slice(-1)?.[0]?.route
   if (route === 'pages/login/index') return
-  Taro.redirectTo({ url: '/pages/login/index' })
+  if (redirectingToLogin) return
+  redirectingToLogin = true
+  void Taro.reLaunch({ url: '/pages/login/index' }).finally(() => {
+    redirectingToLogin = false
+  })
 }
 
 export async function withGlobalLoading<T>(run: () => Promise<T>, enabled = true) {
@@ -125,10 +86,10 @@ export async function withGlobalLoading<T>(run: () => Promise<T>, enabled = true
 
 export async function request<T>(
   path: string,
-  options: Omit<Taro.request.Option, 'url'> & { authToken?: string; showLoading?: boolean; _retry?: boolean } = {}
+  options: Omit<Taro.request.Option, 'url'> & { authToken?: string; showLoading?: boolean } = {}
 ): Promise<T> {
   const url = `${getBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`
-  const { authToken, header, showLoading = true, method, data, _retry = false, ...rest } = options
+  const { authToken, header, showLoading = true, method, data, ...rest } = options
   const storedAuth = readAuthStorage()
   const effectiveToken = authToken || String(storedAuth.token || '')
   const requestMethod = method || 'GET'
@@ -150,15 +111,7 @@ export async function request<T>(
 
     const body = res.data
     if (isAuthExpiredResponse(res.statusCode, body)) {
-      if (!_retry && !isAuthPublicPath(path)) {
-        try {
-          const nextToken = await refreshAccessToken()
-          return request<T>(path, { ...options, authToken: nextToken, showLoading: false, _retry: true })
-        } catch (err) {
-          redirectToLogin()
-          throw err
-        }
-      }
+      if (!isAuthPublicPath(path)) redirectToLogin()
       throw new Error(body?.message || body?.error || '登录已过期，请重新登录')
     }
     if (!body) throw new Error('接口返回为空')

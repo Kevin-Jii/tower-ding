@@ -47,10 +47,18 @@
       <view v-if="isTakeawayChannel" class="card takeawayCard">
         <view class="totalLabel">外卖订单</view>
         <view class="takeawayHint">{{ channelLabel }} 实际收入会覆盖商品明细销售额，商品明细只用于扣库存和成本核算</view>
-        <view class="fieldLabel mt">外卖订单号</view>
-        <input class="input" :value="orderNo" placeholder="如：美团1号 / 淘宝闪购1号" @input="onOrderNoInput" />
-        <view class="fieldLabel mt">平台收入金额</view>
-        <input class="input" type="digit" :value="incomeAmount" placeholder="0.00" @input="onIncomeAmountInput" />
+        <view class="takeawayFields">
+          <view class="takeawayField">
+            <view class="fieldLabel">外卖订单号</view>
+            <input class="input takeawayInput" type="number" maxlength="32" :value="orderNo" placeholder="如：1"
+              @input="onOrderNoInput" />
+          </view>
+          <view class="takeawayField">
+            <view class="fieldLabel">平台收入金额</view>
+            <input class="input takeawayInput" type="digit" :value="incomeAmount" placeholder="0.00"
+              @input="onIncomeAmountInput" />
+          </view>
+        </view>
       </view>
 
       <view class="section-title">商品明细</view>
@@ -187,11 +195,6 @@
           </view>
         </view>
 
-        <view v-if="isTakeawayChannel" class="netPreview">
-          <view class="netLabel">预计净收入</view>
-          <view class="netValue">¥ {{ formatMoney(estimatedNetIncome) }}</view>
-        </view>
-        <view v-if="isTakeawayChannel" class="totalHint">预计值未扣商品成本和消耗品成本，最终以后端计算为准</view>
       </view>
 
       <view class="btnRow">

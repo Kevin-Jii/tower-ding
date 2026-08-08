@@ -37,6 +37,10 @@
             <view class="rowMeta rowMeta--warn">未支付</view>
             <view v-if="isReadOnlyAccount(item)" class="rowMeta rowMeta--readonly">B2B只读</view>
           </view>
+          <view class="auditLine">
+            <text>操作人：{{ operatorLabel(item) }}</text>
+            <text>操作时间：{{ formatDateTime(item.created_at) }}</text>
+          </view>
           <view v-if="!isReadOnlyAccount(item)" class="rowActions rowActions--right" @tap.stop>
             <view :class="['miniBtn', 'miniBtn--dark', savingId === item.id ? 'miniBtn--disabled' : '']" @tap="markPaid(item)">
               {{ savingId === item.id ? '处理中…' : '标记已支付' }}

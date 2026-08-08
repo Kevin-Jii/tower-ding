@@ -37,6 +37,27 @@
             </view>
           </view>
         </view>
+        <view v-if="canSubscribeTurnover" class="kv">
+          <view class="k">营业额通知</view>
+          <view class="v">
+            <view
+              v-if="!turnoverSubscribed"
+              :class="['miniAction', subscribingTurnover ? 'miniAction--disabled' : '']"
+              @tap="onSubscribeTurnover"
+            >
+              {{ subscribingTurnover ? '订阅中...' : '订阅通知' }}
+            </view>
+            <view v-else class="subscriptionActions">
+              <view class="wechatStatus">已订阅</view>
+              <view
+                :class="['miniAction', 'miniAction--danger', subscribingTurnover ? 'miniAction--disabled' : '']"
+                @tap="onCancelTurnoverSubscription"
+              >
+                取消订阅
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
 
       <view class="card storeCard">

@@ -14,6 +14,9 @@ import {
 
 import { useAuthStore } from '../../stores/auth'
 
+
+import { formatDateTime } from '../../shared/format'
+
 export default {
   setup() {
     const auth = useAuthStore()
@@ -162,6 +165,7 @@ export default {
       formatMoney,
       formatQty,
       formatDate,
+      formatDateTime,
       mapDict,
       channelLabel,
       loadChannelDict,

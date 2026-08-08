@@ -18,10 +18,6 @@ export default {
     const POLICY_ACCEPT_KEY = 'tower.login.policyAcceptedVersion'
     
     
-    const WECHAT_SILENT_FAIL_KEY = 'tower.login.wechatSilentFailedAt'
-    
-    
-    
     const auth = useAuthStore()
     
     
@@ -42,9 +38,6 @@ export default {
     
     /** true 为密文（小眼睛点一下可短暂查看明文） */
     const maskPassword = ref(true)
-    
-    
-    const autoLoginRunning = ref(false)
     
     
     const autoLoginChecked = ref(false)
@@ -90,37 +83,12 @@ export default {
     
     
     
-    async function redirectAuthedUser() {
-      if (autoLoginRunning.value || autoLoginChecked.value) return
-      autoLoginRunning.value = true
+    function redirectAuthedUser() {
+      if (autoLoginChecked.value) return
       autoLoginChecked.value = true
       auth.hydrate()
       if (auth.isAuthed) {
         Taro.reLaunch({ url: '/pages/home/index' })
-        autoLoginRunning.value = false
-        return
-      }
-      if (auth.refreshToken) {
-        const ok = await auth.refreshSession()
-        if (ok) {
-          Taro.reLaunch({ url: '/pages/home/index' })
-          autoLoginRunning.value = false
-          return
-        }
-      }
-      try {
-        const silentLoginDisabled = Boolean(Taro.getStorageSync(WECHAT_SILENT_FAIL_KEY))
-        if (silentLoginDisabled) return
-    
-        Taro.setStorageSync(WECHAT_SILENT_FAIL_KEY, Date.now())
-        const wxOk = await auth.loginByWechatCode()
-        if (wxOk) {
-          Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
-          Taro.reLaunch({ url: '/pages/home/index' })
-          return
-        }
-      } finally {
-        autoLoginRunning.value = false
       }
     }
     
@@ -160,8 +128,7 @@ export default {
       loading.value = true
       Taro.showLoading({ title: '登录中' })
       try {
-        const wechatBound = await auth.login(phone.value.trim(), password.value)
-        if (wechatBound) Taro.removeStorageSync(WECHAT_SILENT_FAIL_KEY)
+        await auth.login(phone.value.trim(), password.value)
         Taro.setStorageSync(POLICY_ACCEPT_KEY, POLICY_VERSION)
         if (rememberPwd.value) {
           Taro.setStorageSync(LOGIN_FORM_KEY, {
@@ -180,11 +147,8 @@ export default {
         loading.value = false
       }
     }
-    
-    
-    
     useDidShow(() => {
-      void redirectAuthedUser()
+      redirectAuthedUser()
       hydrateRememberForm()
       hydratePolicyAccept()
     })
@@ -197,7 +161,6 @@ export default {
       LOGIN_FORM_KEY,
       POLICY_VERSION,
       POLICY_ACCEPT_KEY,
-      WECHAT_SILENT_FAIL_KEY,
       auth,
       phone,
       password,
@@ -205,7 +168,6 @@ export default {
       rememberPwd,
       agreedTerms,
       maskPassword,
-      autoLoginRunning,
       autoLoginChecked,
       onPhoneInput,
       onPwdInput,

@@ -16,6 +16,9 @@ import {
 
 import { useAuthStore } from '../../stores/auth'
 
+
+import { formatDateTime } from '../../shared/format'
+
 export default {
   setup() {
     const auth = useAuthStore()
@@ -65,6 +68,13 @@ export default {
       if (item.member) return memberLabel(item.member)
       const mid = Number(item.member_id || 0)
       return mid > 0 ? `会员 #${mid}` : '-'
+    }
+
+
+
+    function operatorLabel(item: StoreAccount) {
+      const operator = item.operator
+      return operator?.nickname || operator?.username || operator?.phone || '-'
     }
     
     
@@ -217,8 +227,10 @@ export default {
       savingId,
       formatMoney,
       formatDate,
+      formatDateTime,
       memberLabel,
       accountMemberLabel,
+      operatorLabel,
       rowDisplayNo,
       channelText,
       isReadOnlyAccount,
