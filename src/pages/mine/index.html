@@ -48,12 +48,18 @@
               {{ subscribingTurnover ? '订阅中...' : '订阅通知' }}
             </view>
             <view v-else class="subscriptionActions">
-              <view class="wechatStatus">已订阅</view>
+              <view class="wechatStatus">已允许</view>
               <view
-                :class="['miniAction', 'miniAction--danger', subscribingTurnover ? 'miniAction--disabled' : '']"
+                :class="['miniAction', subscribingTurnover ? 'miniAction--disabled' : '']"
+                @tap="onSubscribeTurnover"
+              >
+                {{ subscribingTurnover ? '订阅中...' : '再次订阅' }}
+              </view>
+              <view
+                :class="['subscriptionCancel', subscribingTurnover ? 'miniAction--disabled' : '']"
                 @tap="onCancelTurnoverSubscription"
               >
-                取消订阅
+                取消
               </view>
             </view>
           </view>

@@ -11,7 +11,7 @@ GO_API_BASE_URL=https://tower.usove.online
 INTERNAL_SERVICE_TOKEN=与Go服务相同的强随机令牌
 WECHAT_APP_ID=微信小程序AppID
 WECHAT_APP_SECRET=微信小程序AppSecret
-WECHAT_TEMPLATE_ID=微信订阅消息模板ID
+WECHAT_TEMPLATE_ID=7aaQQAMYqAzfyffKov5MDNp85FfeO_6-TzKbIEh8M4Y
 WECHAT_TEMPLATE_AMOUNT_KEY=amount2
 WECHAT_TEMPLATE_TIME_KEY=time1
 ```
@@ -23,7 +23,7 @@ WECHAT_NOTIFY_PAGE=pages/accounting/index
 SKIP_ZERO_TURNOVER=false
 ```
 
-当前模板编号 70041 只包含「总业绩 `amount2`」和「时间 `time1`」，云函数只发送这两个字段。
+当前模板编号 70040 包含「总业绩 `amount2`」和「时间 `time1`」。`time1` 根据日报接口返回的 `business_date` 显示营业日，例如 `2026年08月07日`，不使用推送时刻。
 `WECHAT_APP_SECRET` 只能保存在云函数环境变量中，不得写入小程序前端或提交到代码库。
 云函数通过微信 HTTPS 接口获取 `stable_token` 并发送通知，因此定时触发和云端手动测试都不依赖小程序调用上下文。
 

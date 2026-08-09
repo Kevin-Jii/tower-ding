@@ -2,7 +2,6 @@
 
 const DEFAULT_NOTIFY_PAGE = 'pages/accounting/index'
 const REQUEST_TIMEOUT_MS = 15000
-const REPORT_TIME_ZONE = 'Asia/Shanghai'
 const WECHAT_STABLE_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/stable_token'
 const WECHAT_SUBSCRIBE_MESSAGE_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send'
 const WECHAT_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
@@ -236,17 +235,17 @@ function formatWechatAPIError(apiName, status, body) {
 function buildTemplateData(report, fields) {
   return {
     [fields.amount]: { value: `${numberValue(report.total_amount).toFixed(2)}元` },
-    [fields.time]: { value: formatNotificationTime(new Date()) }
+    [fields.time]: { value: formatBusinessPeriod(report.business_date) }
   }
 }
 
-function formatNotificationTime(date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: REPORT_TIME_ZONE,
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23'
-  }).format(date)
+function formatBusinessPeriod(businessDate) {
+  const normalized = normalizeBusinessDate(businessDate)
+  if (!normalized) {
+    throw new Error('report business_date is required')
+  }
+  const [year, month, day] = normalized.split('-')
+  return `${year}年${month}月${day}日`
 }
 
 function shouldNotifyStore(report) {

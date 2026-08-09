@@ -9,7 +9,7 @@ import { useAuthStore } from '../../stores/auth'
 
 import { listDictDataByTypeCode, type DictData } from '../../services/api'
 
-const DAILY_TURNOVER_TEMPLATE_ID = 'D8gV-cyZySnxHt3QK5P_SPzSw3uwrMOItncAq7nRS8E'
+const DAILY_TURNOVER_TEMPLATE_ID = '7aaQQAMYqAzfyffKov5MDNp85FfeO_6-TzKbIEh8M4Y'
 const DAILY_TURNOVER_ROLES = new Set(['store_admin', 'admin', 'super_admin'])
 const DAILY_TURNOVER_SUBSCRIPTION_CACHE_PREFIX = 'tower.daily-turnover-subscription'
 
@@ -71,7 +71,7 @@ export default {
 
 
     function subscriptionCacheKey() {
-      return `${DAILY_TURNOVER_SUBSCRIPTION_CACHE_PREFIX}.${auth.user?.id || 'current'}`
+      return `${DAILY_TURNOVER_SUBSCRIPTION_CACHE_PREFIX}.${DAILY_TURNOVER_TEMPLATE_ID}.${auth.user?.id || 'current'}`
     }
 
 
@@ -158,7 +158,7 @@ export default {
 
         if (status === 'accept' || status === 'acceptWithAudio') {
           updateTurnoverSubscriptionStatus(true)
-          Taro.showToast({ title: '订阅成功', icon: 'success' })
+          Taro.showToast({ title: '本次订阅成功', icon: 'success' })
         } else if (status === 'ban') {
           updateTurnoverSubscriptionStatus(false)
           const modal = await Taro.showModal({
