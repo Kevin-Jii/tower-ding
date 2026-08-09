@@ -1,13 +1,15 @@
 'use strict'
 
-const cloud = require('wx-server-sdk')
-
-cloud.init({
-  env: cloud.DYNAMIC_CURRENT_ENV
-})
-
 const DEFAULT_NOTIFY_PAGE = 'pages/accounting/index'
 const REQUEST_TIMEOUT_MS = 15000
+const REPORT_TIME_ZONE = 'Asia/Shanghai'
+const WECHAT_STABLE_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/stable_token'
+const WECHAT_SUBSCRIBE_MESSAGE_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send'
+const WECHAT_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
+const WECHAT_TOKEN_ERROR_CODES = new Set([40001, 40014, 42001])
+
+let cachedWechatAccessToken = ''
+let cachedWechatAccessTokenExpiresAt = 0
 
 exports.main = async (event = {}) => {
   const dryRun = event.dryRun === true || event.dryRun === 'true'
@@ -66,31 +68,21 @@ async function fetchDailyTurnoverReports(businessDate) {
   const baseURL = requiredEnv('GO_API_BASE_URL')
   const token = requiredEnv('INTERNAL_SERVICE_TOKEN')
   const endpoint = buildDailyTurnoverURL(baseURL, businessDate)
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-
-  try {
-    const response = await fetch(endpoint, {
+  const { response, body } = await requestJSON(
+    endpoint,
+    {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json'
-      },
-      signal: controller.signal
-    })
-    const body = await parseJSONResponse(response)
-    if (!response.ok || body.code !== 200 || !Array.isArray(body.data)) {
-      throw new Error(`Go report API failed: HTTP ${response.status}, code ${body.code || 'unknown'}`)
-    }
-    return body.data
-  } catch (error) {
-    if (error && error.name === 'AbortError') {
-      throw new Error(`Go report API timed out after ${REQUEST_TIMEOUT_MS}ms`)
-    }
-    throw error
-  } finally {
-    clearTimeout(timeout)
+      }
+    },
+    'Go report API'
+  )
+  if (!response.ok || body.code !== 200 || !Array.isArray(body.data)) {
+    throw new Error(`Go report API failed: HTTP ${response.status}, code ${body.code || 'unknown'}`)
   }
+  return body.data
 }
 
 function buildDailyTurnoverURL(baseURL, businessDate) {
@@ -106,13 +98,29 @@ function buildDailyTurnoverURL(baseURL, businessDate) {
   return url.toString()
 }
 
-async function parseJSONResponse(response) {
-  const text = await response.text()
-  if (!text) return {}
+async function requestJSON(url, options, requestName) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
   try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error(`Go report API returned invalid JSON: HTTP ${response.status}`)
+    const response = await fetch(url, { ...options, signal: controller.signal })
+    const text = await response.text()
+    let body = {}
+    if (text) {
+      try {
+        body = JSON.parse(text)
+      } catch {
+        throw new Error(`${requestName} returned invalid JSON: HTTP ${response.status}`)
+      }
+    }
+    return { response, body }
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error(`${requestName} timed out after ${REQUEST_TIMEOUT_MS}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -121,11 +129,8 @@ function loadMessageConfig() {
     templateId: requiredEnv('WECHAT_TEMPLATE_ID'),
     page: normalizePage(process.env.WECHAT_NOTIFY_PAGE || DEFAULT_NOTIFY_PAGE),
     fields: {
-      store: requiredEnv('WECHAT_TEMPLATE_STORE_KEY'),
-      date: requiredEnv('WECHAT_TEMPLATE_DATE_KEY'),
       amount: requiredEnv('WECHAT_TEMPLATE_AMOUNT_KEY'),
-      orderCount: requiredEnv('WECHAT_TEMPLATE_ORDER_COUNT_KEY'),
-      channels: optionalEnv('WECHAT_TEMPLATE_CHANNELS_KEY')
+      time: requiredEnv('WECHAT_TEMPLATE_TIME_KEY')
     }
   }
 }
@@ -139,9 +144,9 @@ async function sendDailyTurnoverMessage(report, admin, config) {
   }
 
   try {
-    await cloud.openapi.subscribeMessage.send({
+    await sendWechatSubscribeMessage({
       touser: openID,
-      templateId: config.templateId,
+      template_id: config.templateId,
       page: config.page,
       data: buildTemplateData(report, config.fields)
     })
@@ -153,27 +158,95 @@ async function sendDailyTurnoverMessage(report, admin, config) {
   }
 }
 
-function buildTemplateData(report, fields) {
-  const data = {
-    [fields.store]: { value: truncateText(report.store_name || '未命名门店', 20) },
-    [fields.date]: { value: formatBusinessDate(report.business_date) },
-    [fields.amount]: { value: `${numberValue(report.total_amount).toFixed(2)}元` },
-    [fields.orderCount]: { value: String(integerValue(report.order_count)) }
+async function sendWechatSubscribeMessage(payload) {
+  let result = await requestWechatSubscribeMessage(payload, false)
+  if (WECHAT_TOKEN_ERROR_CODES.has(Number(result.body.errcode))) {
+    cachedWechatAccessToken = ''
+    cachedWechatAccessTokenExpiresAt = 0
+    result = await requestWechatSubscribeMessage(payload, true)
   }
 
-  if (fields.channels) {
-    data[fields.channels] = { value: formatChannelSummary(report.channels) }
+  if (!result.response.ok || Number(result.body.errcode) !== 0) {
+    throw new Error(formatWechatAPIError('WeChat subscribe message API', result.response.status, result.body))
   }
-  return data
 }
 
-function formatChannelSummary(channels) {
-  if (!Array.isArray(channels) || channels.length === 0) return '暂无渠道数据'
-  const summary = channels
-    .filter(channel => numberValue(channel.amount) > 0 || integerValue(channel.order_count) > 0)
-    .map(channel => `${channel.channel_name || channel.channel}:${numberValue(channel.amount).toFixed(2)}元`)
-    .join('，')
-  return truncateText(summary || '暂无渠道数据', 20)
+async function requestWechatSubscribeMessage(payload, forceRefreshToken) {
+  const accessToken = await getWechatAccessToken(forceRefreshToken)
+  const endpoint = new URL(WECHAT_SUBSCRIBE_MESSAGE_URL)
+  endpoint.searchParams.set('access_token', accessToken)
+  return requestJSON(
+    endpoint.toString(),
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    },
+    'WeChat subscribe message API'
+  )
+}
+
+async function getWechatAccessToken(forceRefresh) {
+  const now = Date.now()
+  if (!forceRefresh && cachedWechatAccessToken && now < cachedWechatAccessTokenExpiresAt) {
+    return cachedWechatAccessToken
+  }
+
+  const { response, body } = await requestJSON(
+    WECHAT_STABLE_TOKEN_URL,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        grant_type: 'client_credential',
+        appid: requiredEnv('WECHAT_APP_ID'),
+        secret: requiredEnv('WECHAT_APP_SECRET'),
+        force_refresh: Boolean(forceRefresh)
+      })
+    },
+    'WeChat stable token API'
+  )
+
+  const accessToken = String(body.access_token || '').trim()
+  if (!response.ok || !accessToken) {
+    throw new Error(formatWechatAPIError('WeChat stable token API', response.status, body))
+  }
+
+  const expiresInSeconds = Math.max(60, integerValue(body.expires_in || 7200))
+  cachedWechatAccessToken = accessToken
+  cachedWechatAccessTokenExpiresAt = now + Math.max(
+    60 * 1000,
+    expiresInSeconds * 1000 - WECHAT_TOKEN_REFRESH_BUFFER_MS
+  )
+  return cachedWechatAccessToken
+}
+
+function formatWechatAPIError(apiName, status, body) {
+  const errCode = Number.isFinite(Number(body && body.errcode)) ? Number(body.errcode) : 'unknown'
+  const errMsg = truncateText(body && body.errmsg ? body.errmsg : 'unknown error', 160)
+  return `${apiName} failed: HTTP ${status}, errcode ${errCode}, errmsg ${errMsg}`
+}
+
+function buildTemplateData(report, fields) {
+  return {
+    [fields.amount]: { value: `${numberValue(report.total_amount).toFixed(2)}元` },
+    [fields.time]: { value: formatNotificationTime(new Date()) }
+  }
+}
+
+function formatNotificationTime(date) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: REPORT_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).format(date)
 }
 
 function shouldNotifyStore(report) {
@@ -189,13 +262,6 @@ function normalizeBusinessDate(value) {
     throw new Error('business_date must use YYYY-MM-DD format')
   }
   return normalized
-}
-
-function formatBusinessDate(value) {
-  const normalized = normalizeBusinessDate(value)
-  if (!normalized) return ''
-  const [year, month, day] = normalized.split('-')
-  return `${year}年${month}月${day}日`
 }
 
 function normalizePage(value) {

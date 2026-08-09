@@ -1,10 +1,4 @@
 {
-  "dryRun": true,
-  "permissions": {
-    "openapi": [
-      "subscribeMessage.send"
-    ]
-  },
   "triggers": [
     {
       "name": "daily-turnover-at-1030",
