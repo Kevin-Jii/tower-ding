@@ -58,7 +58,6 @@ export const useAuthStore = defineStore('auth', {
       Taro.setStorageSync(STORAGE_KEY, { token: this.token, refreshToken: this.refreshToken, user: this.user })
     },
     async getWechatCode() {
-      if (process.env.TARO_ENV !== 'weapp') return ''
       const res = await Taro.login()
       return String(res.code || '')
     },
@@ -72,7 +71,7 @@ export const useAuthStore = defineStore('auth', {
     async bindWechat() {
       if (!this.token) throw new Error('请先登录')
       const code = await this.getWechatCode()
-      if (!code) throw new Error('当前环境不支持微信绑定')
+      if (!code) throw new Error('微信登录凭证获取失败')
       await request<null>('/users/wechat-bind', {
         method: 'POST',
         data: { code },

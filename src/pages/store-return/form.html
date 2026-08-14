@@ -37,6 +37,35 @@
           </view>
         </view>
 
+        <view class="photoBlock">
+          <view class="photoHead">
+            <view>
+              <view class="photoTitle">返厂照片</view>
+              <view class="photoHint">最多 3 张，单张不超过 20MB</view>
+            </view>
+            <view class="photoCount">{{ photos.length }}/3</view>
+          </view>
+          <view class="photoGrid">
+            <view v-for="(photo, index) in photos" :key="photo.id" class="photoItem" @tap="previewPhoto(index)">
+              <image class="photoImage" :src="photo.previewUrl" mode="aspectFill" />
+              <view v-if="photo.status === 'uploading'" class="photoMask">上传中</view>
+              <view v-else-if="photo.status === 'failed'" class="photoMask photoMask--failed">待重试</view>
+              <view v-if="!saving" class="photoRemove" aria-label="删除照片" @tap.stop="removePhoto(index)">
+                <LucideIcon name="x" color="#ffffff" :size="14" :stroke-width="2.5" />
+              </view>
+            </view>
+            <view
+              v-if="photos.length < 3"
+              :class="['photoAdd', saving ? 'photoAdd--disabled' : '']"
+              aria-label="添加返厂照片"
+              @tap="choosePhotos"
+            >
+              <LucideIcon name="image-plus" color="#687385" :size="28" :stroke-width="1.9" />
+              <view class="photoAddText">添加照片</view>
+            </view>
+          </view>
+        </view>
+
         <input class="input mt" type="digit" :value="logisticsFee" placeholder="物流费用" @input="onLogisticsInput" />
         <input class="input mt" :value="remark" placeholder="备注（选填）" @input="onRemarkInput" />
         <view :class="['btn', 'mt', saving ? 'btn--disabled' : '']" @tap="submitReturn">

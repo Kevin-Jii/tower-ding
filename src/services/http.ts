@@ -126,3 +126,45 @@ export async function request<T>(
     if (showLoading) hideGlobalLoading()
   }
 }
+
+export async function uploadFile<T>(
+  path: string,
+  options: Omit<Taro.uploadFile.Option, 'url'> & { authToken?: string; showLoading?: boolean }
+): Promise<T> {
+  const url = `${getBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`
+  const { authToken, header, showLoading = true, ...rest } = options
+  const storedAuth = readAuthStorage()
+  const effectiveToken = authToken || String(storedAuth.token || '')
+  if (showLoading) showGlobalLoading()
+  try {
+    const res = await Taro.uploadFile({
+      url,
+      header: {
+        [CLIENT_SOURCE_HEADER]: getClientSource(),
+        ...(effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {}),
+        ...(header || {})
+      },
+      ...rest
+    })
+
+    let body: ApiResponse<T>
+    try {
+      body = (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as ApiResponse<T>
+    } catch {
+      throw new Error('上传接口返回格式异常')
+    }
+
+    if (isAuthExpiredResponse(res.statusCode, body)) {
+      if (!isAuthPublicPath(path)) redirectToLogin()
+      throw new Error(body?.message || body?.error || '登录已过期，请重新登录')
+    }
+    if (!body) throw new Error('上传接口返回为空')
+    if (body.code !== 0 && body.code !== 200) {
+      throw new Error(body.message || body.error || `上传失败(${body.code})`)
+    }
+
+    return body.data as T
+  } finally {
+    if (showLoading) hideGlobalLoading()
+  }
+}

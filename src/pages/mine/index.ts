@@ -100,7 +100,7 @@ export default {
 
 
     async function refreshTurnoverSubscriptionStatus() {
-      if (process.env.TARO_ENV !== 'weapp' || !canSubscribeTurnover.value) return
+      if (!canSubscribeTurnover.value) return
       turnoverSubscribed.value = Boolean(Taro.getStorageSync(subscriptionCacheKey()))
       try {
         const result = await Taro.getSetting({ withSubscriptions: true })
@@ -143,11 +143,6 @@ export default {
         Taro.showToast({ title: '请先绑定微信', icon: 'none' })
         return
       }
-      if (process.env.TARO_ENV !== 'weapp') {
-        Taro.showToast({ title: '请在微信小程序中操作', icon: 'none' })
-        return
-      }
-
       subscribingTurnover.value = true
       try {
         // Taro 4.1.11 的聚合类型会误将支付宝 entityIds 标记为必填。
@@ -184,11 +179,6 @@ export default {
 
     async function onCancelTurnoverSubscription() {
       if (subscribingTurnover.value) return
-      if (process.env.TARO_ENV !== 'weapp') {
-        Taro.showToast({ title: '请在微信小程序中操作', icon: 'none' })
-        return
-      }
-
       const modal = await Taro.showModal({
         title: '取消营业额通知',
         content: '微信需要由你在订阅消息设置中关闭该通知。',

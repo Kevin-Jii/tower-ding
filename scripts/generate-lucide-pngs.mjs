@@ -22,7 +22,9 @@ const icons = {
   clock: '#287fe5',
   settings: '#17202a',
   'file-text': '#287fe5',
-  pencil: '#17202a'
+  pencil: '#17202a',
+  'image-plus': '#687385',
+  x: '#ffffff'
 }
 
 const nodes = JSON.parse(readFileSync(new URL('../node_modules/lucide-static/icon-nodes.json', import.meta.url), 'utf8'))

@@ -4,6 +4,5 @@ export default {
     quiet: false,
     stats: true
   },
-  mini: {},
-  h5: {}
+  mini: {}
 } satisfies UserConfigExport<'vite'>

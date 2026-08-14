@@ -43,6 +43,13 @@ export default {
       if (!v) return '-'
       return String(v).slice(0, 10)
     }
+
+
+    function previewPhoto(index: number) {
+      const urls = detail.value?.photos || []
+      if (!urls[index]) return
+      void Taro.previewImage({ current: urls[index], urls })
+    }
     
     
     
@@ -73,6 +80,7 @@ export default {
       formatMoney,
       formatQty,
       formatDate,
+      previewPhoto,
       refresh,
     }
   }

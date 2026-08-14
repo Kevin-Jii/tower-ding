@@ -3,7 +3,7 @@ import { defineConfig } from '@tarojs/cli'
 import devConfig from './dev'
 import prodConfig from './prod'
 
-/** 与 `src/services/http.ts` 默认一致；构建时写入 `process.env.TARO_APP_*` 的 define，避免小程序运行时访问真实 `process` */
+/** 与 `src/services/http.ts` 默认一致；构建时写入接口地址，避免小程序运行时访问真实 `process` */
 const DEFAULT_API_BASE = 'http://47.120.27.64:5713/api/v1'
 
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
@@ -22,8 +22,7 @@ export default defineConfig<'vite'>(async (merge) => {
     outputRoot: 'dist',
     plugins: [],
     env: {
-      TARO_APP_API_BASE_URL: JSON.stringify(process.env.TARO_APP_API_BASE_URL || DEFAULT_API_BASE),
-      TARO_APP_CLIENT_SOURCE: JSON.stringify(process.env.TARO_APP_CLIENT_SOURCE || '')
+      TARO_APP_API_BASE_URL: JSON.stringify(process.env.TARO_APP_API_BASE_URL || DEFAULT_API_BASE)
     },
     defineConstants: {},
     copy: {
@@ -45,36 +44,6 @@ export default defineConfig<'vite'>(async (merge) => {
             generateScopedName: '[name]__[local]___[hash:base64:5]'
           }
         }
-      }
-    },
-    h5: {
-      publicPath: '/',
-      staticDirectory: 'static',
-      output: {
-        filename: 'js/[name].[hash:8].js',
-        chunkFilename: 'js/[name].[chunkhash:8].js'
-      } as any,
-      miniCssExtractPluginOption: {
-        ignoreOrder: true,
-        filename: 'css/[name].[hash].css',
-        chunkFilename: 'css/[name].[chunkhash].css'
-      },
-      postcss: {
-        autoprefixer: {
-          enable: true,
-          config: {}
-        },
-        cssModules: {
-          enable: false,
-          config: {
-            namingPattern: 'module',
-            generateScopedName: '[name]__[local]___[hash:base64:5]'
-          }
-        }
-      },
-      // Capacitor WebView 无服务端路由，hash 模式更稳妥
-      router: {
-        mode: 'hash'
       }
     }
   }

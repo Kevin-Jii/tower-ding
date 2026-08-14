@@ -14,6 +14,23 @@
         <view class="kv"><view class="k">备注</view><view class="v">{{ detail?.remark || '-' }}</view></view>
       </view>
 
+      <view v-if="detail?.photos?.length" class="card photoSection">
+        <view class="sectionHead">
+          <view class="sectionTitle">返厂照片</view>
+          <view class="sectionTip">{{ detail?.photos?.length || 0 }} 张</view>
+        </view>
+        <view class="photoGrid">
+          <image
+            v-for="(photo, index) in detail?.photos || []"
+            :key="photo"
+            class="photoImage"
+            :src="photo"
+            mode="aspectFill"
+            @tap="previewPhoto(index)"
+          />
+        </view>
+      </view>
+
       <view class="card">
         <view class="sectionHead">
           <view class="sectionTitle">返厂明细</view>

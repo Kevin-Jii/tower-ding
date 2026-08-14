@@ -5,6 +5,7 @@ import bottleWineIcon from '../assets/icons/bottle-wine.png'
 import chartColumnIcon from '../assets/icons/chart-column-increasing.png'
 import clockIcon from '../assets/icons/clock.png'
 import fileTextIcon from '../assets/icons/file-text.png'
+import imagePlusIcon from '../assets/icons/image-plus.png'
 import packagePlusIcon from '../assets/icons/package-plus.png'
 import packageSearchIcon from '../assets/icons/package-search.png'
 import packageXIcon from '../assets/icons/package-x.png'
@@ -17,6 +18,7 @@ import usersRoundIcon from '../assets/icons/users-round.png'
 import walletIcon from '../assets/icons/wallet.png'
 import walletCardsIcon from '../assets/icons/wallet-cards.png'
 import warehouseIcon from '../assets/icons/warehouse.png'
+import xIcon from '../assets/icons/x.png'
 import { type LucideIconName } from '../utils/lucide-icons'
 
 const iconSources: Record<LucideIconName, string> = {
@@ -37,7 +39,9 @@ const iconSources: Record<LucideIconName, string> = {
   clock: clockIcon,
   settings: settingsIcon,
   'file-text': fileTextIcon,
-  pencil: pencilIcon
+  pencil: pencilIcon,
+  'image-plus': imagePlusIcon,
+  x: xIcon
 }
 
 type LucideIconProps = {

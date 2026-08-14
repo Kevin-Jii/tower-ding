@@ -4,7 +4,15 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { ref } from 'vue'
 
 
-import { createStoreReturn, listStoreReturnProducts, type StoreReturnProduct } from '../../services/api'
+import LucideIcon from '../../components/LucideIcon.vue'
+
+
+import {
+  createStoreReturn,
+  listStoreReturnProducts,
+  uploadStoreReturnPhoto,
+  type StoreReturnProduct
+} from '../../services/api'
 
 
 import { useAuthStore } from '../../stores/auth'
@@ -18,7 +26,18 @@ type ReturnLine = {
   deposit: string
 }
 
+type ReturnPhoto = {
+  id: string
+  previewUrl: string
+  uploadedUrl?: string
+  status: 'pending' | 'uploading' | 'uploaded' | 'failed'
+}
+
+const MAX_PHOTO_COUNT = 3
+const MAX_PHOTO_SIZE = 20 * 1024 * 1024
+
 export default {
+  components: { LucideIcon },
   setup() {
     const auth = useAuthStore()
     
@@ -36,6 +55,9 @@ export default {
     
     
     const remark = ref('')
+
+
+    const photos = ref<ReturnPhoto[]>([])
     
     
     const saving = ref(false)
@@ -136,6 +158,82 @@ export default {
     function onRemarkInput(e: any) {
       remark.value = String(e?.detail?.value || '')
     }
+
+
+    async function choosePhotos() {
+      if (saving.value) return
+      const remaining = MAX_PHOTO_COUNT - photos.value.length
+      if (remaining <= 0) return
+      try {
+        const result = await Taro.chooseImage({
+          count: remaining,
+          sizeType: ['compressed'],
+          sourceType: ['album', 'camera']
+        })
+        const validPhotos: ReturnPhoto[] = []
+        let hasOversizedPhoto = false
+        result.tempFilePaths.slice(0, remaining).forEach((path, index) => {
+          const file = result.tempFiles?.[index]
+          if (Number(file?.size || 0) > MAX_PHOTO_SIZE) {
+            hasOversizedPhoto = true
+            return
+          }
+          validPhotos.push({
+            id: `${Date.now()}-${index}-${path}`,
+            previewUrl: path,
+            status: 'pending'
+          })
+        })
+        photos.value.push(...validPhotos)
+        if (hasOversizedPhoto) {
+          Taro.showToast({ title: '单张图片不能超过20MB', icon: 'none' })
+        }
+      } catch (err: any) {
+        if (!String(err?.errMsg || err?.message || '').includes('cancel')) {
+          Taro.showToast({ title: '选择图片失败', icon: 'none' })
+        }
+      }
+    }
+
+
+    function removePhoto(index: number) {
+      if (saving.value || index < 0 || index >= photos.value.length) return
+      photos.value.splice(index, 1)
+    }
+
+
+    function previewPhoto(index: number) {
+      const photo = photos.value[index]
+      if (!photo) return
+      void Taro.previewImage({
+        current: photo.previewUrl,
+        urls: photos.value.map((item) => item.previewUrl)
+      })
+    }
+
+
+    async function uploadPhotos() {
+      const urls: string[] = []
+      for (let index = 0; index < photos.value.length; index += 1) {
+        const photo = photos.value[index]
+        if (photo.uploadedUrl) {
+          urls.push(photo.uploadedUrl)
+          continue
+        }
+        photo.status = 'uploading'
+        try {
+          const gallery = await uploadStoreReturnPhoto(auth.token, photo.previewUrl)
+          if (!gallery.url) throw new Error('上传接口未返回图片地址')
+          photo.uploadedUrl = gallery.url
+          photo.status = 'uploaded'
+          urls.push(gallery.url)
+        } catch (err: any) {
+          photo.status = 'failed'
+          throw new Error(`第${index + 1}张图片上传失败：${err?.message || '请重试'}`)
+        }
+      }
+      return urls
+    }
     
     
     
@@ -179,10 +277,12 @@ export default {
       }
       saving.value = true
       try {
+        const photoUrls = await uploadPhotos()
         await createStoreReturn(auth.token, {
           store_id: auth.storeId || undefined,
           return_date: returnDate.value,
           logistics_fee: Number(logisticsFee.value || 0),
+          photos: photoUrls,
           remark: remark.value.trim(),
           items
         })
@@ -210,12 +310,14 @@ export default {
       createStoreReturn,
       listStoreReturnProducts,
       useAuthStore,
+      LucideIcon,
       auth,
       products,
       returnDate,
       lines,
       logisticsFee,
       remark,
+      photos,
       saving,
       pad,
       todayStr,
@@ -230,6 +332,10 @@ export default {
       onDepositInput,
       onLogisticsInput,
       onRemarkInput,
+      choosePhotos,
+      removePhoto,
+      previewPhoto,
+      uploadPhotos,
       loadProducts,
       submitReturn,
     }

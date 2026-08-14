@@ -1,4 +1,4 @@
-import { request, withGlobalLoading } from './http'
+import { request, uploadFile, withGlobalLoading } from './http'
 
 export type DashboardStats = Record<string, any>
 
@@ -480,11 +480,21 @@ export type StoreReturn = {
   logistics_fee?: number
   total_deposit?: number
   item_count?: number
+  photos?: string[]
   remark?: string
   operator_id?: number
   operator_name?: string
   created_at?: string
+  updated_at?: string
   items?: StoreReturnItem[]
+}
+
+export type Gallery = {
+  id: number
+  name?: string
+  url?: string
+  size?: number
+  mime_type?: string
 }
 
 export type StoreReturnProduct = {
@@ -1096,6 +1106,19 @@ export function getStoreReturnStats(
 
 export function createStoreReturn(authToken: string, body: Record<string, unknown>) {
   return request<StoreReturn>('/store-returns', { method: 'POST', data: body, authToken })
+}
+
+export function uploadStoreReturnPhoto(authToken: string, filePath: string) {
+  return uploadFile<Gallery>('/galleries/upload', {
+    filePath,
+    name: 'file',
+    formData: {
+      category: 'store-return',
+      remark: '返厂记录照片'
+    },
+    authToken,
+    showLoading: false
+  })
 }
 
 export function listStoreReturnProducts(
