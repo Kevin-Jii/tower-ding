@@ -460,10 +460,6 @@ body.android-shell .accountingFormPage .container {
   align-items: center;
 }
 
-.inventoryCompactRow--selected {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-}
-
 .compactProductPick {
   min-width: 0;
   min-height: 88px;
@@ -505,26 +501,57 @@ body.android-shell .accountingFormPage .container {
 }
 
 .compactSpec {
-  max-width: 160px;
+  margin-top: 12px;
   min-width: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.compactSpecLabel {
+  flex: 0 0 auto;
+  color: #596579;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .compactSpec .unitPills {
+  flex: 1;
+  min-width: 0;
   flex-wrap: nowrap;
   gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #eef2f7;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .compactSpec .unitPill {
-  padding: 6px 10px;
-  min-height: 64px;
-  font-size: 22px;
+  flex: 1 0 88px;
+  min-height: 80px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: transparent;
+  color: #596579;
+  font-size: 24px;
+  font-weight: 800;
   white-space: nowrap;
-  flex-shrink: 0;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  transition: background-color 160ms ease-out, color 160ms ease-out, opacity 160ms ease-out;
+}
+
+.compactSpec .unitPill--on {
+  background: #111418;
+  color: #fff;
+}
+
+.compactSpec .unitPill:active {
+  opacity: 0.78;
 }
 
 .compactQty {

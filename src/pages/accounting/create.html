@@ -73,27 +73,29 @@
             </view>
             <view :class="['modePill', line.is_custom ? 'modePill--on' : '']" @tap="setLineMode(idx, true)">自定义内容</view>
           </view>
-          <view v-if="!line.is_custom"
-            :class="['inventoryCompactRow', line.product_id ? 'inventoryCompactRow--selected' : '']">
-            <view class="compactProductPick" @tap="openPicker(idx)">
-              <view v-if="line.product_id" class="compactProductName">{{ line.product_name }}</view>
-              <view v-else class="compactProductPlaceholder">选择商品</view>
-              <view class="compactProductArrow">›</view>
+          <view v-if="!line.is_custom" class="inventoryProductBlock">
+            <view class="inventoryCompactRow">
+              <view class="compactProductPick" @tap="openPicker(idx)">
+                <view v-if="line.product_id" class="compactProductName">{{ line.product_name }}</view>
+                <view v-else class="compactProductPlaceholder">选择商品</view>
+                <view class="compactProductArrow">›</view>
+              </view>
+              <view class="compactQty">
+                <view class="stepper compactStepper" @tap.stop>
+                  <view class="stepBtn" @tap="decQty(idx)">−</view>
+                  <view class="stepVal">{{ qtyStr(line) }}</view>
+                  <view class="stepBtn" @tap="incQty(idx)">+</view>
+                </view>
+              </view>
             </view>
             <view v-if="line.product_id" class="compactSpec">
+              <view class="compactSpecLabel">规格</view>
               <view class="unitPills">
                 <view v-for="u in lineUnitOptions(line)" :key="u.value"
                   :class="['unitPill', line.unit === u.value ? 'unitPill--on' : '']"
                   @tap="setLineUnit(idx, u.value, u.spec)">
                   {{ u.label }}
                 </view>
-              </view>
-            </view>
-            <view class="compactQty">
-              <view class="stepper compactStepper" @tap.stop>
-                <view class="stepBtn" @tap="decQty(idx)">−</view>
-                <view class="stepVal">{{ qtyStr(line) }}</view>
-                <view class="stepBtn" @tap="incQty(idx)">+</view>
               </view>
             </view>
           </view>
