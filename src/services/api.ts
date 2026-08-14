@@ -206,6 +206,7 @@ export type ProductUnitSpec = {
   cost_price?: number
   sale_price?: number
   is_enabled?: boolean
+  is_saleable?: boolean
 }
 
 export type StoreAccount = {

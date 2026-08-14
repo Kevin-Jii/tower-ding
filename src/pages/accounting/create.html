@@ -90,13 +90,14 @@
             </view>
             <view v-if="line.product_id" class="compactSpec">
               <view class="compactSpecLabel">规格</view>
-              <view class="unitPills">
+              <view v-if="lineUnitOptions(line).length" class="unitPills">
                 <view v-for="u in lineUnitOptions(line)" :key="u.value"
                   :class="['unitPill', line.unit === u.value ? 'unitPill--on' : '']"
                   @tap="setLineUnit(idx, u.value, u.spec)">
                   {{ u.label }}
                 </view>
               </view>
+              <view v-else class="compactSpecEmpty">暂无可售规格</view>
             </view>
           </view>
           <view v-else class="customBox">
@@ -169,15 +170,18 @@
           <view v-if="giftWineProductId" class="lineReadRow">
             <view class="lrItem lrItem--wide">
               <view class="fieldLabel">规格单位</view>
-              <view class="unitPills">
+              <view v-if="giftWineUnitOptions.length" class="unitPills">
                 <view v-for="u in giftWineUnitOptions" :key="u.value"
                   :class="['unitPill', giftWineUnit === u.value ? 'unitPill--on' : '']"
                   @tap="setGiftWineUnit(u.value)">
                   {{ u.label }}
                 </view>
               </view>
-              <view v-if="giftWineUnitOptions.length < 2" class="lrVal lrVal--hint">
-                暂无更多规格，成本按当前单位计算
+              <view v-if="!giftWineUnitOptions.length" class="lrVal lrVal--hint">
+                暂无可售规格
+              </view>
+              <view v-else-if="giftWineUnitOptions.length < 2" class="lrVal lrVal--hint">
+                当前只有一个可售规格
               </view>
             </view>
           </view>

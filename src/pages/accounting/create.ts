@@ -532,7 +532,7 @@ export default {
       line.unit = unit
       line.spec = spec
       const opt = lineUnitOptions(line).find((o) => o.value === unit)
-      if (opt?.sale_price > 0) line.list_price = opt.sale_price
+      line.list_price = Number(opt?.sale_price || 0)
     }
     
     
@@ -553,7 +553,7 @@ export default {
     
     function buildUnitOptions(specs) {
       const enabled = specs
-        .filter((s) => s?.is_enabled !== false)
+        .filter((s) => s?.is_enabled !== false && s?.is_saleable === true)
         .map((s) => {
           const label = String(s?.unit_name || s?.unit_code || '').trim()
           const factor = Number(s?.factor_to_base || 1)
@@ -582,34 +582,39 @@ export default {
     
     
     
-    async function loadUnitOptionsForProduct(productId, fallbackUnit) {
+    function applyProductUnitOptions(productId, opts) {
+      unitOptionsMap.value[productId] = opts
+      for (const line of lines.value) {
+        if (Number(line?.product_id || 0) !== productId) continue
+        if (!opts.length) {
+          line.unit = ''
+          line.spec = ''
+          line.list_price = 0
+          continue
+        }
+        const current = opts.find((o) => o.value === line.unit)
+        const selected = current || opts[0]
+        line.unit = selected.value
+        line.spec = selected.spec
+        line.list_price = Number(selected?.sale_price || 0)
+      }
+      if (Number(giftWineProductId.value || 0) !== productId) return
+      const currentGiftUnit = opts.find((o) => o.value === giftWineUnit.value)
+      giftWineUnit.value = currentGiftUnit?.value || opts[0]?.value || ''
+    }
+
+
+
+    async function loadUnitOptionsForProduct(productId) {
       if (!auth.token || !productId) return
       try {
         const specs = await listProductUnitSpecs(auth.token, productId)
         const opts = buildUnitOptions(specs)
-        if (opts.length) {
-          unitOptionsMap.value[productId] = opts
-          for (const line of lines.value) {
-            if (Number(line?.product_id || 0) !== productId) continue
-            const exists = opts.some((o) => o.value === line.unit)
-            if (!exists) {
-              line.unit = opts[0].value
-              line.spec = opts[0].spec
-              if (opts[0]?.sale_price > 0) line.list_price = opts[0].sale_price
-            } else {
-              const current = opts.find((o) => o.value === line.unit)
-              if (current?.sale_price > 0) line.list_price = current.sale_price
-            }
-          }
-          if (Number(giftWineProductId.value || 0) === productId && !opts.some((o) => o.value === giftWineUnit.value)) {
-            giftWineUnit.value = opts[0].value
-          }
-          return
-        }
+        applyProductUnitOptions(productId, opts)
       } catch {
-        // ignore and fallback
+        applyProductUnitOptions(productId, [])
+        Taro.showToast({ title: '商品规格加载失败，请重新选择商品', icon: 'none' })
       }
-      unitOptionsMap.value[productId] = fallbackUnit ? [{ label: fallbackUnit, value: fallbackUnit, spec: fallbackUnit }] : []
     }
     
     
@@ -811,7 +816,7 @@ export default {
       Taro.setNavigationBarTitle({ title: '编辑记账' })
       await Promise.all(lines.value
         .filter((line) => !line.is_custom && Number(line.product_id || 0) > 0)
-        .map((line) => loadUnitOptionsForProduct(Number(line.product_id), String(line.unit || ''))))
+        .map((line) => loadUnitOptionsForProduct(Number(line.product_id))))
     }
 
 
@@ -835,13 +840,12 @@ export default {
       if (!pid) return
       row.product_id = pid
       row.product_name = p.product_name || `商品 #${pid}`
-      const fallback = String(p.unit || '').trim() || '件'
-      row.unit = fallback
-      row.spec = fallback
+      row.unit = ''
+      row.spec = ''
       row.list_price = Number(p.list_price || 0)
       row.price = undefined
       row.amount = undefined
-      void loadUnitOptionsForProduct(pid, fallback)
+      void loadUnitOptionsForProduct(pid)
       closePicker()
     }
     
@@ -853,10 +857,9 @@ export default {
       giftWineProductId.value = pid
       giftWineProductName.value = p.product_name || `商品 #${pid}`
       giftWineProductPath.value = productPathOf(p)
-      const fallback = String(p.unit || '').trim() || '件'
-      giftWineUnit.value = fallback
+      giftWineUnit.value = ''
       if (!(Number(giftWineQuantity.value || 0) > 0)) giftWineQuantity.value = '1'
-      void loadUnitOptionsForProduct(pid, fallback)
+      void loadUnitOptionsForProduct(pid)
       closePicker()
     }
     
