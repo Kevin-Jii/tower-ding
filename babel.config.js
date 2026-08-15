@@ -6,7 +6,8 @@ module.exports = {
       framework: 'vue3',
       ts: true,
       compiler: 'vite',
-      'loose': true
+      // TaroElement 依赖父类 accessor；loose 模式会把 super setter 错误转换成自身赋值。
+      loose: false
     }]
   ]
 }
