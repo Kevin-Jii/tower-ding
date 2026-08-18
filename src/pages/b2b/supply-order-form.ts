@@ -1,342 +1,601 @@
-import Taro, { useDidShow, useRouter } from '@tarojs/taro'
-
-
-import { computed, ref } from 'vue'
-
+import Taro, { useDidShow, useRouter } from "@tarojs/taro";
+import { computed, ref } from "vue";
 
 import {
   createB2BSupplyOrder,
   listB2BCustomers,
   listB2BPrices,
   type B2BCustomer,
-  type B2BPrice
-} from '../../services/api'
+  type B2BPrice,
+} from "../../services/api";
 
-
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from "../../stores/auth";
 
 export default {
   setup() {
-    const auth = useAuthStore()
-    
-    
-    const router = useRouter()
-    
-    
-    const initialCustomerId = Number(router.params?.customer_id || 0)
+    const auth = useAuthStore();
+    const router = useRouter();
 
+    // =========================
+    // 基础状态
+    // =========================
 
-    const todayDate = formatDateValue(new Date())
+    const initialCustomerId = Number(router.params?.customer_id || 0);
 
+    const todayDate = formatDateValue(new Date());
 
-    const orderDate = ref(todayDate)
-    
-    
-    const customers = ref<B2BCustomer[]>([])
-    
-    
-    const prices = ref<B2BPrice[]>([])
-    
-    
-    const customerId = ref(initialCustomerId)
-    
-    
-    const lines = ref<any[]>([newOrderLine()])
-    
-    
-    const paidAmount = ref('')
-    
-    
-    const remark = ref('')
-    
-    
-    const saving = ref(false)
-    
-    
-    
+    const orderDate = ref(todayDate);
+
+    const customers = ref<B2BCustomer[]>([]);
+    const prices = ref<B2BPrice[]>([]);
+
+    const customerId = ref(initialCustomerId);
+
+    const lines = ref<any[]>([newOrderLine()]);
+
+    const paidAmount = ref("");
+    const remark = ref("");
+
+    const saving = ref(false);
+
+    // =========================
+    // 基础方法
+    // =========================
+
     function newOrderLine() {
-      return { price_id: 0, quantity: '1' }
+      return {
+        price_id: 0,
+        quantity: "1",
+      };
     }
-
 
     function formatDateValue(date: Date) {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-    
-    
-    
-    const customerOptions = computed(() => customers.value.map((c) => ({ label: c.name || `客户 #${c.id}`, value: c.id })))
-    
-    
-    const customerIndex = computed(() => Math.max(0, customerOptions.value.findIndex((c) => c.value === customerId.value)))
-    
-    
-    const selectedCustomerLabel = computed(() => customerOptions.value[customerIndex.value]?.label || '请选择客户')
-    
-    
-    const selectedCustomer = computed(() => customers.value.find((c) => Number(c.id || 0) === customerId.value) || null)
-    
-    
-    const visiblePrices = computed(() => {
-      const customer = selectedCustomer.value
-      if (!customer) return []
-      return prices.value.filter((p) => priceMatchesCustomer(p, customer))
-    })
-    
-    
-    const priceOptions = computed(() =>
-      visiblePrices.value.map((p) => ({
-        label: `${p.product?.name || p.product?.product_name || `商品 #${p.product_id}`} / ${p.unit_name || p.unit_spec?.unit_name || '-'} / ¥${formatMoney(p.supply_price)}`,
-        value: p.id
-      }))
-    )
-    
-    
-    const orderTotalAmount = computed(() => lines.value.reduce((sum, line) => {
-      const price = selectedLinePrice(line)
-      return sum + Number(price?.supply_price || 0) * Number(line.quantity || 0)
-    }, 0))
-    
-    
-    
-    function onCustomerChange(e: any) {
-      const idx = Number(e?.detail?.value ?? 0)
-      customerId.value = Number(customerOptions.value[idx]?.value || 0)
-      lines.value = [newOrderLine()]
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
     }
 
+    function formatMoney(value: any) {
+      const number = Number(value || 0);
 
-    function onOrderDateChange(e: any) {
-      orderDate.value = String(e?.detail?.value || todayDate)
+      return Number.isFinite(number) ? number.toFixed(2) : "0.00";
     }
-    
-    
-    
-    function linePriceIndex(line: { price_id: number }) {
-      const idx = priceOptions.value.findIndex((p) => p.value === line.price_id)
-      return idx >= 0 ? idx : 0
-    }
-    
-    
-    
-    function selectedLinePrice(line: { price_id: number }) {
-      return visiblePrices.value.find((p) => p.id === line.price_id)
-    }
-    
-    
-    
-    function linePriceLabel(line: { price_id: number }) {
-      const idx = linePriceIndex(line)
-      return priceOptions.value[idx]?.value === line.price_id ? priceOptions.value[idx]?.label : '请选择供货价'
-    }
-    
-    
-    
-    function onLinePriceChange(lineIdx: number, e: any) {
-      const idx = Number(e?.detail?.value ?? 0)
-      const line = lines.value[lineIdx]
-      if (!line) return
-      line.price_id = Number(priceOptions.value[idx]?.value || 0)
-    }
-    
-    
-    
-    function moneyInputValue(e: any) {
-      const raw = String(e?.detail?.value || '').replace(/[^\d.]/g, '')
-      const [head, ...tail] = raw.split('.')
-      return tail.length ? `${head}.${tail.join('').slice(0, 2)}` : head
-    }
-    
-    
-    
-    function onLineQtyInput(lineIdx: number, e: any) {
-      const line = lines.value[lineIdx]
-      if (!line) return
-      line.quantity = moneyInputValue(e)
-    }
-    
-    
-    
-    function onPaidInput(e: any) {
-      paidAmount.value = moneyInputValue(e)
-    }
-    
-    
-    
-    function onRemarkInput(e: any) {
-      remark.value = String(e?.detail?.value || '')
-    }
-    
-    
-    
-    function formatMoney(v: any) {
-      const n = Number(v || 0)
-      return Number.isFinite(n) ? n.toFixed(2) : '0.00'
-    }
-    
-    
-    
+
+    // =========================
+    // 客户
+    // =========================
+
+    const customerOptions = computed(() =>
+      customers.value.map((customer) => ({
+        label: customer.name || `客户 #${customer.id}`,
+
+        value: Number(customer.id),
+      })),
+    );
+
+    const customerIndex = computed(() => {
+      const index = customerOptions.value.findIndex(
+        (item) => Number(item.value) === Number(customerId.value),
+      );
+
+      return index >= 0 ? index : 0;
+    });
+
+    const selectedCustomerLabel = computed(() => {
+      return customerOptions.value[customerIndex.value]?.label || "请选择客户";
+    });
+
+    const selectedCustomer = computed(() => {
+      return (
+        customers.value.find(
+          (customer) =>
+            Number(customer.id || 0) === Number(customerId.value || 0),
+        ) || null
+      );
+    });
+
+    // =========================
+    // 价格匹配
+    //
+    // 优先级：
+    // 1. 客户专属价格
+    // 2. 客户价格等级
+    // 3. 默认价格
+    // =========================
+
     function priceMatchesCustomer(price: B2BPrice, customer: B2BCustomer) {
-      if (Number(price.customer_id || 0) > 0) return Number(price.customer_id || 0) === Number(customer.id || 0)
-      const level = String(customer.price_level || '').trim()
-      return !level || String(price.price_level || '').trim() === level
+      const currentCustomerId = Number(customer.id || 0);
+
+      const priceCustomerId = Number(price.customer_id || 0);
+
+      const customerLevel = String(customer.price_level || "").trim();
+
+      const priceLevel = String(price.price_level || "").trim();
+
+      // 客户专属价格
+      if (priceCustomerId > 0) {
+        return priceCustomerId === currentCustomerId;
+      }
+
+      // 客户有价格等级
+      if (customerLevel) {
+        return priceLevel === customerLevel;
+      }
+
+      // 客户没有价格等级
+      // 只使用默认价格
+      return !priceLevel;
     }
-    
-    
-    
+
+    /**
+     * 当前客户可使用的全部价格
+     */
+    const customerPrices = computed(() => {
+      const customer = selectedCustomer.value;
+
+      if (!customer) {
+        return [];
+      }
+
+      return prices.value.filter((price) =>
+        priceMatchesCustomer(price, customer),
+      );
+    });
+
+    /**
+     * Picker 使用的价格列表
+     */
+    const priceOptions = computed(() => {
+      return customerPrices.value.map((price) => ({
+        label: `${getProductName(price)} / ${getUnitName(
+          price,
+        )} / ¥${formatMoney(price.supply_price)}`,
+
+        value: Number(price.id),
+      }));
+    });
+
+    function getProductName(price: B2BPrice) {
+      return (
+        price.product?.name ||
+        price.product?.product_name ||
+        `商品 #${price.product_id}`
+      );
+    }
+
+    function getUnitName(price: B2BPrice) {
+      return price.unit_name || price.unit_spec?.unit_name || "-";
+    }
+
+    // =========================
+    // 商品价格
+    // =========================
+
+    /**
+     * 根据 price_id 找到真实价格
+     */
+    function selectedLinePrice(line: { price_id: number }) {
+      const priceId = Number(line.price_id || 0);
+
+      if (!priceId) {
+        return undefined;
+      }
+
+      return customerPrices.value.find((price) => Number(price.id) === priceId);
+    }
+
+    /**
+     * price_id → Picker index
+     *
+     * 注意：
+     * price_id 是数据库 ID
+     * Picker value 是数组下标
+     */
+    function linePriceIndex(line: { price_id: number }) {
+      const priceId = Number(line.price_id || 0);
+
+      const index = priceOptions.value.findIndex(
+        (item) => Number(item.value) === priceId,
+      );
+
+      return index >= 0 ? index : 0;
+    }
+
+    /**
+     * 获取 Picker 显示文本
+     */
+    function linePriceLabel(line: { price_id: number }) {
+      const price = selectedLinePrice(line);
+
+      if (!price) {
+        return "请选择供货价";
+      }
+
+      const option = priceOptions.value.find(
+        (item) => Number(item.value) === Number(price.id),
+      );
+
+      return option?.label || "请选择供货价";
+    }
+
+    /**
+     * Picker index → price_id
+     */
+    function onLinePriceChange(lineIdx: number, event: any) {
+      const index = Number(event?.detail?.value ?? 0);
+
+      const line = lines.value[lineIdx];
+
+      if (!line) {
+        return;
+      }
+
+      const option = priceOptions.value[index];
+
+      if (!option) {
+        line.price_id = 0;
+        return;
+      }
+
+      line.price_id = Number(option.value);
+    }
+
+    // =========================
+    // 客户切换
+    // =========================
+
+    function onCustomerChange(event: any) {
+      const index = Number(event?.detail?.value ?? 0);
+
+      const option = customerOptions.value[index];
+
+      customerId.value = Number(option?.value || 0);
+
+      // 切换客户后必须清空商品
+      // 防止旧客户的 price_id
+      // 继续残留
+      lines.value = [newOrderLine()];
+    }
+
+    // =========================
+    // 日期
+    // =========================
+
+    function onOrderDateChange(event: any) {
+      orderDate.value = String(event?.detail?.value || todayDate);
+    }
+
+    // =========================
+    // 数量
+    // =========================
+
+    function moneyInputValue(event: any) {
+      const raw = String(event?.detail?.value || "").replace(/[^\d.]/g, "");
+
+      if (!raw) {
+        return "";
+      }
+
+      const [head, ...tail] = raw.split(".");
+
+      if (tail.length) {
+        return `${head}.${tail.join("").slice(0, 2)}`;
+      }
+
+      return head;
+    }
+
+    function onLineQtyInput(lineIdx: number, event: any) {
+      const line = lines.value[lineIdx];
+
+      if (!line) {
+        return;
+      }
+
+      line.quantity = moneyInputValue(event);
+    }
+
+    // =========================
+    // 已收金额
+    // =========================
+
+    function onPaidInput(event: any) {
+      paidAmount.value = moneyInputValue(event);
+    }
+
+    // =========================
+    // 备注
+    // =========================
+
+    function onRemarkInput(event: any) {
+      remark.value = String(event?.detail?.value || "");
+    }
+
+    // =========================
+    // 商品合计
+    // =========================
+
+    const orderTotalAmount = computed(() => {
+      return lines.value.reduce((sum, line) => {
+        const price = selectedLinePrice(line);
+
+        const unitPrice = Number(price?.supply_price || 0);
+
+        const quantity = Number(line.quantity || 0);
+
+        return sum + unitPrice * quantity;
+      }, 0);
+    });
+
+    // =========================
+    // 商品操作
+    // =========================
+
     function addLine() {
-      lines.value.push(newOrderLine())
+      lines.value.push(newOrderLine());
     }
-    
-    
-    
-    function removeLine(idx: number) {
-      if (lines.value.length <= 1) return
-      lines.value.splice(idx, 1)
+
+    function removeLine(index: number) {
+      if (lines.value.length <= 1) {
+        return;
+      }
+
+      lines.value.splice(index, 1);
     }
-    
-    
-    
+
+    // =========================
+    // 加载数据
+    // =========================
+
     async function refresh() {
       if (!auth.token) {
-        Taro.redirectTo({ url: '/pages/login/index' })
-        return
+        Taro.redirectTo({
+          url: "/pages/login/index",
+        });
+
+        return;
       }
+
       try {
-        const [cs, ps] = await Promise.all([
-          listB2BCustomers(auth.token, { store_id: auth.storeId || undefined, status: 1, page: 1, page_size: 100 }),
-          listB2BPrices(auth.token, { store_id: auth.storeId || undefined, page: 1, page_size: 100 })
-        ])
-        customers.value = cs
-        prices.value = ps
-        const hasSelectedCustomer = customers.value.some((c) => Number(c.id || 0) === customerId.value)
+        const [customerList, priceList] = await Promise.all([
+          listB2BCustomers(auth.token, {
+            store_id: auth.storeId || undefined,
+
+            status: 1,
+
+            page: 1,
+
+            page_size: 100,
+          }),
+
+          listB2BPrices(auth.token, {
+            store_id: auth.storeId || undefined,
+
+            page: 1,
+
+            page_size: 100,
+          }),
+        ]);
+
+        customers.value = customerList;
+
+        prices.value = priceList;
+
+        const hasSelectedCustomer = customers.value.some(
+          (customer) => Number(customer.id || 0) === Number(customerId.value),
+        );
+
         if (customers.value.length && !hasSelectedCustomer) {
-          customerId.value = Number(customers.value[0]?.id || 0)
-          lines.value = [newOrderLine()]
-        } else if (!customers.value.length) {
-          customerId.value = 0
+          customerId.value = Number(customers.value[0]?.id || 0);
+
+          lines.value = [newOrderLine()];
         }
-      } catch (err: any) {
-        Taro.showToast({ title: err?.message || '加载失败', icon: 'none' })
+
+        if (!customers.value.length) {
+          customerId.value = 0;
+          lines.value = [newOrderLine()];
+        }
+      } catch (error: any) {
+        Taro.showToast({
+          title: error?.message || "加载失败",
+
+          icon: "none",
+        });
       }
     }
-    
-    
-    
+
+    // =========================
+    // 提交供货单
+    // =========================
+
     async function submitOrder() {
-      if (!auth.token || saving.value) return
+      if (!auth.token || saving.value) {
+        return;
+      }
+
+      // 客户
       if (!customerId.value) {
-        Taro.showToast({ title: '请选择客户', icon: 'none' })
-        return
+        Taro.showToast({
+          title: "请选择客户",
+          icon: "none",
+        });
+
+        return;
       }
+
+      // 日期
       if (!orderDate.value) {
-        Taro.showToast({ title: '请选择供货日期', icon: 'none' })
-        return
+        Taro.showToast({
+          title: "请选择供货日期",
+          icon: "none",
+        });
+
+        return;
       }
-      if (!visiblePrices.value.length) {
-        Taro.showToast({ title: '该客户暂无可用供货价', icon: 'none' })
-        return
+
+      // 价格
+      if (!customerPrices.value.length) {
+        Taro.showToast({
+          title: "该客户暂无可用供货价",
+
+          icon: "none",
+        });
+
+        return;
       }
-      const items: any[] = []
-      for (let i = 0; i < lines.value.length; i += 1) {
-        const line = lines.value[i]
-        const price = selectedLinePrice(line)
+
+      const items: any[] = [];
+
+      // 校验商品
+      for (let index = 0; index < lines.value.length; index += 1) {
+        const line = lines.value[index];
+
+        const price = selectedLinePrice(line);
+
         if (!price) {
-          Taro.showToast({ title: `请选择商品 ${i + 1} 的供货价`, icon: 'none' })
-          return
+          Taro.showToast({
+            title: `请选择商品 ${index + 1} 的供货价`,
+
+            icon: "none",
+          });
+
+          return;
         }
-        const qty = Number(line.quantity || 0)
-        if (!(qty > 0)) {
-          Taro.showToast({ title: `请填写商品 ${i + 1} 的数量`, icon: 'none' })
-          return
+
+        const quantity = Number(line.quantity || 0);
+
+        if (!(quantity > 0)) {
+          Taro.showToast({
+            title: `请填写商品 ${index + 1} 的数量`,
+
+            icon: "none",
+          });
+
+          return;
         }
+
         items.push({
           product_id: price.product_id,
+
           unit_spec_id: price.unit_spec_id,
-          quantity: qty,
+
+          quantity,
+
           supply_price: price.supply_price,
-          remark: ''
-        })
+
+          remark: "",
+        });
       }
+
       if (!items.length) {
-        Taro.showToast({ title: '请至少添加一个商品', icon: 'none' })
-        return
+        Taro.showToast({
+          title: "请至少添加一个商品",
+
+          icon: "none",
+        });
+
+        return;
       }
-      saving.value = true
+
+      saving.value = true;
+
       try {
         await createB2BSupplyOrder(auth.token, {
           store_id: auth.storeId || undefined,
+
           customer_id: customerId.value,
+
           order_date: orderDate.value,
+
           paid_amount: Number(paidAmount.value || 0),
+
           remark: remark.value.trim(),
-          items
-        })
-        Taro.showToast({ title: '已提交', icon: 'success' })
+
+          items,
+        });
+
+        Taro.showToast({
+          title: "已提交",
+          icon: "success",
+        });
+
         setTimeout(() => {
-          Taro.navigateBack().catch(() => Taro.redirectTo({ url: '/pages/b2b/supply-orders' }))
-        }, 400)
-      } catch (err: any) {
-        Taro.showToast({ title: err?.message || '保存失败', icon: 'none' })
+          Taro.navigateBack().catch(() =>
+            Taro.redirectTo({
+              url: "/pages/b2b/supply-orders",
+            }),
+          );
+        }, 400);
+      } catch (error: any) {
+        Taro.showToast({
+          title: error?.message || "保存失败",
+
+          icon: "none",
+        });
       } finally {
-        saving.value = false
+        saving.value = false;
       }
     }
-    
-    
-    
-    useDidShow(() => refresh())
+
+    // =========================
+    // 页面显示
+    // =========================
+
+    useDidShow(() => {
+      refresh();
+    });
+
+    // =========================
+    // 暴露给模板
+    // =========================
 
     return {
-      Taro,
-      useDidShow,
-      useRouter,
-      computed,
-      ref,
-      createB2BSupplyOrder,
-      listB2BCustomers,
-      listB2BPrices,
-      useAuthStore,
       auth,
       router,
-      initialCustomerId,
-      todayDate,
+
       orderDate,
       customers,
       prices,
       customerId,
+
       lines,
       paidAmount,
       remark,
       saving,
-      newOrderLine,
-      formatDateValue,
+
       customerOptions,
       customerIndex,
       selectedCustomerLabel,
       selectedCustomer,
-      visiblePrices,
+
+      customerPrices,
+      visiblePrices: customerPrices,
       priceOptions,
+
       orderTotalAmount,
+
       onCustomerChange,
       onOrderDateChange,
+
       linePriceIndex,
       selectedLinePrice,
       linePriceLabel,
       onLinePriceChange,
-      moneyInputValue,
+
       onLineQtyInput,
       onPaidInput,
       onRemarkInput,
-      formatMoney,
-      priceMatchesCustomer,
+
       addLine,
       removeLine,
+
+      formatMoney,
+
       refresh,
       submitOrder,
-    }
-  }
-}
+    };
+  },
+};
