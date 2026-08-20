@@ -1,193 +1,102 @@
-.searchCard {
-  margin-top: 0;
-}
+.unpaidPage { background: #f5f8fc; }
+.unpaidContainer { padding-bottom: calc(64px + var(--page-safe-bottom)); }
 
-.searchTitle {
-  color: #17202a;
-  font-size: 32px;
-  font-weight: 900;
-}
+.summaryCard { margin-top: 2px; min-height: 166px; padding: 28px 24px; border: 1px solid #dfe6ef; border-radius: 16px; background: #fff; display: flex; align-items: stretch; box-sizing: border-box; }
+.summaryLead { width: 43%; padding-right: 24px; box-sizing: border-box; }
+.summaryLabel { color: #53647d; font-size: 23px; font-weight: 700; }
+.summaryAmount { margin-top: 12px; color: #d86316; font-size: 43px; font-weight: 900; line-height: 1.05; white-space: nowrap; }
+.summaryAmount text { font-size: 29px; }
+.summaryMeta { margin-top: 12px; color: #53647d; font-size: 21px; }
+.summaryMeta text { margin: 0 9px; color: #9aa6b7; }
+.summaryMetric { width: 19%; padding: 0 20px; border-left: 1px solid #e4e9f0; box-sizing: border-box; }
+.summaryMetricIcon { width: 46px; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.summaryMetric--orange .summaryMetricIcon { background: #fff0e6; }
+.summaryMetric--blue .summaryMetricIcon { background: #eaf2ff; }
+.summaryMetric--green .summaryMetricIcon { background: #e7f6ef; }
+.summaryMetricLabel { margin-top: 12px; color: #53647d; font-size: 21px; white-space: nowrap; }
+.summaryMetricValue { margin-top: 8px; color: #17202a; font-size: 25px; font-weight: 900; white-space: nowrap; }
 
-.searchRow {
-  margin-top: 18px;
-  display: flex;
-  gap: 12px;
-}
+.searchRow { margin-top: 18px; display: flex; gap: 12px; }
+.searchBox { min-width: 0; height: 72px; flex: 1; padding: 0 18px; border: 1px solid #dce4ef; border-radius: 11px; background: #fff; display: flex; align-items: center; gap: 11px; box-sizing: border-box; }
+.searchInput { min-width: 0; flex: 1; color: #17202a; font-size: 24px; }
+.filterBtn { width: 112px; height: 72px; border: 1px solid #dce4ef; border-radius: 11px; background: #fff; color: #17202a; font-size: 23px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
+.sectionHead { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; }
+.sectionTitle { color: #152238; font-size: 30px; font-weight: 900; }
+.sectionActions { display: flex; align-items: center; gap: 15px; color: #31557b; font-size: 21px; font-weight: 800; }
+.sectionActions text { color: #a8b2c0; font-weight: 400; }
 
-.searchInput {
-  flex: 1;
-  min-width: 0;
-  height: 76px;
-  padding: 0 18px;
-  border-radius: 8px;
-  background: #f7f9fc;
-  border: 1px solid #dce2eb;
-  color: #17202a;
-  font-size: 25px;
-  box-sizing: border-box;
-}
+.list { margin-top: 14px; display: grid; gap: 12px; }
+.memberHead { min-height: 70px; display: flex; align-items: flex-start; gap: 16px; box-sizing: border-box; }
+.memberAvatar { width: 70px; height: 70px; border-radius: 50%; background: #eaf2ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.memberIdentity { min-width: 0; flex: 1; }
+.memberName { overflow: hidden; color: #17202a; font-size: 27px; font-weight: 900; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.memberMeta { margin-top: 6px; color: #68778d; font-size: 20px; line-height: 1.3; }
+.memberMeta text, .memberSummary text { margin: 0 8px; color: #a3adba; }
+.memberSummary { margin-top: 7px; color: #53647d; font-size: 20px; line-height: 1.3; }
+.memberSummaryAmount { color: #d86316; font-weight: 800; }
+.memberTotal { padding-top: 3px; color: #d86316; font-size: 27px; font-weight: 900; white-space: nowrap; }
+.memberArrow { margin-left: 17px; color: #697789; font-size: 27px; font-weight: 500; }
+.memberArrow--open { display: inline-block; transform: rotate(180deg); }
+.memberAsideLabel { padding-top: 4px; color: #d86316; font-size: 20px; font-weight: 800; text-align: center; }
 
-.searchBtn {
-  width: 116px;
-  height: 76px;
-  border-radius: 8px;
-  background: #17202a;
-  color: #fff;
-  font-size: 24px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.accountArea { padding: 0 0 2px; }
+.accountTable { overflow: hidden; border: 1px solid #dce4ed; border-radius: 9px; }
+.accountTableHead, .accountRow { display: grid; grid-template-columns: 1.35fr 1.45fr .8fr 1fr .82fr 1fr; column-gap: 8px; align-items: center; }
+.accountTableHead { min-height: 52px; padding: 0 14px; background: #f7f9fc; color: #53647d; font-size: 18px; font-weight: 800; }
+.accountRow { min-height: 66px; padding: 10px 14px; border-top: 1px solid #e6ebf1; color: #43546e; font-size: 18px; line-height: 1.3; box-sizing: border-box; }
+.accountDate, .accountProducts { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.accountProducts { color: #43546e; }
+.moreProducts { color: #8792a2; font-size: 16px; }
+.accountQuantity, .accountAmount { white-space: nowrap; }
+.accountAmount { color: #17202a; font-weight: 800; }
+.accountStatus { color: #d86316; white-space: nowrap; }
+.accountAction { color: #246fe5; font-weight: 800; white-space: nowrap; }
+.accountFoot { min-height: 72px; padding: 16px 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 15px; box-sizing: border-box; }
+.remark { display: flex; align-items: center; gap: 7px; min-width: 0; color: #53647d; font-size: 19px; }
+.accountButtons { display: flex; gap: 12px; flex-shrink: 0; }
+.outlineBtn, .primaryBtn { min-height: 48px; padding: 0 18px; border-radius: 8px; font-size: 19px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap; }
+.outlineBtn { border: 1px solid #8fb5ff; color: #246fe5; background: #fff; }
+.primaryBtn { border: 1px solid #246fe5; background: #246fe5; color: #fff; }
 
-.sectionHead {
-  margin-top: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
+.empty { padding: 44px 20px; border-radius: 14px; color: #66758b; font-size: 23px; text-align: center; }
+.emptyTitle { color: #243148; font-size: 27px; font-weight: 900; }
+.emptyHint { margin-top: 10px; font-size: 21px; }
+.pagination { margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 22px; color: #53647d; font-size: 20px; }
+.pageBtn { min-width: 94px; height: 48px; border: 1px solid #dce4ef; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; }
+.pageBtn--disabled { color: #b3bdc9; background: #f5f7fa; }
+.pageNumber { font-weight: 800; }
 
-.sectionHead .section-title {
-  margin-top: 0;
-}
+.confirmMask { position: fixed; inset: 0; z-index: 50; background: rgba(10, 21, 39, .38); display: flex; align-items: flex-end; }
+.confirmSheet { width: 100%; max-height: 78vh; padding: 14px 24px calc(24px + var(--page-safe-bottom)); border-radius: 22px 22px 0 0; background: #fff; box-sizing: border-box; }
+.confirmHandle { width: 48px; height: 6px; margin: 0 auto 18px; border-radius: 99px; background: #d5dce5; }
+.confirmTitle { color: #152238; font-size: 26px; font-weight: 800; text-align: center; }
+.confirmList { max-height: 360px; margin-top: 18px; overflow: auto; }
+.confirmItem { min-height: 78px; padding: 14px 16px; border: 1px solid #dce4ef; border-radius: 9px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-sizing: border-box; }
+.confirmItem + .confirmItem { margin-top: 10px; }
+.confirmItemMain { min-width: 0; }
+.confirmItemTitle { overflow: hidden; color: #152238; font-size: 21px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.confirmItemMeta, .confirmItemSub { margin-top: 4px; color: #68778d; font-size: 18px; }
+.confirmItemAmount { color: #d86316; font-size: 23px; font-weight: 900; white-space: nowrap; }
+.confirmTotal { margin-top: 17px; padding-top: 15px; border-top: 1px solid #e7ebf0; display: flex; justify-content: space-between; color: #53647d; font-size: 21px; }
+.confirmTotalAmount { color: #d86316; font-size: 25px; font-weight: 900; }
+.confirmActions { margin-top: 18px; display: flex; gap: 14px; }
+.cancelBtn, .confirmBtn { height: 60px; flex: 1; border-radius: 9px; font-size: 23px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.cancelBtn { border: 1px solid #b9c7da; color: #53647d; background: #fff; }
+.confirmBtn { background: #2463eb; color: #fff; }
+.confirmBtn--disabled { opacity: .56; }
+.filterBtn:active, .sectionActions view:active, .memberHead:active, .accountAction:active, .outlineBtn:active, .primaryBtn:active, .cancelBtn:active, .confirmBtn:active { opacity: .76; }
 
-.sectionCount {
-  color: #687385;
-  font-size: 24px;
-  font-weight: 800;
-}
-
-.list {
-  margin-top: 14px;
-  display: grid;
-  gap: 12px;
-}
-
-.row {
-  width: 100%;
-  padding: 24px;
-  border-radius: 24px;
-  box-sizing: border-box;
-}
-
-.rowTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.rowMain {
-  flex: 1;
-  min-width: 0;
-}
-
-.rowTitle {
-  color: #17202a;
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1.25;
-}
-
-.rowSub {
-  margin-top: 8px;
-  color: #687385;
-  font-size: 22px;
-  line-height: 1.35;
-}
-
-.amount {
-  flex-shrink: 0;
-  font-size: 28px;
-  font-weight: 900;
-}
-
-.amount--in {
-  color: #047857;
-}
-
-.rowFoot {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.rowMeta {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: #f7f9fc;
-  color: #687385;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.rowMeta--warn {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.rowMeta--readonly {
-  background: #edf3fb;
-  color: #31557b;
-}
-
-.auditLine {
-  margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  color: #8792a2;
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.rowActions {
-  margin-top: 16px;
-  display: flex;
-  gap: 10px;
-}
-
-.rowActions--right {
-  justify-content: flex-end;
-}
-
-.miniBtn {
-  min-width: 160px;
-  height: 58px;
-  padding: 0 18px;
-  border-radius: 12px;
-  font-size: 23px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.miniBtn--dark {
-  background: #17202a;
-  color: #fff;
-}
-
-.miniBtn--disabled {
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.readOnlyHint {
-  margin-top: 16px;
-  color: #527091;
-  font-size: 21px;
-  font-weight: 800;
-  text-align: right;
-}
-
-.empty {
-  text-align: center;
-  color: #687385;
-  font-size: 26px;
-  padding: 42px 20px;
+@media (max-width: 680px) {
+  .summaryCard { padding: 20px 14px; }
+  .summaryLead { width: 40%; padding-right: 12px; }
+  .summaryAmount { font-size: 33px; }
+  .summaryMetric { padding: 0 9px; }
+  .summaryMetricValue { font-size: 20px; }
+  .summaryMetricLabel { font-size: 18px; }
+  .summaryMeta { font-size: 17px; }
+  .accountTable { overflow-x: auto; }
+  .accountTableHead, .accountRow { min-width: 820px; }
+  .accountFoot { align-items: flex-start; flex-direction: column; }
+  .accountButtons { width: 100%; }
+  .outlineBtn, .primaryBtn { flex: 1; padding: 0 10px; }
 }

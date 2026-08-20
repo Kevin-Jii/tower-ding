@@ -1,7 +1,7 @@
 <view class="page">
     <view class="container">
       <view class="profile card">
-        <view class="avatar">{{ initials }}</view>
+        <view class="avatar" @longpress.stop="onAvatarLongPress">{{ initials }}</view>
         <view class="profileMeta">
           <view class="profileName">{{ auth.user?.nickname || auth.user?.username || auth.user?.phone || '未登录用户' }}
           </view>
@@ -96,4 +96,13 @@
 
       <view class="btn danger" @tap="onLogout">退出登录</view>
     </view>
+
+    <RememberedAccountsSheet
+      v-if="accountSheetOpen"
+      :accounts="rememberedAccounts"
+      :switching="switchingAccount"
+      @select="onSelectRememberedAccount"
+      @close="closeAccountSheet"
+      @use-other="onUseOtherAccount"
+    />
   </view>

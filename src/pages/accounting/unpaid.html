@@ -1,53 +1,147 @@
-<view class="page">
-    <view class="container">
-      <view class="card searchCard">
-        <view class="searchTitle">未支付订单</view>
-        <view class="searchRow">
-          <input
-            class="searchInput"
-            :value="memberKeyword"
-            placeholder="搜索会员名称 / 手机号"
-            confirm-type="search"
-            @input="onKeywordInput"
-            @confirm="refresh"
-          />
-          <view class="searchBtn" @tap="refresh">搜索</view>
+<view class="page unpaidPage">
+  <view class="container unpaidContainer">
+    <view class="summaryCard">
+      <view class="summaryLead">
+        <view class="summaryLabel">待收总金额</view>
+        <view class="summaryAmount"><text>¥</text> {{ formatMoney(unpaidAmount) }}</view>
+        <view class="summaryMeta">{{ total }} 位客户 <text>·</text> {{ unpaidAccountCount }} 笔账单</view>
+      </view>
+      <view class="summaryMetric summaryMetric--orange">
+        <view class="summaryMetricIcon">
+          <LucideIcon name="wallet" color="#d86316" :size="22" />
         </view>
+        <view class="summaryMetricLabel">待收金额</view>
+        <view class="summaryMetricValue">¥{{ formatMoney(unpaidAmount) }}</view>
+      </view>
+      <view class="summaryMetric summaryMetric--blue">
+        <view class="summaryMetricIcon">
+          <LucideIcon name="receipt-text" color="#287fe5" :size="22" />
+        </view>
+        <view class="summaryMetricLabel">待收账单</view>
+        <view class="summaryMetricValue">{{ unpaidAccountCount }} 笔</view>
+      </view>
+      <view class="summaryMetric summaryMetric--green">
+        <view class="summaryMetricIcon">
+          <LucideIcon name="chart-column-increasing" color="#189568" :size="22" />
+        </view>
+        <view class="summaryMetricLabel">已结清</view>
+        <view class="summaryMetricValue">{{ paidAccountCount }} 笔</view>
+      </view>
+    </view>
+
+    <view class="searchRow">
+      <view class="searchBox">
+        <LucideIcon name="package-search" color="#7d8a9d" :size="22" :stroke-width="1.8" />
+        <input class="searchInput" :value="memberKeyword" placeholder="搜索姓名 / 手机号" confirm-type="search"
+          @input="onKeywordInput" @confirm="refresh" />
+      </view>
+      <view class="filterBtn" @tap="refresh">
+        <LucideIcon name="settings" color="#17202a" :size="20" :stroke-width="1.8" /><text>筛选</text>
+      </view>
+    </view>
+
+    <view class="sectionHead">
+      <view class="sectionTitle">账单列表</view>
+      <view class="sectionActions">
+        <view @tap="expandAll">全部展开</view><text>|</text>
+        <view @tap="collapseAll">收起</view>
+      </view>
+    </view>
+
+    <view class="list">
+      <view v-if="loading" class="empty card">正在加载待结账账单…</view>
+      <view v-else-if="!list.length" class="empty card">
+        <view class="emptyTitle">暂无待结账账单</view>
+        <view class="emptyHint">当前门店没有未支付账单</view>
       </view>
 
-      <view class="sectionHead">
-        <view class="section-title">待处理列表</view>
-        <view class="sectionCount">{{ list.length }} 笔</view>
-      </view>
+      <BillTicket v-for="member in list" :key="member.id" status="unpaid">
+        <template #header>
+          <view class="memberHead" @tap.stop="toggleMember(member.id)">
+            <view class="memberAvatar">
+              <LucideIcon name="users-round" color="#287fe5" :size="27" :stroke-width="1.8" />
+            </view>
+            <view class="memberIdentity">
+              <view class="memberName">{{ memberLabel(member) }}</view>
+              <view class="memberMeta">{{ member.phone || '未填写手机号' }} <text v-if="member.uid">· 会员号 {{ member.uid
+                  }}</text></view>
+            </view>
+          </view>
+        </template>
+        <template #status>
+          <view class="memberTotal">¥ {{ formatMoney(member.unsettled_amount) }}<text
+              :class="['memberArrow', isExpanded(member.id) ? 'memberArrow--open' : '']">⌄</text></view>
+        </template>
+        <template #content>
+          <view class="memberSummary">共 {{ member.unsettled_accounts?.length || 0 }} 笔账单 <text>|</text> 待收金额：<text
+              class="memberSummaryAmount">¥ {{ formatMoney(member.unsettled_amount) }}</text></view>
+        </template>
+        <template #aside>
+          <view class="memberAsideLabel">待结账</view>
+        </template>
+        <template #items>
+          <view v-if="isExpanded(member.id)" class="accountArea">
+            <view class="accountTable">
+              <view class="accountTableHead">
+                <text>账单日期</text><text>商品明细</text><text>数量</text><text>金额</text><text>状态</text><text>操作</text>
+              </view>
+              <view v-for="account in member.unsettled_accounts || []" :key="account.id" class="accountRow">
+                <view class="accountDate" @tap="openDetail(account)">{{ formatDateTime(account.created_at ||
+                  account.account_date) }}</view>
+                <view class="accountProducts" @tap="openDetail(account)">
+                  <view v-if="account.items?.length">{{ account.items[0].product_name || '商品' }}</view>
+                  <view v-else>{{ account.title || account.account_no || `账单 #${account.id}` }}</view>
+                  <view v-if="(account.items?.length || 0) > 1" class="moreProducts">+{{ (account.items?.length || 0) -
+                    1 }} 项</view>
+                </view>
+                <view class="accountQuantity">{{ account.items?.[0]?.quantity || account.item_count || 1 }} {{
+                  account.items?.[0]?.unit || '项' }}</view>
+                <view class="accountAmount">¥ {{ formatMoney(accountAmount(account)) }}</view>
+                <view class="accountStatus">待结账</view>
+                <view class="accountAction" @tap.stop="openConfirm([account], memberLabel(member))">标记已支付</view>
+              </view>
+            </view>
+            <view class="accountFoot">
+              <view class="remark">
+                <LucideIcon name="file-text" color="#7d8a9d" :size="18" :stroke-width="1.8" /> 收款备注：{{
+                member.unsettled_accounts?.[0]?.remark || '-' }}
+              </view>
+              <view class="accountButtons">
+                <view class="outlineBtn" @tap="openDetail(member.unsettled_accounts?.[0])">查看完整账单</view>
+                <view class="primaryBtn" @tap="openConfirm(member.unsettled_accounts || [], memberLabel(member))">
+                  全部标记为已支付</view>
+              </view>
+            </view>
+          </view>
+        </template>
+      </BillTicket>
+    </view>
 
-      <view class="list">
-        <view v-if="loading" class="empty card">正在加载未支付订单…</view>
-        <view v-else-if="!list.length" class="empty card">暂无未支付订单</view>
-        <view v-for="item in list" :key="item.id" class="row card" @tap="openDetail(item)">
-          <view class="rowTop">
-            <view class="rowMain">
-              <view class="rowTitle">{{ rowDisplayNo(item) }}</view>
-              <view class="rowSub">{{ channelText(item) }} · {{ formatDate(item.account_date || item.created_at) }}</view>
-            </view>
-            <view class="amount amount--in">¥ {{ formatMoney(item.gross_total_amount ?? item.total_amount ?? item.amount) }}</view>
+  </view>
+
+  <view v-if="confirmOpen" class="confirmMask" @tap="closeConfirm">
+    <view class="confirmSheet" @tap.stop>
+      <view class="confirmHandle" />
+      <view class="confirmTitle">确认将以下账单标记为已支付?</view>
+      <view class="confirmList">
+        <view v-for="account in confirmAccounts" :key="account.id" class="confirmItem">
+          <view class="confirmItemMain">
+            <view class="confirmItemTitle">{{ account.member?.name || account.member?.phone || activeConfirmMemberName
+              || '会员账单' }}</view>
+            <view class="confirmItemMeta">{{ formatDateTime(account.created_at || account.account_date) }}</view>
+            <view class="confirmItemSub">{{ account.items?.[0]?.product_name || account.title || '消费账单' }} × {{
+              account.items?.[0]?.quantity || account.item_count || 1 }}</view>
           </view>
-          <view class="rowFoot">
-            <view class="rowMeta">会员 {{ accountMemberLabel(item) }}</view>
-            <view class="rowMeta">商品 {{ item.item_count ?? item.items?.length ?? 0 }} 项</view>
-            <view class="rowMeta rowMeta--warn">未支付</view>
-            <view v-if="isReadOnlyAccount(item)" class="rowMeta rowMeta--readonly">B2B只读</view>
-          </view>
-          <view class="auditLine">
-            <text>操作人：{{ operatorLabel(item) }}</text>
-            <text>操作时间：{{ formatDateTime(item.created_at) }}</text>
-          </view>
-          <view v-if="!isReadOnlyAccount(item)" class="rowActions rowActions--right" @tap.stop>
-            <view :class="['miniBtn', 'miniBtn--dark', savingId === item.id ? 'miniBtn--disabled' : '']" @tap="markPaid(item)">
-              {{ savingId === item.id ? '处理中…' : '标记已支付' }}
-            </view>
-          </view>
-          <view v-else class="readOnlyHint">仅供查看</view>
+          <view class="confirmItemAmount">¥ {{ formatMoney(accountAmount(account)) }}</view>
         </view>
+      </view>
+      <view class="confirmTotal"><text>合计</text><text class="confirmTotalAmount">¥ {{ formatMoney(confirmAmount)
+          }}</text></view>
+      <view class="confirmActions">
+        <view class="cancelBtn" @tap="closeConfirm">取消</view>
+        <view :class="['confirmBtn', confirming ? 'confirmBtn--disabled' : '']" @tap="confirmPayment">{{ confirming ?
+          '处理中…' : '确认已支付' }}</view>
       </view>
     </view>
   </view>
+</view>

@@ -1,36 +1,129 @@
-<view class="page">
-    <view class="container">
-      <view class="eyebrow">会员模块</view>
-      <view class="title">会员管理</view>
-      <view class="subtitle">会员资料查询与新增</view>
-
-      <view class="card formCard">
-        <view class="formTitle">新增会员</view>
-        <input class="input mt" :value="form.name" placeholder="姓名" @input="onNameInput" />
-        <input class="input mt" :value="form.phone" type="number" placeholder="手机号" @input="onPhoneInput" />
-        <view class="btn mt" @tap="submitMember">保存会员</view>
+<view class="page memberPage">
+  <view class="container memberContainer">
+    <view class="statsCard">
+      <view class="statItem">
+        <view class="statIcon statIcon--blue"><LucideIcon name="users-round" color="#287fe5" :size="22" /></view>
+        <view class="statLabel">会员总数</view>
+        <view class="statValue">{{ totalMembers }}<text class="statUnit">人</text></view>
       </view>
+      <view class="statItem">
+        <view class="statIcon statIcon--green"><LucideIcon name="wallet-cards" color="#20a866" :size="22" /></view>
+        <view class="statLabel">累计消费</view>
+        <view class="statValue statValue--money"><text class="currency">¥</text>{{ formatMoney(totalConsumption) }}</view>
+        <view class="statHint">总金额</view>
+      </view>
+      <view class="statItem">
+        <view class="statIcon statIcon--orange"><LucideIcon name="chart-column-increasing" color="#e88924" :size="22" /></view>
+        <view class="statLabel">活跃会员</view>
+        <view class="statValue">{{ activeMembers }}<text class="statUnit">人</text></view>
+        <view class="statHint">近 30 天</view>
+      </view>
+      <view class="statItem">
+        <view class="statIcon statIcon--violet"><LucideIcon name="receipt-text" color="#7357cf" :size="22" /></view>
+        <view class="statLabel">会员积分</view>
+        <view class="statValue">{{ totalPoints }}</view>
+        <view class="statHint">总积分</view>
+      </view>
+    </view>
 
-      <view class="searchRow">
+    <view class="searchRow">
+      <view class="searchBox">
+        <LucideIcon name="package-search" color="#9aa6b7" :size="22" :stroke-width="1.8" />
         <input class="searchInput" :value="keyword" placeholder="搜索姓名 / 手机号 / 会员号" confirm-type="search" @input="onKeywordInput" @confirm="refresh" />
-        <view class="searchBtn" @tap="refresh">搜索</view>
       </view>
+      <view :class="['filterBtn', filterOpen ? 'filterBtn--on' : '']" @tap="filterOpen = !filterOpen">
+        <LucideIcon name="settings" color="#17202a" :size="20" :stroke-width="1.8" />
+        <text>筛选</text>
+      </view>
+    </view>
 
-      <view class="list">
-        <view v-if="!members.length" class="empty card">暂无会员</view>
-        <view v-for="m in members" :key="m.id" class="row card">
-          <view class="rowTop">
-            <view>
-              <view class="rowTitle">{{ memberName(m) }}</view>
-              <view class="rowSub">{{ m.phone || '-' }}</view>
-            </view>
-            <view class="statusTag">等级 {{ m.level ?? 0 }}</view>
-          </view>
-          <view class="rowFoot">
-            <view class="rowMeta">余额 ¥{{ formatMoney(m.balance) }}</view>
-            <view class="rowMeta">积分 {{ m.points ?? 0 }}</view>
-          </view>
+    <view v-if="filterOpen" class="filterPanel">
+      <view class="filterGroup">
+        <view class="filterTitle">会员状态</view>
+        <view class="filterOptions">
+          <view :class="['filterOption', activityFilter === 'all' ? 'filterOption--on' : '']" @tap="selectActivity('all')">全部</view>
+          <view :class="['filterOption', activityFilter === 'active' ? 'filterOption--on' : '']" @tap="selectActivity('active')">近 30 天有消费</view>
+          <view :class="['filterOption', activityFilter === 'inactive' ? 'filterOption--on' : '']" @tap="selectActivity('inactive')">暂无消费</view>
+        </view>
+      </view>
+      <view class="filterGroup">
+        <view class="filterTitle">会员等级</view>
+        <view class="filterOptions">
+          <view :class="['filterOption', levelFilter === null ? 'filterOption--on' : '']" @tap="selectLevel(null)">全部等级</view>
+          <view :class="['filterOption', levelFilter === 1 ? 'filterOption--on' : '']" @tap="selectLevel(1)">等级 1</view>
+          <view :class="['filterOption', levelFilter === 2 ? 'filterOption--on' : '']" @tap="selectLevel(2)">等级 2</view>
+          <view :class="['filterOption', levelFilter === 3 ? 'filterOption--on' : '']" @tap="selectLevel(3)">等级 3</view>
+        </view>
+      </view>
+      <view class="filterFooter">
+        <view class="clearFilter" @tap="clearFilters">重置筛选</view>
+        <view class="filterSummary">{{ activityLabel }} · {{ levelFilter === null ? '全部等级' : `等级 ${levelFilter}` }}</view>
+      </view>
+    </view>
+
+    <view class="createCard" @tap="openCreate">
+      <view class="createIcon"><LucideIcon name="users-round" color="#287fe5" :size="28" :stroke-width="1.8" /></view>
+      <view class="createCopy">
+        <view class="createTitle">新增会员</view>
+        <view class="createHint">填写会员信息，快速创建新会员</view>
+      </view>
+      <view class="createAction">去新增 <text class="arrow">›</text></view>
+    </view>
+
+    <view class="listToolbar">
+      <view class="listCount">共 {{ totalMembers }} 位会员</view>
+      <view class="toolbarActions">
+        <view class="sortTrigger" @tap="sortOpen = !sortOpen">{{ sortLabel }} <text class="sortArrow">⌄</text></view>
+        <view class="viewToggle">
+          <view :class="['viewBtn', viewMode === 'grid' ? 'viewBtn--on' : '']" @tap="setViewMode('grid')">▦</view>
+          <view :class="['viewBtn', viewMode === 'list' ? 'viewBtn--on' : '']" @tap="setViewMode('list')">☷</view>
         </view>
       </view>
     </view>
+
+    <view v-if="sortOpen" class="sortMenu">
+      <view :class="['sortOption', sortMode === 'default' ? 'sortOption--on' : '']" @tap="selectSort('default')">默认排序</view>
+      <view :class="['sortOption', sortMode === 'balance' ? 'sortOption--on' : '']" @tap="selectSort('balance')">余额从高到低</view>
+      <view :class="['sortOption', sortMode === 'points' ? 'sortOption--on' : '']" @tap="selectSort('points')">积分从高到低</view>
+    </view>
+
+    <view class="list">
+      <view v-if="loading" class="empty card">正在加载会员列表…</view>
+      <view v-else-if="!filteredMembers.length" class="empty card">
+        <view class="emptyTitle">暂无会员</view>
+        <view class="emptyHint">调整筛选条件或新增一位会员</view>
+      </view>
+      <view v-for="member in filteredMembers" :key="member.id" :class="['memberCard', viewMode === 'list' ? 'memberCard--list' : '']" @tap="openConsumption(member)">
+        <view class="memberAvatar">{{ memberInitial(member) }}</view>
+        <view class="memberBody">
+          <view class="memberHead">
+            <view class="memberName">{{ memberName(member) }}</view>
+            <view class="levelTag">等级 {{ member.level ?? 1 }}</view>
+          </view>
+          <view class="memberIdentity"><text>{{ member.phone || '未填写手机号' }}</text><text>会员号：{{ member.uid || member.id }}</text></view>
+          <view class="memberBadges">
+            <view class="balanceBadge">余额&nbsp; ¥{{ formatMoney(member.balance) }}</view>
+            <view class="pointsBadge">积分&nbsp; {{ member.points ?? 0 }}</view>
+          </view>
+          <view class="memberFoot"><text>最近消费：{{ formatDate(member.recent_consumption_at) }}</text><text>消费 {{ member.consumption_count ?? 0 }} 次</text></view>
+        </view>
+        <view class="memberChevron">›</view>
+      </view>
+    </view>
+
+    <view v-if="createOpen" class="mask" @tap="closeCreate">
+      <view class="sheet" @tap.stop>
+        <view class="sheetHandle" />
+        <view class="sheetHeader">
+          <view><view class="sheetTitle">新增会员</view><view class="sheetHint">建立资料后即可在记账时快速选择</view></view>
+          <view class="sheetClose" @tap="closeCreate">×</view>
+        </view>
+        <view class="fieldLabel">姓名 <text class="optional">选填</text></view>
+        <input class="sheetInput" :value="form.name" placeholder="请输入会员姓名" @input="onNameInput" />
+        <view class="fieldLabel">手机号 <text class="required">必填</text></view>
+        <input class="sheetInput" :value="form.phone" type="number" placeholder="请输入手机号" @input="onPhoneInput" />
+        <view :class="['submitBtn', saving ? 'submitBtn--disabled' : '']" @tap="submitMember">{{ saving ? '保存中…' : '保存会员' }}</view>
+      </view>
+    </view>
   </view>
+</view>

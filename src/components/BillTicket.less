@@ -1,0 +1,128 @@
+.billTicket {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dfe6ef;
+  border-radius: 14px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.billTicket--clickable:active {
+  opacity: 0.78;
+}
+
+.billTicketTopNotch,
+.billTicketSideNotch {
+  position: absolute;
+  z-index: 3;
+  background: #f4f7fb;
+  border: 1px solid #dfe6ef;
+  box-sizing: border-box;
+}
+
+.billTicketTopNotch {
+  top: -11px;
+  left: 72%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.billTicketSideNotch {
+  top: 58px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow:
+    0 44px 0 #f4f7fb,
+    0 88px 0 #f4f7fb,
+    0 132px 0 #f4f7fb,
+    0 176px 0 #f4f7fb;
+}
+
+.billTicketSideNotch--left {
+  left: -10px;
+}
+
+.billTicketSideNotch--right {
+  right: -10px;
+}
+
+.billTicketHeader {
+  min-height: 62px;
+  padding: 20px 16px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.billTicketHeaderMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.billTicketStatus {
+  flex-shrink: 0;
+}
+
+.billTicketBody {
+  min-height: 126px;
+  padding: 9px 16px 16px;
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.billTicketMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.billTicketAside {
+  width: 145px;
+  padding-left: 14px;
+  border-left: 1px dashed #d8dfe8;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.billTicketItems {
+  margin: 0 16px;
+  padding: 13px 0 0;
+  border-top: 1px dashed #d8dfe8;
+}
+
+.billTicketFooter {
+  margin: 0 16px;
+  padding: 13px 0 17px;
+  border-top: 1px solid #edf1f5;
+}
+
+.billTicket--paid .billTicketTopNotch,
+.billTicket--paid .billTicketSideNotch {
+  background: #f4f7fb;
+}
+
+@media (max-width: 680px) {
+  .billTicketHeader,
+  .billTicketBody {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .billTicketItems,
+  .billTicketFooter {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .billTicketAside {
+    display: flex;
+    align-items: center;
+    width: 145px;
+    padding-left: 12px;
+  }
+}

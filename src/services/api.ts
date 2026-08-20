@@ -176,7 +176,7 @@ export type SupplierProduct = {
   supplier_id?: number
   category_id?: number
   category_name?: string
-  category?: { id?: number; name?: string }
+  category?: { id?: number; name?: string; sort?: number }
   product?: {
     id?: number
     name?: string
@@ -184,7 +184,7 @@ export type SupplierProduct = {
     unit?: string
     category_id?: number
     category_name?: string
-    category?: { id?: number; name?: string }
+    category?: { id?: number; name?: string; sort?: number }
   }
   product_name?: string
   name?: string
@@ -211,6 +211,7 @@ export type ProductUnitSpec = {
 
 export type StoreAccount = {
   id: number
+  store_id?: number
   title?: string
   channel?: string
   amount?: number
@@ -244,6 +245,9 @@ export type StoreAccount = {
   store?: { id?: number; name?: string }
   member?: Member
   operator?: { id?: number; nickname?: string; username?: string; phone?: string }
+  operator_id?: number
+  operator_name?: string
+  operator_phone?: string
   items?: Array<{
     id: number
     product_id?: number
@@ -356,9 +360,32 @@ export type Member = {
   balance?: string | number
   points?: number
   level?: number
+  recent_consumption_at?: string
+  consumption_count?: number
+  total_consumption_amount?: number | string
   version?: number
   created_at?: string
   updated_at?: string
+}
+
+export type MemberStats = {
+  total?: number
+  total_consumption_amount?: number | string
+  active_30_days?: number
+  total_points?: number
+}
+
+export type MemberUnsettledAccountGroup = Member & {
+  unsettled_amount?: number | string
+  unsettled_accounts?: StoreAccount[]
+}
+
+export type MemberUnsettledAccountPage = {
+  list: MemberUnsettledAccountGroup[]
+  total: number
+  page: number
+  page_size: number
+  page_num: number
 }
 
 export type MemberWineStorage = {
@@ -419,7 +446,14 @@ export type B2BPrice = {
   is_enabled?: boolean
   remark?: string
   customer?: B2BCustomer
-  product?: { id?: number; name?: string; product_name?: string }
+  product?: {
+    id?: number
+    name?: string
+    product_name?: string
+    category_id?: number
+    category_name?: string
+    category?: { id?: number; name?: string; sort?: number }
+  }
   unit_spec?: ProductUnitSpec
 }
 
@@ -840,7 +874,7 @@ export function listSuppliers(
 
 export function listStoreAccounts(
   authToken: string,
-  params: { store_id?: number; channel?: string; order_no?: string; member_keyword?: string; payment_status?: number; start_date?: string; end_date?: string; page?: number; page_size?: number }
+  params: { store_id?: number; member_id?: number; channel?: string; order_no?: string; member_keyword?: string; payment_status?: number; start_date?: string; end_date?: string; page?: number; page_size?: number }
 ) {
   return request<StoreAccount[] | PaginatedList<StoreAccount>>('/store-accounts', {
     method: 'GET',
@@ -867,7 +901,7 @@ export function cancelStoreAccount(authToken: string, id: number, body?: { remar
 
 export function getStoreAccountStats(
   authToken: string,
-  params: { store_id?: number; start_date?: string; end_date?: string }
+  params: { store_id?: number; member_id?: number; payment_status?: number; start_date?: string; end_date?: string }
 ) {
   return request<{
     gross_total_amount?: number
@@ -876,6 +910,10 @@ export function getStoreAccountStats(
     total_turnover_amount?: number
     net_income_amount?: number
     count?: number
+    paid_amount?: number
+    unpaid_amount?: number
+    paid_count?: number
+    unpaid_count?: number
   }>('/store-accounts/stats', {
     method: 'GET',
     data: params,
@@ -908,7 +946,7 @@ export function listStoreAccountConsumableProducts(
 
 export function listMembers(
   authToken: string,
-  params: { keyword?: string; page?: number; page_size?: number } = {}
+  params: { store_id?: number; keyword?: string; page?: number; page_size?: number } = {}
 ) {
   return request<Member[] | PaginatedList<Member>>('/members', {
     method: 'GET',
@@ -919,7 +957,7 @@ export function listMembers(
 
 export function getMemberPage(
   authToken: string,
-  params: { keyword?: string; page?: number; page_size?: number } = {}
+  params: { store_id?: number; keyword?: string; page?: number; page_size?: number } = {}
 ) {
   return request<Member[] | PaginatedList<Member>>('/members', {
     method: 'GET',
@@ -938,6 +976,29 @@ export function getMemberPage(
       page_num: Number(payload?.page_num || 0)
     }
   })
+}
+
+/** `GET /members/stats`，用于会员列表顶部经营概览。后端未上线时页面会回退到列表数据。 */
+export function getMemberStats(
+  authToken: string,
+  params: { store_id?: number } = {}
+) {
+  return request<MemberStats>('/members/stats', {
+    method: 'GET',
+    data: params,
+    authToken,
+    showLoading: false
+  })
+}
+
+export function getMemberUnsettledAccounts(
+  authToken: string,
+  params: { store_id?: number; keyword?: string } = {}
+) {
+  return request<MemberUnsettledAccountGroup[] | { list?: MemberUnsettledAccountGroup[] }>(
+    '/members/unsettled-accounts',
+    { method: 'GET', data: params, authToken, showLoading: false }
+  ).then((payload) => Array.isArray(payload) ? payload : payload?.list || [])
 }
 
 export function createMember(

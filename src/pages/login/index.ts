@@ -5,12 +5,15 @@ import { ref } from 'vue'
 
 
 import { useAuthStore } from '../../stores/auth'
+import {
+  forgetLogin,
+  readRememberedLogins,
+  rememberLogin,
+  type RememberedLogin
+} from '../../shared/login-accounts'
 
 export default {
   setup() {
-    const LOGIN_FORM_KEY = 'tower.login.form'
-    
-    
     /** 与协议正文「更新日期」或条款变更保持一致时，已同意用户可自动勾选 */
     const POLICY_VERSION = '2026-05-10'
     
@@ -57,7 +60,7 @@ export default {
     
     function hydrateRememberForm() {
       try {
-        const saved = Taro.getStorageSync(LOGIN_FORM_KEY) as { phone?: string; password?: string } | undefined
+        const saved = readRememberedLogins()[0] as RememberedLogin | undefined
         if (saved?.phone && saved?.password) {
           phone.value = String(saved.phone)
           password.value = String(saved.password)
@@ -131,12 +134,9 @@ export default {
         await auth.login(phone.value.trim(), password.value)
         Taro.setStorageSync(POLICY_ACCEPT_KEY, POLICY_VERSION)
         if (rememberPwd.value) {
-          Taro.setStorageSync(LOGIN_FORM_KEY, {
-            phone: phone.value.trim(),
-            password: password.value
-          })
+          rememberLogin(phone.value.trim(), password.value)
         } else {
-          Taro.removeStorageSync(LOGIN_FORM_KEY)
+          forgetLogin(phone.value.trim())
         }
         Taro.hideLoading()
         Taro.reLaunch({ url: '/pages/home/index' })
@@ -158,7 +158,6 @@ export default {
       useDidShow,
       ref,
       useAuthStore,
-      LOGIN_FORM_KEY,
       POLICY_VERSION,
       POLICY_ACCEPT_KEY,
       auth,

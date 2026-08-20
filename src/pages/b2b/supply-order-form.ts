@@ -149,7 +149,7 @@ export default {
      * Picker 使用的价格列表
      */
     const priceOptions = computed(() => {
-      return customerPrices.value.map((price) => ({
+      return [...customerPrices.value].sort(comparePrices).map((price) => ({
         label: `${getProductName(price)} / ${getUnitName(
           price,
         )} / ¥${formatMoney(price.supply_price)}`,
@@ -157,6 +157,39 @@ export default {
         value: Number(price.id),
       }));
     });
+
+    function comparePrices(a: B2BPrice, b: B2BPrice) {
+      const categorySort = compareSort(getPriceCategorySort(a), getPriceCategorySort(b));
+      if (categorySort) {
+        return categorySort;
+      }
+
+      const categoryId = Number(a.product?.category_id || 0) - Number(b.product?.category_id || 0);
+      if (categoryId) {
+        return categoryId;
+      }
+
+      const name = getProductName(a).localeCompare(getProductName(b), "zh-Hans");
+      if (name) {
+        return name;
+      }
+
+      return Number(a.id || 0) - Number(b.id || 0);
+    }
+
+    function getPriceCategorySort(price: B2BPrice) {
+      const sort = Number(price.product?.category?.sort);
+      return Number.isFinite(sort) ? sort : null;
+    }
+
+    function compareSort(a: number | null, b: number | null) {
+      const leftValid = a != null;
+      const rightValid = b != null;
+      if (!leftValid && !rightValid) return 0;
+      if (!leftValid) return 1;
+      if (!rightValid) return -1;
+      return a - b;
+    }
 
     function getProductName(price: B2BPrice) {
       return (

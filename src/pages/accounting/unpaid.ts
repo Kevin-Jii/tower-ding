@@ -1,59 +1,54 @@
 import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 
-
-import { ref } from 'vue'
-
+import { computed, ref } from 'vue'
 
 import {
-  listDictDataByTypeCode,
-  listStoreAccounts,
+  getMemberUnsettledAccounts,
+  getStoreAccountStats,
   updateStoreAccount,
-  type DictData,
   type Member,
+  type MemberUnsettledAccountGroup,
   type StoreAccount
 } from '../../services/api'
 
-
 import { useAuthStore } from '../../stores/auth'
-
+import BillTicket from '../../components/BillTicket.vue'
+import LucideIcon from '../../components/LucideIcon.vue'
 
 import { formatDateTime } from '../../shared/format'
 
 export default {
+  components: { BillTicket, LucideIcon },
   setup() {
     const auth = useAuthStore()
-    
-    
-    const list = ref<StoreAccount[]>([])
-    
-    
-    const channelDict = ref<Record<string, string>>({})
-    
-    
+    const list = ref<MemberUnsettledAccountGroup[]>([])
     const memberKeyword = ref('')
-    
-    
     const loading = ref(false)
-    
-    
-    const savingId = ref(0)
-    
-    
-    
-    function formatMoney(v: any) {
-      const n = Number(v || 0)
-      return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+    const expandedMemberIds = ref<number[]>([])
+    const stats = ref<Awaited<ReturnType<typeof getStoreAccountStats>>>({})
+    const confirmOpen = ref(false)
+    const confirming = ref(false)
+    const confirmAccounts = ref<StoreAccount[]>([])
+    const activeConfirmMemberName = ref('')
+
+    const pageAmount = computed(() => list.value.reduce((sum, member) => {
+      return sum + Number(member.unsettled_amount || 0)
+    }, 0))
+
+    const accountCount = computed(() => list.value.reduce((sum, member) => {
+      return sum + (member.unsettled_accounts?.length || 0)
+    }, 0))
+
+    const unpaidAmount = computed(() => stats.value.unpaid_amount ?? pageAmount.value)
+    const unpaidAccountCount = computed(() => stats.value.unpaid_count ?? accountCount.value)
+    const paidAccountCount = computed(() => stats.value.paid_count ?? 0)
+    const confirmAmount = computed(() => confirmAccounts.value.reduce((sum, account) => sum + Number(accountAmount(account) || 0), 0))
+
+    function formatMoney(value: any) {
+      const amount = Number(value || 0)
+      return Number.isFinite(amount) ? amount.toFixed(2) : '0.00'
     }
-    
-    
-    
-    function formatDate(v?: string) {
-      if (!v) return '-'
-      return String(v).slice(0, 10)
-    }
-    
-    
-    
+
     function memberLabel(member?: Member | null) {
       if (!member) return '-'
       const name = String(member.name || '').trim()
@@ -61,100 +56,98 @@ export default {
       if (name && phone) return `${name}(${phone})`
       return name || phone || `会员 #${member.id}`
     }
-    
-    
-    
-    function accountMemberLabel(item: StoreAccount) {
-      if (item.member) return memberLabel(item.member)
-      const mid = Number(item.member_id || 0)
-      return mid > 0 ? `会员 #${mid}` : '-'
+
+    function accountAmount(account?: StoreAccount | null) {
+      if (!account) return 0
+      return account.gross_total_amount ?? account.total_amount ?? account.amount
     }
 
+    function normalizeGroups(value: unknown): MemberUnsettledAccountGroup[] {
+      if (!Array.isArray(value)) return []
 
-
-    function operatorLabel(item: StoreAccount) {
-      const operator = item.operator
-      return operator?.nickname || operator?.username || operator?.phone || '-'
-    }
-    
-    
-    
-    function rowDisplayNo(item: StoreAccount) {
-      if (item.member) return memberLabel(item.member)
-      return item.order_no || item.account_no || `记账 #${item.id}`
-    }
-    
-    
-    
-    function channelText(item: StoreAccount) {
-      const code = String(item.channel || '').trim()
-      if (!code) return '未知渠道'
-      return channelDict.value[code] || code
-    }
-
-
-
-    function isReadOnlyAccount(item: StoreAccount) {
-      return item.is_read_only === true || item.source_type === 'b2b_supply_order'
-    }
-
-
-
-    function openDetail(item: StoreAccount) {
-      Taro.navigateTo({ url: `/pages/accounting/detail?id=${item.id}` })
-    }
-    
-    
-    
-    function mapDict(rows: DictData[]) {
-      const map: Record<string, string> = {}
-      rows.forEach((r) => {
-        const value = String(r?.value || '').trim()
-        if (!value) return
-        map[value] = String(r?.label || r?.value || '').trim() || value
-      })
-      return map
-    }
-    
-    
-    
-    function onKeywordInput(e: any) {
-      memberKeyword.value = String(e?.detail?.value || '')
-    }
-    
-    
-    
-    async function loadChannelDict() {
-      if (!auth.token) return
-      try {
-        channelDict.value = mapDict(await listDictDataByTypeCode(auth.token, 'sales_channel'))
-      } catch {
-        channelDict.value = {}
-      }
-    }
-    
-    
-    
-    async function loadAllUnpaidAccounts() {
-      if (!auth.token) return []
-      const rows: StoreAccount[] = []
-      const pageSize = 100
-      for (let page = 1; page <= 50; page += 1) {
-        const pageRows = await listStoreAccounts(auth.token, {
-          store_id: auth.storeId || undefined,
-          member_keyword: memberKeyword.value.trim() || undefined,
-          payment_status: 2,
-          page,
-          page_size: pageSize
+      return value
+        .filter((member): member is MemberUnsettledAccountGroup => {
+          return Boolean(member && typeof member === 'object' && Number((member as MemberUnsettledAccountGroup).id) > 0)
         })
-        rows.push(...pageRows)
-        if (pageRows.length < pageSize) break
-      }
-      return rows.filter((item) => !item.is_canceled)
+        .map((member) => ({
+          ...member,
+          id: Number(member.id),
+          unsettled_accounts: Array.isArray(member.unsettled_accounts)
+            ? member.unsettled_accounts.filter((account): account is StoreAccount => {
+              return Boolean(account && typeof account === 'object' && Number((account as StoreAccount).id) > 0)
+            })
+            : []
+        }))
     }
-    
-    
-    
+
+    function isReadOnlyAccount(account: StoreAccount) {
+      return account.is_read_only === true || account.source_type === 'b2b_supply_order'
+    }
+
+    function toggleMember(memberId: number) {
+      if (expandedMemberIds.value.includes(memberId)) {
+        expandedMemberIds.value = expandedMemberIds.value.filter((id) => id !== memberId)
+      } else {
+        expandedMemberIds.value = [...expandedMemberIds.value, memberId]
+      }
+    }
+
+    function isExpanded(memberId: number) {
+      return expandedMemberIds.value.includes(memberId)
+    }
+
+    function expandAll() {
+      expandedMemberIds.value = list.value.map((member) => Number(member.id))
+    }
+
+    function expandFirst() {
+      expandedMemberIds.value = list.value.length ? [Number(list.value[0].id)] : []
+    }
+
+    function collapseAll() {
+      expandedMemberIds.value = []
+    }
+
+    function openDetail(account: StoreAccount) {
+      if (!account?.id) return
+      Taro.navigateTo({ url: `/pages/accounting/unpaid-detail?id=${account.id}` })
+    }
+
+    function openConfirm(accounts: StoreAccount[], memberName = '') {
+      const available = accounts.filter((account) => !isReadOnlyAccount(account) && !account.is_canceled)
+      if (!available.length) {
+        Taro.showToast({ title: '当前账单不可标记为已支付', icon: 'none' })
+        return
+      }
+      confirmAccounts.value = available
+      activeConfirmMemberName.value = memberName
+      confirmOpen.value = true
+    }
+
+    function closeConfirm() {
+      if (!confirming.value) confirmOpen.value = false
+    }
+
+    function onKeywordInput(event: any) {
+      memberKeyword.value = String(event?.detail?.value || '')
+    }
+
+    async function loadAccounts() {
+      if (!auth.token) return
+      const [data, summary] = await Promise.all([
+        getMemberUnsettledAccounts(auth.token, {
+          store_id: auth.storeId || undefined,
+          keyword: memberKeyword.value.trim() || undefined
+        }),
+        getStoreAccountStats(auth.token, {
+          store_id: auth.storeId || undefined
+        }).catch(() => ({}))
+      ])
+      stats.value = summary
+      list.value = normalizeGroups(data)
+      expandFirst()
+    }
+
     async function refresh() {
       if (!auth.token) {
         Taro.redirectTo({ url: '/pages/login/index' })
@@ -162,49 +155,36 @@ export default {
       }
       loading.value = true
       try {
-        await loadChannelDict()
-        list.value = await loadAllUnpaidAccounts()
+        await loadAccounts()
       } catch (err: any) {
         list.value = []
-        Taro.showToast({ title: err?.message || '加载未支付订单失败', icon: 'none' })
+        Taro.showToast({ title: err?.message || '加载待结账会员失败', icon: 'none' })
       } finally {
         loading.value = false
       }
     }
-    
-    
-    
-    async function markPaid(item: StoreAccount) {
-      if (!auth.token || savingId.value) return
-      if (isReadOnlyAccount(item)) {
-        Taro.showToast({ title: '请在B2B供货单中确认收款', icon: 'none' })
-        return
-      }
-      if (item.is_canceled) {
-        Taro.showToast({ title: '已作废订单不可修改', icon: 'none' })
-        list.value = list.value.filter((row) => row.id !== item.id)
-        return
-      }
-      savingId.value = item.id
+
+    async function confirmPayment() {
+      if (!auth.token || confirming.value || !confirmAccounts.value.length) return
+      confirming.value = true
       try {
-        await updateStoreAccount(auth.token, item.id, { payment_status: 1 })
-        Taro.showToast({ title: '已改为已支付', icon: 'success' })
-        list.value = list.value.filter((row) => row.id !== item.id)
+        for (const account of confirmAccounts.value) {
+          await updateStoreAccount(auth.token, account.id, { payment_status: 1 })
+        }
+        Taro.showToast({ title: '账单已结清', icon: 'success' })
+        confirmOpen.value = false
+        await refresh()
       } catch (err: any) {
         Taro.showToast({ title: err?.message || '修改失败', icon: 'none' })
       } finally {
-        savingId.value = 0
+        confirming.value = false
       }
     }
-    
-    
-    
+
     useDidShow(() => {
       void refresh()
     })
-    
-    
-    
+
     usePullDownRefresh(async () => {
       await refresh()
       Taro.stopPullDownRefresh()
@@ -214,33 +194,45 @@ export default {
       Taro,
       useDidShow,
       usePullDownRefresh,
+      computed,
       ref,
-      listDictDataByTypeCode,
-      listStoreAccounts,
+      getMemberUnsettledAccounts,
       updateStoreAccount,
       useAuthStore,
       auth,
       list,
-      channelDict,
       memberKeyword,
+      total: computed(() => list.value.length),
       loading,
-      savingId,
+      expandedMemberIds,
+      stats,
+      pageAmount,
+      accountCount,
+      unpaidAmount,
+      unpaidAccountCount,
+      paidAccountCount,
+      confirmOpen,
+      confirming,
+      confirmAccounts,
+      activeConfirmMemberName,
+      confirmAmount,
       formatMoney,
-      formatDate,
       formatDateTime,
       memberLabel,
-      accountMemberLabel,
-      operatorLabel,
-      rowDisplayNo,
-      channelText,
+      accountAmount,
       isReadOnlyAccount,
+      toggleMember,
+      isExpanded,
+      expandAll,
+      collapseAll,
       openDetail,
-      mapDict,
+      openConfirm,
+      closeConfirm,
+      expandFirst,
       onKeywordInput,
-      loadChannelDict,
-      loadAllUnpaidAccounts,
+      loadAccounts,
       refresh,
-      markPaid,
+      confirmPayment,
     }
   }
 }

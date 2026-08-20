@@ -1,0 +1,31 @@
+<view class="halfScreenDialog">
+  <view class="halfScreenDialogBackdrop" catchMove @tap="emit('close')" @touchmove.stop.prevent="noopTouchMove" />
+  <view class="halfScreenDialogPanel" @tap.stop @touchmove.stop>
+    <view class="halfScreenDialogHandle" />
+    <view class="halfScreenDialogHeader">
+      <view>
+        <view class="halfScreenDialogTitle">切换账号</view>
+        <view class="halfScreenDialogSub">选择已记住的账号快速登录</view>
+      </view>
+      <view class="halfScreenDialogClose" @tap="emit('close')">×</view>
+    </view>
+
+    <view class="halfScreenDialogList">
+      <view v-for="account in accounts" :key="account.phone" class="rememberedAccountRow"
+        @tap="emit('select', account)">
+        <view class="rememberedAccountAvatar">{{ account.phone.slice(0, 1) }}</view>
+        <view class="rememberedAccountMeta">
+          <view class="rememberedAccountName">{{ maskPhone(account.phone) }}</view>
+          <view class="rememberedAccountHint">已记住密码</view>
+        </view>
+        <!-- <view class="rememberedAccountArrow">›</view> -->
+      </view>
+      <view v-if="!accounts.length" class="halfScreenDialogEmpty">暂无已记住的账号</view>
+    </view>
+
+    <view :class="['halfScreenDialogOther', switching ? 'halfScreenDialogOther--disabled' : '']"
+      @tap="emit('use-other')">
+      使用其他账号登录
+    </view>
+  </view>
+</view>

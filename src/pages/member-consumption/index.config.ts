@@ -1,4 +1,4 @@
 export default {
-  navigationBarTitleText: '待结账',
+  navigationBarTitleText: '消费记录',
   enablePullDownRefresh: true
 }

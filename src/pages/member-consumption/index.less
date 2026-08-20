@@ -1,0 +1,510 @@
+.consumptionPage {
+  background: #f4f7fb;
+}
+
+.consumptionContainer {
+  padding-bottom: calc(56px + var(--page-safe-bottom));
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.headerAvatar,
+.summaryAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e5efff;
+  color: #286fe1;
+  font-weight: 900;
+}
+
+.headerAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  font-size: 28px;
+}
+
+.memberSummary {
+  margin-top: 22px;
+  padding: 20px 0 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.memberSummaryHead {
+  padding: 0 22px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.summaryAvatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  font-size: 30px;
+}
+
+.summaryIdentity {
+  min-width: 0;
+  flex: 1;
+}
+
+.summaryName {
+  overflow: hidden;
+  color: #132037;
+  font-size: 28px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryPhone {
+  margin-top: 6px;
+  color: #65758c;
+  font-size: 21px;
+}
+
+.summaryMemberNo {
+  color: #75849a;
+  font-size: 19px;
+  white-space: nowrap;
+}
+
+.summaryStats {
+  padding: 17px 0 19px;
+  border-top: 1px solid #edf1f5;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summaryStat {
+  min-width: 0;
+  padding: 0 13px;
+  text-align: center;
+}
+
+.summaryStat + .summaryStat {
+  border-left: 1px solid #e2e8ef;
+}
+
+.summaryStatLabel {
+  color: #68778d;
+  font-size: 19px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.summaryStatValue {
+  margin-top: 9px;
+  color: #142037;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.summaryStat--paid .summaryStatValue {
+  color: #3d8b4e;
+}
+
+.summaryStat--unpaid .summaryStatValue {
+  color: #e26c1d;
+}
+
+.summaryUnit {
+  margin-left: 4px;
+  color: #66758b;
+  font-size: 18px;
+}
+
+.filterBar {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.filterTitle {
+  color: #17243a;
+  font-size: 29px;
+  font-weight: 900;
+}
+
+.filterOpenBtn {
+  min-height: 50px;
+  padding: 0 15px;
+  border: 1px solid #dce4ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #17202a;
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dateQuickRow {
+  margin-top: 13px;
+  display: flex;
+  gap: 9px;
+}
+
+.quickBtn {
+  min-height: 48px;
+  padding: 0 17px;
+  border: 1px solid #dce4ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #67768b;
+  font-size: 21px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+
+.quickBtn--on {
+  border-color: #8bb5fb;
+  background: #edf4ff;
+  color: #216fe5;
+}
+
+.dateRangeBar {
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid #dce4ef;
+  border-radius: 13px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+}
+
+.dateRangeBar > picker {
+  min-width: 0;
+  flex: 1;
+}
+
+.datePickerBox {
+  min-width: 0;
+  height: 56px;
+  padding: 0 10px;
+  border: 1px solid #e0e6ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+}
+
+.datePickerLabel {
+  color: #8995a6;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.datePickerValue {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #26354b;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dateRangeDash {
+  color: #9aa6b7;
+  font-size: 20px;
+}
+
+.dateQueryBtn {
+  min-width: 64px;
+  height: 56px;
+  border-radius: 8px;
+  background: #246fe5;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list {
+  margin-top: 15px;
+  display: grid;
+  gap: 13px;
+}
+
+.accountCardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.accountNo {
+  min-width: 0;
+  overflow: hidden;
+  color: #c8382d;
+  font-size: 25px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paymentTag {
+  min-height: 38px;
+  padding: 0 11px;
+  border-radius: 7px;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.paymentTag--paid {
+  background: #edf8ef;
+  color: #3d8b4e;
+}
+
+.paymentTag--unpaid {
+  background: #fff1e9;
+  color: #d95d1c;
+}
+
+.accountInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.infoLine {
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  color: #4e5e75;
+  font-size: 21px;
+  line-height: 1.55;
+}
+
+.infoLabel {
+  width: 80px;
+  flex-shrink: 0;
+  color: #7a8799;
+}
+
+.accountAmountBox {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.amountLabel {
+  color: #68778d;
+  font-size: 20px;
+}
+
+.accountAmount {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.accountAmount--paid { color: #3d8b4e; }
+.accountAmount--unpaid { color: #d95d1c; }
+
+.accountArrow {
+  margin-top: 12px;
+  color: #8190a3;
+  font-size: 33px;
+  line-height: 1;
+}
+
+.itemTable {
+  padding-top: 0;
+}
+
+.itemTableHead,
+.itemTableRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px 82px 82px;
+  gap: 8px;
+  align-items: center;
+}
+
+.itemTableHead {
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e9edf2;
+  color: #758297;
+  font-size: 18px;
+}
+
+.itemTableHead text:not(:first-child),
+.itemTableRow text:not(:first-child) {
+  text-align: right;
+}
+
+.itemTableRow {
+  padding: 9px 0;
+  color: #33425a;
+  font-size: 20px;
+}
+
+.itemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountCardFoot {
+  color: #718097;
+  font-size: 20px;
+}
+
+.footArrow {
+  margin-left: 4px;
+  color: #246fe5;
+  font-size: 27px;
+}
+
+.empty {
+  padding: 44px 20px;
+  color: #68778d;
+  text-align: center;
+}
+
+.emptyTitle {
+  color: #25344b;
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.emptyHint {
+  margin-top: 9px;
+  font-size: 21px;
+}
+
+.loadMore {
+  padding: 10px 0 22px;
+  color: #8390a2;
+  font-size: 20px;
+  text-align: center;
+}
+
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(12, 26, 47, 0.42);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  padding: 18px 24px calc(28px + var(--page-safe-bottom));
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.sheetHandle {
+  width: 54px;
+  height: 7px;
+  margin: 0 auto 20px;
+  border-radius: 6px;
+  background: #d8e0ea;
+}
+
+.sheetTitle {
+  color: #132037;
+  font-size: 31px;
+  font-weight: 900;
+}
+
+.sheetHint {
+  margin-top: 8px;
+  color: #68778d;
+  font-size: 21px;
+}
+
+.sheetLabel {
+  margin-top: 24px;
+  margin-bottom: 10px;
+  color: #26354b;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.sheetPicker {
+  height: 76px;
+  padding: 0 18px;
+  border: 1px solid #dce4ef;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #26354b;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.sheetPicker text {
+  color: #93a0b1;
+  font-size: 32px;
+}
+
+.sheetActions {
+  margin-top: 30px;
+  display: flex;
+  gap: 12px;
+}
+
+.resetBtn,
+.applyBtn {
+  height: 78px;
+  flex: 1;
+  border-radius: 11px;
+  font-size: 25px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resetBtn {
+  border: 1px solid #dce4ef;
+  background: #fff;
+  color: #5d6d83;
+}
+
+.applyBtn {
+  background: #246fe5;
+  color: #fff;
+}
+
+.filterOpenBtn:active,
+.quickBtn:active,
+.dateQueryBtn:active,
+.resetBtn:active,
+.applyBtn:active {
+  opacity: 0.76;
+}

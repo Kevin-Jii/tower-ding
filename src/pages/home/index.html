@@ -5,7 +5,7 @@
           <view class="greeting">{{ greeting }}，{{ userName }}</view>
           <view class="brand">Tower 中台</view>
         </view>
-        <view class="avatarBtn" @tap="go('/pages/mine/index')">{{ initials }}</view>
+        <view class="avatarBtn" @tap="go('/pages/mine/index')" @longpress.stop="onAvatarLongPress">{{ initials }}</view>
       </view>
 
       <view class="panel overviewPanel">
@@ -95,4 +95,13 @@
         </view>
       </view>
     </view>
+
+    <RememberedAccountsSheet
+      v-if="accountSheetOpen"
+      :accounts="rememberedAccounts"
+      :switching="switchingAccount"
+      @select="onSelectRememberedAccount"
+      @close="closeAccountSheet"
+      @use-other="onUseOtherAccount"
+    />
   </view>

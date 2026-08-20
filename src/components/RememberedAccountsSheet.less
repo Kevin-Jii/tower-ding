@@ -1,0 +1,163 @@
+.halfScreenDialog {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.halfScreenDialogBackdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.halfScreenDialogPanel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: 72vh;
+  padding: 18px 22px calc(24px + var(--page-safe-bottom));
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+}
+
+.halfScreenDialogHandle {
+  width: 72px;
+  height: 8px;
+  margin: 0 auto 22px;
+  border-radius: 999px;
+  background: #d6dde8;
+}
+
+.halfScreenDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.halfScreenDialogTitle {
+  color: #111827;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.halfScreenDialogSub {
+  margin-top: 7px;
+  color: #718096;
+  font-size: 23px;
+  line-height: 1.35;
+}
+
+.halfScreenDialogClose {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 42px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.halfScreenDialogList {
+  max-height: 46vh;
+  margin-top: 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rememberedAccountRow {
+  min-height: 88px;
+  padding: 14px 4px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.rememberedAccountRow:active {
+  background: #f7f9fc;
+}
+
+.rememberedAccountAvatar {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #17202a;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.rememberedAccountMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.rememberedAccountName {
+  color: #111827;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.rememberedAccountHint {
+  margin-top: 5px;
+  color: #7a8392;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.rememberedAccountArrow {
+  flex-shrink: 0;
+  color: #9aa5b5;
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.halfScreenDialogEmpty {
+  padding: 38px 0;
+  color: #7a8392;
+  font-size: 25px;
+  text-align: center;
+}
+
+.halfScreenDialogOther {
+  height: 78px;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #f3f6fb;
+  color: #1e3a8a;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.halfScreenDialogOther:active {
+  opacity: 0.72;
+}
+
+.halfScreenDialogOther--disabled {
+  opacity: 0.55;
+}

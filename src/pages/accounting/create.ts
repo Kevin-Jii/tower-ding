@@ -205,24 +205,67 @@ export default {
       categorySource.value.forEach((p) => {
         const id = Number(p?.category_id || 0)
         const name = String(p?.category_name || '').trim()
-        if (id > 0 && name && !seen.has(id)) seen.set(id, name)
+        const sort = Number(p?.category_sort)
+        if (id > 0 && name && !seen.has(id)) {
+          seen.set(id, {
+            label: name,
+            sort: Number.isFinite(sort) ? sort : null
+          })
+        }
       })
       const tabs = [{ label: '全部分类', value: 'all' }]
-      seen.forEach((label, id) => {
-        tabs.push({ label, value: String(id) })
-      })
+      Array.from(seen.entries())
+        .sort(([idA, a], [idB, b]) => compareSort(a.sort, b.sort) || compareNumber(Number(idA), Number(idB)))
+        .forEach(([id, item]) => tabs.push({ label: item.label, value: String(id) }))
       return tabs
     })
     
     
     const filteredProducts = computed(() => {
-      if (productTab.value !== 'all') {
-        return products.value.filter((p) => String(Number(p?.category_id || 0)) === productTab.value)
-      }
-      return products.value
+      const rows = productTab.value === 'all'
+        ? products.value
+        : products.value.filter((p) => String(Number(p?.category_id || 0)) === productTab.value)
+
+      return [...rows].sort(compareProductRows)
     })
-    
-    
+
+    function compareNumber(a, b) {
+      return a - b
+    }
+
+    function compareSort(a, b) {
+      const left = Number(a)
+      const right = Number(b)
+      const leftValid = Number.isFinite(left)
+      const rightValid = Number.isFinite(right)
+      if (!leftValid && !rightValid) return 0
+      if (!leftValid) return 1
+      if (!rightValid) return -1
+      return left - right
+    }
+
+    function getProductCategorySort(product) {
+      const sort = Number(
+        product?.category_sort ??
+        product?.category?.sort ??
+        product?.product?.category?.sort
+      )
+      return Number.isFinite(sort) ? sort : null
+    }
+
+    function compareProductRows(a, b) {
+      const categorySort = compareSort(getProductCategorySort(a), getProductCategorySort(b))
+      if (categorySort) return categorySort
+
+      const categoryID = compareNumber(getProductCategoryId(a), getProductCategoryId(b))
+      if (categoryID) return categoryID
+
+      const name = getSupplierProductName(a, '').localeCompare(getSupplierProductName(b, ''), 'zh-Hans')
+      if (name) return name
+
+      return compareNumber(getSupplierProductId(a), getSupplierProductId(b))
+    }
+
     const markedAmount = computed(() => {
       return lines.value.reduce((sum, line) => sum + lineMarkedAmount(line), 0)
     })
@@ -673,7 +716,8 @@ export default {
         const inventoryByProductId = new Map()
         categorySource.value = supplierProducts.map((p) => ({
           category_id: getProductCategoryId(p),
-          category_name: getProductCategoryName(p)
+          category_name: getProductCategoryName(p),
+          category_sort: getProductCategorySort(p)
         }))
         inventories.forEach((inv) => {
           const pid = Number(inv?.product_id || 0)
@@ -694,7 +738,8 @@ export default {
             unit: inv?.unit || getSupplierProductUnit(p, ''),
             list_price: getSupplierProductPrice(p),
             category_id: getProductCategoryId(p),
-            category_name: getProductCategoryName(p)
+            category_name: getProductCategoryName(p),
+            category_sort: getProductCategorySort(p)
           })
         })
         inventories.forEach((inv) => {
@@ -703,7 +748,8 @@ export default {
           rows.push({
             ...inv,
             category_id: 0,
-            category_name: ''
+            category_name: '',
+            category_sort: null
           })
         })
         products.value = rows

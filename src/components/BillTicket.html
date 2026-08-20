@@ -1,0 +1,18 @@
+<view :class="['billTicket', `billTicket--${status}`, clickable ? 'billTicket--clickable' : '']" @tap="onTap">
+  <view class="billTicketTopNotch" />
+  <view class="billTicketSideNotch billTicketSideNotch--left" />
+  <view class="billTicketSideNotch billTicketSideNotch--right" />
+
+  <view class="billTicketHeader">
+    <view class="billTicketHeaderMain"><slot name="header" /></view>
+    <view class="billTicketStatus"><slot name="status" /></view>
+  </view>
+
+  <view class="billTicketBody">
+    <view class="billTicketMain"><slot name="content" /></view>
+    <view class="billTicketAside"><slot name="aside" /></view>
+  </view>
+
+  <view class="billTicketItems"><slot name="items" /></view>
+  <view class="billTicketFooter"><slot name="footer" /></view>
+</view>

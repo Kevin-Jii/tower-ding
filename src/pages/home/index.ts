@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 
 
 import LucideIcon from '../../components/LucideIcon.vue'
+import RememberedAccountsSheet from '../../components/RememberedAccountsSheet.vue'
 
 
 import {
@@ -19,6 +20,11 @@ import {
 
 import { useAuthStore } from '../../stores/auth'
 import { formatMoney } from '../../shared/format'
+import {
+  readRememberedLogins,
+  rememberLogin,
+  type RememberedLogin
+} from '../../shared/login-accounts'
 
 
 import type { LucideIconName } from '../../utils/lucide-icons'
@@ -44,7 +50,7 @@ type HomeTodo = {
 }
 
 export default {
-  components: { LucideIcon },
+  components: { LucideIcon, RememberedAccountsSheet },
   setup() {
     const auth = useAuthStore()
     
@@ -65,6 +71,15 @@ export default {
     
     
     const pendingReturnCount = ref(0)
+
+
+    const accountSheetOpen = ref(false)
+
+
+    const switchingAccount = ref(false)
+
+
+    const rememberedAccounts = ref<RememberedLogin[]>([])
     
     
     
@@ -202,6 +217,45 @@ export default {
       }
       Taro.navigateTo({ url })
     }
+
+
+    function onAvatarLongPress() {
+      if (!auth.token || switchingAccount.value) return
+      rememberedAccounts.value = readRememberedLogins()
+      accountSheetOpen.value = true
+    }
+
+
+    function closeAccountSheet() {
+      if (switchingAccount.value) return
+      accountSheetOpen.value = false
+    }
+
+
+    function onUseOtherAccount() {
+      if (switchingAccount.value) return
+      accountSheetOpen.value = false
+      auth.logout()
+      Taro.reLaunch({ url: '/pages/login/index' })
+    }
+
+
+    async function onSelectRememberedAccount(account: RememberedLogin) {
+      if (switchingAccount.value) return
+      switchingAccount.value = true
+      Taro.showLoading({ title: '切换中' })
+      try {
+        await auth.login(account.phone, account.password)
+        rememberLogin(account.phone, account.password)
+        accountSheetOpen.value = false
+        Taro.reLaunch({ url: '/pages/home/index' })
+      } catch (err: any) {
+        Taro.showToast({ title: err?.message || '切换账号失败', icon: 'none' })
+      } finally {
+        Taro.hideLoading()
+        switchingAccount.value = false
+      }
+    }
     
     
     
@@ -235,6 +289,9 @@ export default {
       unpaidCount,
       lowStockCount,
       pendingReturnCount,
+      accountSheetOpen,
+      switchingAccount,
+      rememberedAccounts,
       userName,
       initials,
       greeting,
@@ -249,6 +306,10 @@ export default {
       countUnpaid,
       refresh,
       go,
+      onAvatarLongPress,
+      closeAccountSheet,
+      onUseOtherAccount,
+      onSelectRememberedAccount,
     }
   }
 }

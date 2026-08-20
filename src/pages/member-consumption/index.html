@@ -1,0 +1,135 @@
+<view class="page consumptionPage">
+  <view class="container consumptionContainer">
+    <view class="memberSummary card">
+      <view class="memberSummaryHead">
+        <view class="summaryAvatar">{{ String(displayName).slice(0, 1) }}</view>
+        <view class="summaryIdentity">
+          <view class="summaryName">{{ displayName }}</view>
+          <view class="summaryPhone">{{ displayPhone }}</view>
+        </view>
+        <view class="summaryMemberNo">会员 #{{ member.id }}</view>
+      </view>
+      <view class="summaryStats">
+        <view class="summaryStat">
+          <view class="summaryStatLabel">累计消费金额</view>
+          <view class="summaryStatValue">¥{{ formatMoney(totalAmount) }}</view>
+        </view>
+        <view class="summaryStat summaryStat--paid">
+          <view class="summaryStatLabel">已支付金额</view>
+          <view class="summaryStatValue">¥{{ formatMoney(paidAmount) }}</view>
+        </view>
+        <view class="summaryStat summaryStat--unpaid">
+          <view class="summaryStatLabel">未支付金额</view>
+          <view class="summaryStatValue">¥{{ formatMoney(unpaidAmount) }}</view>
+        </view>
+        <view class="summaryStat">
+          <view class="summaryStatLabel">账单数量</view>
+          <view class="summaryStatValue">{{ accountCount }}<text class="summaryUnit">笔</text></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="filterBar">
+      <view class="filterTitle">消费账单</view>
+      <view class="filterOpenBtn" @tap="filterOpen = true">
+        <LucideIcon name="settings" color="#17202a" :size="20" :stroke-width="1.8" />
+        <text>筛选</text>
+      </view>
+    </view>
+
+    <view class="dateQuickRow">
+      <view :class="['quickBtn', preset === 'all' ? 'quickBtn--on' : '']" @tap="setPreset('all')">全部</view>
+      <view :class="['quickBtn', preset === '7d' ? 'quickBtn--on' : '']" @tap="setPreset('7d')">近 7 天</view>
+      <view :class="['quickBtn', preset === 'month' ? 'quickBtn--on' : '']" @tap="setPreset('month')">本月</view>
+    </view>
+
+    <view class="dateRangeBar">
+      <picker mode="date" fields="day" :value="startDate || '2026-01-01'" @change="onStartDateChange">
+        <view class="datePickerBox">
+          <view class="datePickerLabel">开始日期</view>
+          <view class="datePickerValue">{{ startDate || '不限' }}</view>
+        </view>
+      </picker>
+      <view class="dateRangeDash">至</view>
+      <picker mode="date" fields="day" :value="endDate || '2026-01-01'" @change="onEndDateChange">
+        <view class="datePickerBox">
+          <view class="datePickerLabel">结束日期</view>
+          <view class="datePickerValue">{{ endDate || '不限' }}</view>
+        </view>
+      </picker>
+      <view class="dateQueryBtn" @tap="refresh(true)">查询</view>
+    </view>
+
+    <view class="list">
+      <view v-if="loading" class="empty card">正在加载消费记录…</view>
+      <view v-else-if="!list.length" class="empty card">
+        <view class="emptyTitle">暂无消费记录</view>
+        <view class="emptyHint">当前日期或支付状态下没有账单</view>
+      </view>
+
+      <BillTicket v-for="account in list" :key="account.id" :status="paymentStatus(account) === 1 ? 'paid' : 'unpaid'"
+        :clickable="true" @tap="openAccount(account)">
+        <template #header>
+          <view class="accountNo">{{ accountNo(account) }}</view>
+        </template>
+        <template #status>
+          <view :class="['paymentTag', paymentStatus(account) === 1 ? 'paymentTag--paid' : 'paymentTag--unpaid']">{{
+            paymentLabel(account) }}</view>
+        </template>
+        <template #content>
+          <view class="accountInfo">
+            <view class="infoLine"><text class="infoLabel">账单日期</text><text>{{ formatDateTime(account.created_at ||
+                account.account_date) }}</text></view>
+            <view class="infoLine"><text class="infoLabel">操作人员</text><text>{{ operatorLabel(account) }}</text></view>
+            <view class="infoLine"><text class="infoLabel">商品数量</text><text>{{ itemCount(account) }}</text></view>
+            <view class="infoLine"><text class="infoLabel">账单备注</text><text>{{ account.remark || '—' }}</text></view>
+          </view>
+        </template>
+        <template #aside>
+          <view class="accountAmountBox">
+            <view class="amountLabel">账单金额</view>
+            <view
+              :class="['accountAmount', paymentStatus(account) === 1 ? 'accountAmount--paid' : 'accountAmount--unpaid']">
+              ¥{{ formatMoney(accountAmount(account)) }}</view>
+            <!-- <view class="accountArrow">›</view> -->
+          </view>
+        </template>
+        <template #items>
+          <view v-if="account.items?.length" class="itemTable">
+            <view class="itemTableHead"><text>商品名称</text><text>数量</text><text>单价</text><text>小计</text></view>
+            <view v-for="item in account.items" :key="item.id" class="itemTableRow">
+              <text class="itemName">{{ item.product_name || `商品 #${item.product_id || ''}` }}</text>
+              <text>{{ item.quantity || 0 }}{{ item.unit || '' }}</text>
+              <text>¥{{ formatMoney(item.price) }}</text>
+              <text>¥{{ formatMoney(item.amount) }}</text>
+            </view>
+          </view>
+        </template>
+        <template #footer>
+          <view class="accountCardFoot"><text>共 {{ itemCount(account) }} 件商品</text><text>查看账单详情 <text
+                class="footArrow">›</text></text></view>
+        </template>
+      </BillTicket>
+      <view v-if="loadingMore" class="loadMore">正在加载更多…</view>
+      <view v-else-if="list.length && !hasMore" class="loadMore">没有更多账单了</view>
+    </view>
+  </view>
+
+  <view v-if="filterOpen" class="mask" @tap="filterOpen = false">
+    <view class="sheet" @tap.stop>
+      <view class="sheetHandle" />
+      <view class="sheetTitle">筛选账单</view>
+      <view class="sheetHint">日期筛选会应用到消费统计与账单列表</view>
+      <view class="sheetLabel">支付状态</view>
+      <picker mode="selector" :range="['全部账单', '已支付', '未支付']" :value="paymentFilter" @change="onPaymentChange">
+        <view class="sheetPicker">{{ paymentFilter === 0 ? '全部账单' : paymentFilter === 1 ? '已支付' : '未支付' }}
+          <text>›</text>
+        </view>
+      </picker>
+      <view class="sheetActions">
+        <view class="resetBtn" @tap="resetFilter">恢复本月</view>
+        <view class="applyBtn" @tap="applyFilter">应用筛选</view>
+      </view>
+    </view>
+  </view>
+</view>

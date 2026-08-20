@@ -5,15 +5,22 @@ import { computed, ref } from 'vue'
 
 
 import { useAuthStore } from '../../stores/auth'
+import RememberedAccountsSheet from '../../components/RememberedAccountsSheet.vue'
 
 
 import { listDictDataByTypeCode, type DictData } from '../../services/api'
+import {
+  readRememberedLogins,
+  rememberLogin,
+  type RememberedLogin
+} from '../../shared/login-accounts'
 
 const DAILY_TURNOVER_TEMPLATE_ID = '7aaQQAMYqAzfyffKov5MDNp85FfeO_6-TzKbIEh8M4Y'
 const DAILY_TURNOVER_ROLES = new Set(['store_admin', 'admin', 'super_admin'])
 const DAILY_TURNOVER_SUBSCRIPTION_CACHE_PREFIX = 'tower.daily-turnover-subscription'
 
 export default {
+  components: { RememberedAccountsSheet },
   setup() {
     const auth = useAuthStore()
     
@@ -33,6 +40,15 @@ export default {
 
 
     const turnoverSubscribed = ref(false)
+
+
+    const accountSheetOpen = ref(false)
+
+
+    const switchingAccount = ref(false)
+
+
+    const rememberedAccounts = ref<RememberedLogin[]>([])
     
     
     const initials = computed(() => {
@@ -115,6 +131,45 @@ export default {
     function onLogout() {
       auth.logout()
       Taro.redirectTo({ url: '/pages/login/index' })
+    }
+
+
+    function onAvatarLongPress() {
+      if (!auth.token || switchingAccount.value) return
+      rememberedAccounts.value = readRememberedLogins()
+      accountSheetOpen.value = true
+    }
+
+
+    function closeAccountSheet() {
+      if (switchingAccount.value) return
+      accountSheetOpen.value = false
+    }
+
+
+    function onUseOtherAccount() {
+      if (switchingAccount.value) return
+      accountSheetOpen.value = false
+      auth.logout()
+      Taro.reLaunch({ url: '/pages/login/index' })
+    }
+
+
+    async function onSelectRememberedAccount(account: RememberedLogin) {
+      if (switchingAccount.value) return
+      switchingAccount.value = true
+      Taro.showLoading({ title: '切换中' })
+      try {
+        await auth.login(account.phone, account.password)
+        rememberLogin(account.phone, account.password)
+        accountSheetOpen.value = false
+        Taro.reLaunch({ url: '/pages/home/index' })
+      } catch (err: any) {
+        Taro.showToast({ title: err?.message || '切换账号失败', icon: 'none' })
+      } finally {
+        Taro.hideLoading()
+        switchingAccount.value = false
+      }
     }
     
     
@@ -255,7 +310,14 @@ export default {
       storeCode,
       wechatBound,
       canSubscribeTurnover,
+      accountSheetOpen,
+      switchingAccount,
+      rememberedAccounts,
       onLogout,
+      onAvatarLongPress,
+      closeAccountSheet,
+      onUseOtherAccount,
+      onSelectRememberedAccount,
       onBindWechat,
       onSubscribeTurnover,
       onCancelTurnoverSubscription,
