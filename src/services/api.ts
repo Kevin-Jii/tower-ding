@@ -993,7 +993,7 @@ export function getMemberStats(
 
 export function getMemberUnsettledAccounts(
   authToken: string,
-  params: { store_id?: number; keyword?: string } = {}
+  params: { store_id?: number; member_id?: number; keyword?: string } = {}
 ) {
   return request<MemberUnsettledAccountGroup[] | { list?: MemberUnsettledAccountGroup[] }>(
     '/members/unsettled-accounts',

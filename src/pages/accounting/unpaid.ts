@@ -110,7 +110,12 @@ export default {
 
     function openDetail(account: StoreAccount) {
       if (!account?.id) return
-      Taro.navigateTo({ url: `/pages/accounting/unpaid-detail?id=${account.id}` })
+      Taro.navigateTo({ url: `/pages/accounting/detail?id=${account.id}` })
+    }
+
+    function openMemberUnpaidDetail(member: MemberUnsettledAccountGroup) {
+      if (!member?.id) return
+      Taro.navigateTo({ url: `/pages/accounting/unpaid-detail?member_id=${member.id}` })
     }
 
     function openConfirm(accounts: StoreAccount[], memberName = '') {
@@ -226,6 +231,7 @@ export default {
       expandAll,
       collapseAll,
       openDetail,
+      openMemberUnpaidDetail,
       openConfirm,
       closeConfirm,
       expandFirst,

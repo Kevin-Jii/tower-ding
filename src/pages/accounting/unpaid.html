@@ -107,7 +107,7 @@
                 member.unsettled_accounts?.[0]?.remark || '-' }}
               </view>
               <view class="accountButtons">
-                <view class="outlineBtn" @tap="openDetail(member.unsettled_accounts?.[0])">查看完整账单</view>
+                <view class="outlineBtn" @tap="openMemberUnpaidDetail(member)">查看完整账单</view>
                 <view class="primaryBtn" @tap="openConfirm(member.unsettled_accounts || [], memberLabel(member))">
                   全部标记为已支付</view>
               </view>

@@ -1,50 +1,47 @@
 <view class="page unpaidDetailPage">
   <view class="container unpaidDetailContainer">
-    <view class="detailHeader">
-      <view class="detailEyebrow">待结账账单</view>
-      <view class="detailTitle">{{ detail?.title || detail?.account_no || `账单 #${detail?.id || '-'}` }}</view>
-      <view class="detailAmount">¥ {{ formatMoney(displayTotalAmount) }}</view>
-      <view class="detailStatus">待结账</view>
-    </view>
+    <view v-if="loading" class="emptyState">正在加载全部未结账单…</view>
+    <view v-else-if="!member" class="emptyState">暂无未结账单</view>
 
-    <view class="metaGrid">
-      <view class="metaItem">
-        <view class="metaLabel">记账日期</view>
-        <view class="metaValue">{{ formatDateTime(detail?.account_date || detail?.created_at) }}</view>
-      </view>
-      <view class="metaItem">
-        <view class="metaLabel">操作人</view>
-        <view class="metaValue">{{ displayOperator }}</view>
-        <view v-if="displayOperatorPhone" class="metaHint">{{ displayOperatorPhone }}</view>
-      </view>
-    </view>
-
-    <view class="productSection">
-      <view class="sectionHead">
-        <view class="sectionTitle">商品明细</view>
-        <view class="sectionCount">{{ itemCount }} 项</view>
+    <template v-else>
+      <view class="detailHeader">
+        <view class="detailEyebrow">待结账账单</view>
+        <view class="detailTitle">{{ member.name || member.phone || `会员 #${member.id}` }}</view>
+        <view v-if="member.phone" class="detailMeta">{{ member.phone }}</view>
+        <view class="detailAmount">¥ {{ formatMoney(totalAmount) }}</view>
+        <view class="detailStatus">共 {{ accounts.length }} 笔账单</view>
       </view>
 
-      <view v-if="detail?.items?.length" class="productList">
-        <view v-for="(item, index) in detail.items" :key="item.id || index" class="productRow">
-          <view class="productIndex">{{ index + 1 }}</view>
-          <view class="productMain">
-            <view class="productName">{{ item.product_name || `商品 #${item.product_id || '-'}` }}</view>
-            <view class="productMeta">
-              {{ formatQuantity(item.quantity) }} {{ item.unit || '项' }}
-              <text v-if="item.spec"> · {{ item.spec }}</text>
+      <view class="summaryRow">
+        <view><text class="summaryLabel">全部商品明细</text><text class="summaryHint"> {{ totalItemCount }} 项</text></view>
+        <text class="summaryAmount">¥ {{ formatMoney(totalAmount) }}</text>
+      </view>
+
+      <view class="billList">
+        <view v-for="(account, accountIndex) in accounts" :key="account.id" class="billSection">
+          <view class="billHead">
+            <view class="billHeadMain">
+              <view class="billNo">账单 {{ accountIndex + 1 }} · {{ account.title || account.account_no || `#${account.id}` }}</view>
+              <view class="billMeta">记账日期：{{ formatDateTime(account.account_date || account.created_at) }}</view>
+              <view class="billMeta">操作人：{{ operatorName(account) }}</view>
             </view>
-            <view v-if="item.remark" class="productRemark">备注：{{ item.remark }}</view>
+            <view class="billAmount">¥ {{ formatMoney(accountAmount(account)) }}</view>
           </view>
-          <view class="productAmount">¥ {{ formatMoney(itemAmount(item)) }}</view>
+
+          <view v-if="account.items?.length" class="productList">
+            <view v-for="(item, itemIndex) in account.items" :key="item.id || itemIndex" class="productRow">
+              <view class="productIndex">{{ itemIndex + 1 }}</view>
+              <view class="productMain">
+                <view class="productName">{{ item.product_name || `商品 #${item.product_id || '-'}` }}</view>
+                <view class="productMeta">{{ formatQuantity(item.quantity) }} {{ item.unit || '项' }}<text v-if="item.spec"> · {{ item.spec }}</text></view>
+                <view v-if="item.remark" class="productRemark">备注：{{ item.remark }}</view>
+              </view>
+              <view class="productAmount">¥ {{ formatMoney(itemAmount(item)) }}</view>
+            </view>
+          </view>
+          <view v-else class="billEmpty">暂无商品明细</view>
         </view>
       </view>
-      <view v-else class="emptyState">暂无商品明细</view>
-    </view>
-
-    <view class="summaryRow">
-      <text>账单总金额</text>
-      <text class="summaryAmount">¥ {{ formatMoney(displayTotalAmount) }}</text>
-    </view>
+    </template>
   </view>
 </view>

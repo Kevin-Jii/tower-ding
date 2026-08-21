@@ -3,7 +3,8 @@ import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { computed, ref } from 'vue'
 
 import {
-  getStoreAccountDetail,
+  getMemberUnsettledAccounts,
+  type MemberUnsettledAccountGroup,
   type StoreAccount
 } from '../../services/api'
 
@@ -15,31 +16,17 @@ export default {
   setup() {
     const auth = useAuthStore()
     const router = useRouter()
-    const id = Number(router.params?.id || 0)
-    const detail = ref<StoreAccount | null>(null)
+    const memberId = Number(router.params?.member_id || 0)
+    const member = ref<MemberUnsettledAccountGroup | null>(null)
+    const loading = ref(false)
 
-    const displayTotalAmount = computed(() => {
-      const account = detail.value
-      return account?.gross_total_amount ?? account?.total_amount ?? account?.amount ?? 0
-    })
+    const accounts = computed(() => member.value?.unsettled_accounts || [])
+    const totalAmount = computed(() => accounts.value.reduce((sum, account) => sum + accountAmount(account), 0))
+    const totalItemCount = computed(() => accounts.value.reduce((sum, account) => sum + (account.items?.length || 0), 0))
 
-    const displayOperator = computed(() => {
-      const account = detail.value
-      return account?.operator?.nickname
-        || account?.operator?.username
-        || account?.operator_name
-        || account?.operator?.phone
-        || account?.operator_phone
-        || '-'
-    })
-
-    const displayOperatorPhone = computed(() => {
-      const account = detail.value
-      const phone = account?.operator?.phone || account?.operator_phone || ''
-      return phone && phone !== displayOperator.value ? phone : ''
-    })
-
-    const itemCount = computed(() => detail.value?.items?.length || 0)
+    function accountAmount(account: StoreAccount) {
+      return Number(account.gross_total_amount ?? account.total_amount ?? account.amount ?? 0)
+    }
 
     function formatMoney(value: unknown) {
       const amount = Number(value || 0)
@@ -53,17 +40,35 @@ export default {
     }
 
     function itemAmount(item: NonNullable<StoreAccount['items']>[number]) {
-      const directAmount = Number(item.amount)
-      if (Number.isFinite(directAmount) && directAmount !== 0) return directAmount
+      const amount = Number(item.amount)
+      if (Number.isFinite(amount) && amount !== 0) return amount
       return Number(item.price || 0) * Number(item.quantity || 0)
     }
 
+    function operatorName(account: StoreAccount) {
+      return account.operator?.nickname
+        || account.operator?.username
+        || account.operator_name
+        || account.operator?.phone
+        || account.operator_phone
+        || '-'
+    }
+
     async function refresh() {
-      if (!auth.token || !id) return
+      if (!auth.token) return
+      loading.value = true
       try {
-        detail.value = await getStoreAccountDetail(auth.token, id)
+        if (memberId) {
+          const groups = await getMemberUnsettledAccounts(auth.token, {
+            store_id: auth.storeId || undefined,
+            member_id: memberId
+          })
+          member.value = groups.find((item) => Number(item.id) === memberId) || groups[0] || null
+        }
       } catch (err: any) {
         Taro.showToast({ title: err?.message || '加载账单失败', icon: 'none' })
+      } finally {
+        loading.value = false
       }
     }
 
@@ -72,15 +77,17 @@ export default {
     })
 
     return {
-      detail,
-      displayTotalAmount,
-      displayOperator,
-      displayOperatorPhone,
-      itemCount,
+      member,
+      accounts,
+      loading,
+      totalAmount,
+      totalItemCount,
+      accountAmount,
       formatDateTime,
       formatMoney,
       formatQuantity,
       itemAmount,
+      operatorName,
       refresh,
     }
   }
