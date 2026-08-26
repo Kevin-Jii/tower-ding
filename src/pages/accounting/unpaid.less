@@ -16,10 +16,12 @@
 .summaryMetricLabel { margin-top: 12px; color: #53647d; font-size: 21px; white-space: nowrap; }
 .summaryMetricValue { margin-top: 8px; color: #17202a; font-size: 25px; font-weight: 900; white-space: nowrap; }
 
-.searchRow { margin-top: 18px; display: flex; gap: 12px; }
-.searchBox { min-width: 0; height: 72px; flex: 1; padding: 0 18px; border: 1px solid #dce4ef; border-radius: 11px; background: #fff; display: flex; align-items: center; gap: 11px; box-sizing: border-box; }
+.searchbarOutlined { margin-top: 18px; min-width: 0; height: 72px; padding: 0 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; display: flex; align-items: center; gap: 10px; box-sizing: border-box; }
 .searchInput { min-width: 0; flex: 1; color: #17202a; font-size: 24px; }
-.filterBtn { width: 112px; height: 72px; border: 1px solid #dce4ef; border-radius: 11px; background: #fff; color: #17202a; font-size: 23px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
+.searchClear { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.accountTabs { margin-top: 16px; padding: 4px; border-radius: 9px; background: #edf1f6; display: flex; gap: 4px; }
+.accountTab { height: 52px; flex: 1; border-radius: 7px; color: #64748b; font-size: 22px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.accountTab--on { background: #fff; color: #17202a; box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
 .sectionHead { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; }
 .sectionTitle { color: #152238; font-size: 30px; font-weight: 900; }
 .sectionActions { display: flex; align-items: center; gap: 15px; color: #31557b; font-size: 21px; font-weight: 800; }
@@ -84,7 +86,7 @@
 .cancelBtn { border: 1px solid #b9c7da; color: #53647d; background: #fff; }
 .confirmBtn { background: #2463eb; color: #fff; }
 .confirmBtn--disabled { opacity: .56; }
-.filterBtn:active, .sectionActions view:active, .memberHead:active, .accountAction:active, .outlineBtn:active, .primaryBtn:active, .cancelBtn:active, .confirmBtn:active { opacity: .76; }
+.searchbarOutlined:focus-within, .accountTab:active, .sectionActions view:active, .memberHead:active, .accountAction:active, .outlineBtn:active, .primaryBtn:active, .cancelBtn:active, .confirmBtn:active { opacity: .76; }
 
 @media (max-width: 680px) {
   .summaryCard { padding: 20px 14px; }

@@ -82,6 +82,9 @@ export default {
     
     
     const incomeAmount = ref('')
+
+
+    const billRemark = ref('')
     
     
     const supplementDate = ref(defaultSupplementDate())
@@ -566,6 +569,12 @@ export default {
       if (!line) return
       line.remark = String(e?.detail?.value || '')
     }
+
+
+
+    function onBillRemarkInput(e) {
+      billRemark.value = String(e?.detail?.value || '')
+    }
     
     
     
@@ -849,6 +858,7 @@ export default {
       otherExpenseAmount.value = String(account.other_expense_amount ?? '')
       orderNo.value = isTakeawayChannel.value ? numericOrderNo(account.order_no) : String(account.order_no || '')
       incomeAmount.value = String(account.total_amount ?? account.income_amount ?? '')
+      billRemark.value = String(account.remark || '')
       giftWineEnabled.value = Number(account.is_gift_wine || 0) === 1
       giftWineProductId.value = Number(account.gift_wine_product_id || 0)
       giftWineProductName.value = String(account.gift_wine_product_name || '')
@@ -1065,6 +1075,7 @@ export default {
         const payload: any = {
           channel: channel.value,
           other_expense_amount: Number(otherExpenseAmount.value || 0),
+          remark: billRemark.value.trim() || undefined,
           payment_status: paymentStatus.value,
           member_id: bindMemberEnabled.value && selectedMemberId.value > 0 ? selectedMemberId.value : 0,
           is_supplement: isSupplementMode.value ? 1 : 0,
@@ -1082,7 +1093,7 @@ export default {
         if (isTakeawayChannel.value) {
           if (orderNo.value.trim()) payload.order_no = orderNo.value.trim()
           if (incomeAmount.value !== '') payload.income_amount = Number(incomeAmount.value || 0)
-          payload.remark = `${channelLabel.value}外卖订单`
+          if (!payload.remark) payload.remark = `${channelLabel.value}外卖订单`
         }
         if (isEditMode.value) {
           await updateStoreAccount(auth.token, editAccountId, payload)
@@ -1143,6 +1154,7 @@ export default {
       otherExpenseAmount,
       orderNo,
       incomeAmount,
+      billRemark,
       supplementDate,
       newLine,
       lines,
@@ -1202,6 +1214,7 @@ export default {
       onOtherExpenseInput,
       onOrderNoInput,
       onIncomeAmountInput,
+      onBillRemarkInput,
       onChannelChange,
       setLineMode,
       onCustomNameInput,

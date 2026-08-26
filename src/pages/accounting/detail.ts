@@ -32,10 +32,6 @@ export default {
       return item.gross_total_amount ?? item.total_amount ?? item.amount
     })
 
-    const consumableAmount = computed(() => {
-      return (detail.value?.consumables || []).reduce((sum, c) => sum + Number(c.amount || 0), 0)
-    })
-
     const itemCostAmount = computed(() => {
       return (detail.value?.items || []).reduce((sum, item: any) => {
         const direct = Number(item.cost_amount ?? item.cost_total ?? 0)
@@ -125,7 +121,6 @@ export default {
       channelDict,
       operatorName,
       displayTotalAmount,
-      consumableAmount,
       itemCostAmount,
       giftWineText,
       formatMoney,

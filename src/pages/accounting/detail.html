@@ -38,10 +38,6 @@
           <view class="v">¥ {{ formatMoney(detail?.gift_wine_cost_amount) }}</view>
         </view>
         <view class="kv">
-          <view class="k">耗材金额</view>
-          <view class="v">¥ {{ formatMoney(consumableAmount) }}</view>
-        </view>
-        <view class="kv">
           <view class="k">渠道</view>
           <view class="v">{{ channelLabel(detail?.channel) }}</view>
         </view>
@@ -70,7 +66,7 @@
           <view class="v">{{ detail?.tag_name || '-' }}</view>
         </view>
         <view class="kv">
-          <view class="k">备注</view>
+          <view class="k">账单备注</view>
           <view class="v">{{ detail?.remark || '无' }}</view>
         </view>
       </view>
@@ -99,27 +95,5 @@
         <view v-else class="empty">暂无明细数据</view>
       </view>
 
-      <view class="card">
-        <view class="sectionHead">
-          <view class="sectionTitle">消耗品</view>
-          <view class="sectionTip">{{ detail?.consumables?.length || 0 }} 项</view>
-        </view>
-        <view v-if="detail?.consumables?.length">
-          <view v-for="item in detail?.consumables || []" :key="item.id" class="itemRow">
-            <view class="itemTop">
-              <view>
-                <view class="itemTitle">{{ item.product_name || `消耗品 #${item.product_id}` }}</view>
-                <view class="itemMeta">
-                  {{ formatQty(item.quantity) }} {{ item.unit || '' }}
-                  <text> · 单价 ¥ {{ formatMoney(item.price) }}</text>
-                </view>
-              </view>
-              <view class="itemAmount">¥ {{ formatMoney(item.amount) }}</view>
-            </view>
-            <view v-if="item.remark" class="itemRemark">{{ item.remark }}</view>
-          </view>
-        </view>
-        <view v-else class="empty">暂无消耗品</view>
-      </view>
     </view>
   </view>

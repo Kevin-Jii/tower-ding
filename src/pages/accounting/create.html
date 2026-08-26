@@ -151,6 +151,9 @@
         <view class="fieldLabel mt">其他支出</view>
         <input class="input" type="digit" :value="otherExpenseAmount" placeholder="0.00" @input="onOtherExpenseInput" />
 
+        <view class="fieldLabel mt">账单备注</view>
+        <textarea class="textarea billRemarkInput" :value="billRemark" maxlength="500" placeholder="填写本张账单的备注信息" @input="onBillRemarkInput" />
+
         <view class="switchRow mt">
           <view>
             <view class="roK">是否赠酒</view>
