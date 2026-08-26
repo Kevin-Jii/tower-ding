@@ -1,0 +1,16 @@
+<view class="halfScreenDialog" @touchmove.stop>
+  <view class="halfScreenDialogBackdrop" catchMove @tap="emit('close')" @touchmove.stop.prevent="noopTouchMove" />
+  <view class="weui-half-screen-dialog" @tap.stop>
+    <view class="weui-half-screen-dialog__hd">
+      <view class="weui-half-screen-dialog__hd__main">{{ title }}</view>
+      <view v-if="subtitle" class="weui-half-screen-dialog__hd__sub">{{ subtitle }}</view>
+      <view v-if="closable" class="weui-half-screen-dialog__hd__side" aria-label="关闭" @tap="emit('close')">×</view>
+    </view>
+    <view class="weui-half-screen-dialog__bd">
+      <slot />
+    </view>
+    <view v-if="$slots.footer" class="weui-half-screen-dialog__ft">
+      <slot name="footer" />
+    </view>
+  </view>
+</view>

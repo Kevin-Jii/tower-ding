@@ -1,47 +1,273 @@
 <view class="page unpaidDetailPage">
   <view class="container unpaidDetailContainer">
-    <view v-if="loading" class="emptyState">正在加载全部未结账单…</view>
-    <view v-else-if="!member" class="emptyState">暂无未结账单</view>
 
+    <!-- =========================
+           加载状态
+      ========================== -->
+    <view v-if="loading" class="emptyState">
+      <view class="loadingDot"></view>
+      <view>正在加载账单…</view>
+    </view>
+
+    <!-- =========================
+           空状态
+      ========================== -->
+    <view v-else-if="!member" class="emptyState">
+      <view class="emptyIcon">¥</view>
+      <view class="emptyTitle">暂无未结账单</view>
+      <view class="emptyHint">当前会员没有待结算消费</view>
+    </view>
+
+    <!-- =========================
+           页面主体
+      ========================== -->
     <template v-else>
-      <view class="detailHeader">
-        <view class="detailEyebrow">待结账账单</view>
-        <view class="detailTitle">{{ member.name || member.phone || `会员 #${member.id}` }}</view>
-        <view v-if="member.phone" class="detailMeta">{{ member.phone }}</view>
-        <view class="detailAmount">¥ {{ formatMoney(totalAmount) }}</view>
-        <view class="detailStatus">共 {{ accounts.length }} 笔账单</view>
-      </view>
 
-      <view class="summaryRow">
-        <view><text class="summaryLabel">全部商品明细</text><text class="summaryHint"> {{ totalItemCount }} 项</text></view>
-        <text class="summaryAmount">¥ {{ formatMoney(totalAmount) }}</text>
-      </view>
+      <!-- ==========================================
+             会员账单总览
+        =========================================== -->
+      <view class="customerHero">
 
-      <view class="billList">
-        <view v-for="(account, accountIndex) in accounts" :key="account.id" class="billSection">
-          <view class="billHead">
-            <view class="billHeadMain">
-              <view class="billNo">账单 {{ accountIndex + 1 }} · {{ account.title || account.account_no || `#${account.id}` }}</view>
-              <view class="billMeta">记账日期：{{ formatDateTime(account.account_date || account.created_at) }}</view>
-              <view class="billMeta">操作人：{{ operatorName(account) }}</view>
+        <view class="heroTop">
+
+          <view class="heroCustomer">
+
+            <view class="heroLabel">
+              会员账单
             </view>
-            <view class="billAmount">¥ {{ formatMoney(accountAmount(account)) }}</view>
+
+            <view class="heroName">
+              {{
+              member.name ||
+              member.phone ||
+              `会员 #${member.id}`
+              }}
+            </view>
+
+            <view v-if="member.phone" class="heroPhone">
+              {{ member.phone }}
+            </view>
+
           </view>
 
-          <view v-if="account.items?.length" class="productList">
-            <view v-for="(item, itemIndex) in account.items" :key="item.id || itemIndex" class="productRow">
-              <view class="productIndex">{{ itemIndex + 1 }}</view>
-              <view class="productMain">
-                <view class="productName">{{ item.product_name || `商品 #${item.product_id || '-'}` }}</view>
-                <view class="productMeta">{{ formatQuantity(item.quantity) }} {{ item.unit || '项' }}<text v-if="item.spec"> · {{ item.spec }}</text></view>
-                <view v-if="item.remark" class="productRemark">备注：{{ item.remark }}</view>
-              </view>
-              <view class="productAmount">¥ {{ formatMoney(itemAmount(item)) }}</view>
+          <!-- 账单数量 -->
+          <view class="heroCount">
+
+            <view class="heroCountNumber">
+              {{ accounts.length }}
             </view>
+
+            <view class="heroCountLabel">
+              笔未结
+            </view>
+
           </view>
-          <view v-else class="billEmpty">暂无商品明细</view>
+
         </view>
+
+
+        <view class="heroDivider"></view>
+
+
+        <view class="heroBottom">
+
+          <view class="heroAmountBox">
+
+            <view class="heroAmountLabel">
+              待结账金额
+            </view>
+
+            <view class="heroAmount">
+              ¥ {{ formatMoney(totalAmount) }}
+            </view>
+
+          </view>
+
+          <button class="heroShareButton" :loading="sharing" :disabled="sharing" aria-label="分享账单" @tap="shareBills">
+            <LucideIcon name="share" color="#2563EB" :size="22" :stroke-width="2.2" />
+          </button>
+
+        </view>
+
       </view>
+
+
+      <!-- ==========================================
+             消费记录标题
+        =========================================== -->
+      <view class="recordHeader">
+
+        <view class="recordHeaderMain">
+
+          <view class="recordTitle">
+            消费记录
+          </view>
+
+          <view class="recordSubtitle">
+            以下为全部未结账单
+          </view>
+
+        </view>
+
+        <view class="recordCount">
+          {{ accounts.length }} 笔
+        </view>
+
+      </view>
+
+
+      <!-- ==========================================
+             账单列表
+        =========================================== -->
+      <view class="billList">
+
+        <view v-for="(account, accountIndex) in accounts" :key="account.id" class="billCard">
+
+          <!-- ===============================
+                 左侧日期
+            ================================= -->
+          <view class="billDateBlock">
+
+            <view class="billDate">
+              {{ formatBillDate(
+              account.created_at ||
+              account.account_date
+              ) }}
+            </view>
+
+            <view class="billTime">
+              {{ formatBillTime(
+              account.created_at ||
+              account.account_date
+              ) }}
+            </view>
+
+            <view class="billIndex">
+              NO.{{
+              String(accountIndex + 1).padStart(2, '0')
+              }}
+            </view>
+
+          </view>
+
+
+          <!-- ===============================
+                 账单主体
+            ================================= -->
+          <view class="billBody">
+
+            <!-- 账单标题 -->
+            <view class="billTop">
+
+              <view class="billTitleBox">
+
+                <view class="billTitle">
+                  {{ getBillTitle(account) }}
+                </view>
+
+                <view class="billDateText">
+                  {{
+                  formatFullBillDate(
+                  account.created_at ||
+                  account.account_date
+                  )
+                  }}
+                </view>
+
+              </view>
+
+              <view class="billTotal">
+                ¥ {{ formatMoney(
+                accountAmount(account)
+                ) }}
+              </view>
+
+            </view>
+
+
+            <!-- ===============================
+                   商品列表
+              ================================= -->
+            <view v-if="account.items?.length" class="billProducts">
+
+              <view v-for="(item, itemIndex) in account.items" :key="item.id || itemIndex" class="billProduct">
+
+                <view class="productInfo">
+
+                  <view class="productName">
+                    {{
+                    item.product_name ||
+                    `商品 #${item.product_id || '-'}`
+                    }}
+                  </view>
+
+                  <view class="productDesc">
+
+                    <text>
+                      {{ formatQuantity(item.quantity) }}
+                      {{ item.unit || '项' }}
+                    </text>
+
+                    <text v-if="item.spec">
+                      · {{ item.spec }}
+                    </text>
+
+                  </view>
+
+                  <!-- 客户备注，如果有 -->
+                  <view v-if="item.remark" class="productRemark">
+                    {{ item.remark }}
+                  </view>
+
+                </view>
+
+
+                <view class="productPrice">
+                  ¥ {{ formatMoney(
+                  itemAmount(item)
+                  ) }}
+                </view>
+
+              </view>
+
+            </view>
+
+
+            <!-- 无商品 -->
+            <view v-else class="billEmpty">
+              暂无商品明细
+            </view>
+
+
+            <!-- ===============================
+                   单笔账单底部
+              ================================= -->
+            <view class="billFooter">
+
+              <view class="billFooterLeft">
+                共 {{ account.items?.length || 0 }} 项商品
+              </view>
+
+              <view class="billFooterRight">
+                未结账
+              </view>
+
+            </view>
+
+          </view>
+
+        </view>
+
+      </view>
+
+
     </template>
+
+
+    <!-- ==========================================
+           隐藏 Canvas
+      =========================================== -->
+    <canvas id="billShareCanvas" type="2d" class="shareCanvas" />
+
   </view>
 </view>

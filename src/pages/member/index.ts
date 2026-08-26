@@ -3,6 +3,7 @@ import Taro, { useDidShow, usePullDownRefresh } from '@tarojs/taro'
 import { computed, reactive, ref } from 'vue'
 
 import LucideIcon from '../../components/LucideIcon.vue'
+import HalfScreenDialog from '../../components/HalfScreenDialog.vue'
 import { createMember, getMemberPage, getMemberStats, type Member, type MemberStats } from '../../services/api'
 import { formatMoney } from '../../shared/format'
 import { useAuthStore } from '../../stores/auth'
@@ -11,7 +12,7 @@ type ActivityFilter = 'all' | 'active' | 'inactive'
 type SortMode = 'default' | 'balance' | 'points'
 
 export default {
-  components: { LucideIcon },
+  components: { LucideIcon, HalfScreenDialog },
   setup() {
     const auth = useAuthStore()
     const keyword = ref('')

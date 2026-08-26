@@ -111,19 +111,19 @@
       </view>
     </view>
 
-    <view v-if="createOpen" class="mask" @tap="closeCreate">
-      <view class="sheet" @tap.stop>
-        <view class="sheetHandle" />
-        <view class="sheetHeader">
-          <view><view class="sheetTitle">新增会员</view><view class="sheetHint">建立资料后即可在记账时快速选择</view></view>
-          <view class="sheetClose" @tap="closeCreate">×</view>
-        </view>
+    <HalfScreenDialog
+      v-if="createOpen"
+      title="新增会员"
+      subtitle="建立资料后即可在记账时快速选择"
+      @close="closeCreate"
+    >
         <view class="fieldLabel">姓名 <text class="optional">选填</text></view>
         <input class="sheetInput" :value="form.name" placeholder="请输入会员姓名" @input="onNameInput" />
         <view class="fieldLabel">手机号 <text class="required">必填</text></view>
         <input class="sheetInput" :value="form.phone" type="number" placeholder="请输入手机号" @input="onPhoneInput" />
+      <template #footer>
         <view :class="['submitBtn', saving ? 'submitBtn--disabled' : '']" @tap="submitMember">{{ saving ? '保存中…' : '保存会员' }}</view>
-      </view>
-    </view>
+      </template>
+    </HalfScreenDialog>
   </view>
 </view>
