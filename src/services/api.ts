@@ -351,6 +351,15 @@ export type UpdateStoreAccountReq = {
   items?: CreateStoreAccountItemReq[]
 }
 
+export type MemberTag = {
+  id?: number | string
+  name?: string
+  label?: string
+  tag_name?: string
+  color?: string
+  tag_color?: string
+}
+
 export type Member = {
   id: number
   store_id?: number
@@ -363,6 +372,7 @@ export type Member = {
   recent_consumption_at?: string
   consumption_count?: number
   total_consumption_amount?: number | string
+  tags?: Array<MemberTag | string>
   version?: number
   created_at?: string
   updated_at?: string

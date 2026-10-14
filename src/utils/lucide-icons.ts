@@ -8,6 +8,7 @@ export type LucideIconName =
   | "package-search"
   | "arrow-down-up"
   | "users-round"
+  | "user-round"
   | "warehouse"
   | "shopping-bag"
   | "wallet"
@@ -38,6 +39,8 @@ const lucideIconBodies: Record<LucideIconName, string> = {
     '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/>',
   "users-round":
     '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>',
+  "user-round":
+    '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
   warehouse:
     '<path d="M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z"/><path d="M6 13h12"/><path d="M6 17h12"/>',
   "shopping-bag":

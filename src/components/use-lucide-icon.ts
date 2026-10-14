@@ -14,6 +14,7 @@ import receiptTextIcon from "../assets/icons/receipt-text.png";
 import settingsIcon from "../assets/icons/settings.png";
 import shoppingBagIcon from "../assets/icons/shopping-bag.png";
 import triangleAlertIcon from "../assets/icons/triangle-alert.png";
+import userRoundIcon from "../assets/icons/user-round.png";
 import usersRoundIcon from "../assets/icons/users-round.png";
 import walletIcon from "../assets/icons/wallet.png";
 import walletCardsIcon from "../assets/icons/wallet-cards.png";
@@ -30,6 +31,7 @@ const iconSources: Record<LucideIconName, string> = {
   "package-search": packageSearchIcon,
   "arrow-down-up": arrowDownUpIcon,
   "users-round": usersRoundIcon,
+  "user-round": userRoundIcon,
   warehouse: warehouseIcon,
   "shopping-bag": shoppingBagIcon,
   wallet: walletIcon,

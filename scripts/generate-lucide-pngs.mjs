@@ -13,6 +13,7 @@ const icons = {
   'package-search': '#6b5cff',
   'arrow-down-up': '#2f80ed',
   'users-round': '#3f7df4',
+  'user-round': '#8792a2',
   warehouse: '#35a853',
   'shopping-bag': '#ff8b2c',
   wallet: '#7c5ce8',

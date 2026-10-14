@@ -25,13 +25,14 @@ page_size?: number
   "balance": 620,
   "points": 620,
   "level": 1,
+  "tags": [{ "id": 1, "name": "重点会员", "color": "#E5484D" }],
   "recent_consumption_at": "2026-08-20T14:30:00+08:00",
   "consumption_count": 5,
   "total_consumption_amount": 12560
 }
 ```
 
-分页响应继续兼容项目现有格式：`{ list, total, page, page_size, page_num }`。`recent_consumption_at` 没有记录时返回 `null`，`consumption_count` 和 `total_consumption_amount` 建议返回 `0`。
+分页响应继续兼容项目现有格式：`{ list, total, page, page_size, page_num }`。`tags` 为会员标签数组，前端使用标签的 `name` 和 `color` 生成筛选项及会员名称颜色；`recent_consumption_at` 没有记录时返回 `null`，`consumption_count` 和 `total_consumption_amount` 建议返回 `0`。
 
 ## `GET /members/stats`
 

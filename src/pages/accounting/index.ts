@@ -43,6 +43,7 @@ import {
   updateStoreAccount,
   type DictData,
   type Member,
+  type MemberTag,
   type StoreAccount,
   type StoreAccountConsumableProduct
 } from '../../services/api'
@@ -364,9 +365,20 @@ export default {
     
     
     
+    function accountMember(item: StoreAccount) {
+      const memberId = Number(item.member?.id || item.member_id || 0)
+      if (!memberId) return item.member || null
+      return members.value.find((member) => Number(member.id) === memberId) || item.member || null
+    }
+
+
+
     function rowDisplayNo(item: StoreAccount) {
-      if (item.member) return memberLabel(item.member)
-      return orderDisplayNo(item)
+      const member = accountMember(item)
+      const name = String(member?.name || '').trim()
+      if (!name) return orderDisplayNo(item)
+      const phone = String(member?.phone || '').trim()
+      return phone ? `${name}-${phone}` : name
     }
     
     
@@ -501,9 +513,59 @@ export default {
     
     
     function accountMemberLabel(item: StoreAccount) {
-      if (item.member) return memberLabel(item.member)
+      const member = accountMember(item)
+      if (member) return memberLabel(member)
       const mid = Number(item.member_id || 0)
       return mid > 0 ? `会员 #${mid}` : '-'
+    }
+
+
+
+    function normalizeTagColor(value?: string) {
+      const color = String(value || '').trim()
+      return /^(#[\da-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%a-z]+\))$/i.test(color) ? color : ''
+    }
+
+
+
+    function normalizeMemberTag(tag: MemberTag | string, index: number) {
+      if (typeof tag === 'string') {
+        const name = tag.trim()
+        return name ? { key: `name:${name}:${index}`, name, color: '' } : null
+      }
+      const name = String(tag?.name || tag?.label || tag?.tag_name || '').trim()
+      if (!name) return null
+      const id = String(tag?.id ?? '').trim()
+      return {
+        key: id ? `id:${id}` : `name:${name}:${index}`,
+        name,
+        color: normalizeTagColor(tag?.color || tag?.tag_color)
+      }
+    }
+
+
+
+    function accountMemberTags(item: StoreAccount) {
+      const member = accountMember(item)
+      const tags = Array.isArray(member?.tags) ? member.tags : []
+      return tags
+        .map(normalizeMemberTag)
+        .filter((tag): tag is { key: string; name: string; color: string } => Boolean(tag))
+    }
+
+
+
+    function memberTagStyle(tag: { color?: string }) {
+      const color = normalizeTagColor(tag?.color)
+      if (!color) return ''
+      const match = color.match(/^#([\da-f]{3}|[\da-f]{6})$/i)
+      if (!match) return `color: ${color}; border-color: ${color};`
+      let hex = match[1]
+      if (hex.length === 3) hex = hex.split('').map((char) => char + char).join('')
+      const red = parseInt(hex.slice(0, 2), 16)
+      const green = parseInt(hex.slice(2, 4), 16)
+      const blue = parseInt(hex.slice(4, 6), 16)
+      return `color: ${color}; border-color: rgba(${red}, ${green}, ${blue}, 0.28); background-color: rgba(${red}, ${green}, ${blue}, 0.12);`
     }
     
     
@@ -656,6 +718,8 @@ export default {
             ...item,
             items: detail.items || item.items || [],
             consumables: detail.consumables || item.consumables || [],
+            member_id: detail.member_id ?? item.member_id,
+            member: detail.member ?? item.member,
             is_canceled: detail.is_canceled ?? item.is_canceled,
             source_type: detail.source_type ?? item.source_type,
             source_id: detail.source_id ?? item.source_id,
@@ -1195,6 +1259,7 @@ export default {
       platformIcon,
       platformLabel,
       orderDisplayNo,
+      accountMember,
       rowDisplayNo,
       operatorLabel,
       isOnlinePaidChannel,
@@ -1211,6 +1276,10 @@ export default {
       canOpenMetaSheet,
       memberLabel,
       accountMemberLabel,
+      normalizeTagColor,
+      normalizeMemberTag,
+      accountMemberTags,
+      memberTagStyle,
       onMemberKeywordInput,
       onPaymentFilterChange,
       openFilterSheet,

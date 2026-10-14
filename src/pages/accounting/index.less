@@ -247,8 +247,8 @@
   z-index: 0;
   width: 132rpx;
   border-radius: 0 16px 16px 0;
-  background: #dc2626;
-  color: #fff;
+  background: transparent;
+  color: transparent;
   font-size: 27px;
   font-weight: 900;
   display: flex;
@@ -257,8 +257,14 @@
   box-sizing: border-box;
 }
 
+.swipeDelete--visible {
+  background: #dc2626;
+  color: #fff;
+}
+
 .swipeDelete--loading {
   background: #991b1b;
+  color: #fff;
   font-size: 24px;
 }
 
@@ -273,6 +279,10 @@
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.row.card {
+  background: #fff;
 }
 
 .row--canceled {
@@ -427,9 +437,32 @@
 }
 
 .rowSub {
+  min-width: 0;
   margin-top: 4px;
   color: #687385;
   font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.memberTag {
+  flex-shrink: 0;
+  max-width: 260px;
+  padding: 3px 9px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: #287fe5;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .paymentStatus {
@@ -453,6 +486,7 @@
 }
 
 .platformName {
+  flex-shrink: 0;
   color: #17202a;
   font-weight: 800;
 }
@@ -589,24 +623,22 @@
   z-index: 1;
   min-width: 0;
   flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
 }
 
-.operatorLine,
-.operatorTime {
+.operatorMeta {
+  min-width: 0;
   color: #8792a2;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.35;
-  word-break: break-all;
-}
-
-.operatorTime {
-  margin-top: 4px;
-  font-weight: 600;
-}
-
-.operatorLine {
-  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
 }
 
 .rowMeta {

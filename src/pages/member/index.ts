@@ -4,7 +4,7 @@ import { computed, reactive, ref } from 'vue'
 
 import LucideIcon from '../../components/LucideIcon.vue'
 import HalfScreenDialog from '../../components/HalfScreenDialog.vue'
-import { createMember, getMemberPage, getMemberStats, type Member, type MemberStats } from '../../services/api'
+import { createMember, getMemberPage, getMemberStats, type Member, type MemberStats, type MemberTag } from '../../services/api'
 import { formatMoney } from '../../shared/format'
 import { useAuthStore } from '../../stores/auth'
 
@@ -26,6 +26,7 @@ export default {
     const sortOpen = ref(false)
     const activityFilter = ref<ActivityFilter>('all')
     const levelFilter = ref<number | null>(null)
+    const tagFilter = ref('')
     const sortMode = ref<SortMode>('default')
     const viewMode = ref<'grid' | 'list'>('grid')
     const form = reactive({ name: '', phone: '' })
@@ -33,6 +34,7 @@ export default {
     const filteredMembers = computed(() => {
       const rows = members.value.filter((member) => {
         if (levelFilter.value !== null && Number(member.level || 0) !== levelFilter.value) return false
+        if (tagFilter.value && !memberTags(member).some((tag) => tag.key === tagFilter.value)) return false
         if (activityFilter.value === 'active' && !member.recent_consumption_at && !Number(member.consumption_count || 0)) return false
         if (activityFilter.value === 'inactive' && (member.recent_consumption_at || Number(member.consumption_count || 0) > 0)) return false
         return true
@@ -58,6 +60,16 @@ export default {
 
     const sortLabel = computed(() => ({ default: '默认排序', balance: '余额从高到低', points: '积分从高到低' }[sortMode.value]))
     const activityLabel = computed(() => ({ all: '全部会员', active: '近 30 天有消费', inactive: '暂无消费' }[activityFilter.value]))
+    const tagOptions = computed(() => {
+      const options = new Map<string, { key: string; name: string; color: string }>()
+      members.value.forEach((member) => {
+        memberTags(member).forEach((tag) => {
+          if (!options.has(tag.key)) options.set(tag.key, tag)
+        })
+      })
+      return Array.from(options.values())
+    })
+    const tagFilterLabel = computed(() => tagOptions.value.find((tag) => tag.key === tagFilter.value)?.name || '全部标签')
 
     function onKeywordInput(event: any) {
       keyword.value = String(event?.detail?.value || '')
@@ -73,6 +85,37 @@ export default {
 
     function memberName(member: Member) {
       return member.name || member.phone || `会员 #${member.id}`
+    }
+
+    function normalizeTagColor(value?: string) {
+      const color = String(value || '').trim()
+      return /^(#[\da-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%a-z]+\))$/i.test(color) ? color : ''
+    }
+
+    function normalizeTag(tag: MemberTag | string) {
+      if (typeof tag === 'string') {
+        const name = tag.trim()
+        return name ? { key: `name:${name}`, name, color: '' } : null
+      }
+      const name = String(tag?.name || tag?.label || tag?.tag_name || '').trim()
+      if (!name) return null
+      const id = String(tag?.id ?? '').trim()
+      return {
+        key: id ? `id:${id}` : `name:${name}`,
+        name,
+        color: normalizeTagColor(tag?.color || tag?.tag_color)
+      }
+    }
+
+    function memberTags(member: Member) {
+      if (!Array.isArray(member.tags)) return []
+      return member.tags
+        .map(normalizeTag)
+        .filter((tag): tag is { key: string; name: string; color: string } => Boolean(tag))
+    }
+
+    function memberNameColor(member: Member) {
+      return memberTags(member).find((tag) => tag.color)?.color || ''
     }
 
     function memberInitial(member: Member) {
@@ -95,6 +138,7 @@ export default {
     function clearFilters() {
       activityFilter.value = 'all'
       levelFilter.value = null
+      tagFilter.value = ''
       filterOpen.value = false
     }
 
@@ -104,6 +148,10 @@ export default {
 
     function selectLevel(value: number | null) {
       levelFilter.value = value
+    }
+
+    function selectTag(value: string) {
+      tagFilter.value = value
     }
 
     function selectSort(value: SortMode) {
@@ -195,6 +243,9 @@ export default {
       sortOpen,
       activityFilter,
       levelFilter,
+      tagFilter,
+      tagOptions,
+      tagFilterLabel,
       sortMode,
       viewMode,
       sortLabel,
@@ -204,6 +255,7 @@ export default {
       onNameInput,
       onPhoneInput,
       memberName,
+      memberNameColor,
       memberInitial,
       formatDate,
       formatMoney,
@@ -212,6 +264,7 @@ export default {
       clearFilters,
       selectActivity,
       selectLevel,
+      selectTag,
       selectSort,
       setViewMode,
       openConsumption,

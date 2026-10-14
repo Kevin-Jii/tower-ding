@@ -55,9 +55,19 @@
           <view :class="['filterOption', levelFilter === 3 ? 'filterOption--on' : '']" @tap="selectLevel(3)">等级 3</view>
         </view>
       </view>
+      <view v-if="tagOptions.length" class="filterGroup">
+        <view class="filterTitle">会员标签</view>
+        <view class="filterOptions">
+          <view :class="['filterOption', tagFilter === '' ? 'filterOption--on' : '']" @tap="selectTag('')">全部标签</view>
+          <view v-for="tag in tagOptions" :key="tag.key" :class="['filterOption', tagFilter === tag.key ? 'filterOption--on' : '']" @tap="selectTag(tag.key)">
+            <text v-if="tag.color" class="tagSwatch" :style="{ backgroundColor: tag.color }"></text>
+            <text>{{ tag.name }}</text>
+          </view>
+        </view>
+      </view>
       <view class="filterFooter">
         <view class="clearFilter" @tap="clearFilters">重置筛选</view>
-        <view class="filterSummary">{{ activityLabel }} · {{ levelFilter === null ? '全部等级' : `等级 ${levelFilter}` }}</view>
+        <view class="filterSummary">{{ activityLabel }} · {{ levelFilter === null ? '全部等级' : `等级 ${levelFilter}` }} · {{ tagFilterLabel }}</view>
       </view>
     </view>
 
@@ -97,7 +107,7 @@
         <view class="memberAvatar">{{ memberInitial(member) }}</view>
         <view class="memberBody">
           <view class="memberHead">
-            <view class="memberName">{{ memberName(member) }}</view>
+            <view class="memberName" :style="{ color: memberNameColor(member) || undefined }">{{ memberName(member) }}</view>
             <view class="levelTag">等级 {{ member.level ?? 1 }}</view>
           </view>
           <view class="memberIdentity"><text>{{ member.phone || '未填写手机号' }}</text><text>会员号：{{ member.uid || member.id }}</text></view>

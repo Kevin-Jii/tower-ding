@@ -40,7 +40,7 @@
         <view v-for="item in list" :key="item.id"
           :class="['swipeCell', isCanceledAccount(item) ? 'swipeCell--canceled' : '']">
           <view v-if="canCancelAccount(item)"
-            :class="['swipeDelete', cancelingId === item.id ? 'swipeDelete--loading' : '']"
+            :class="['swipeDelete', swipeMovingId === item.id || swipeOpenId === item.id ? 'swipeDelete--visible' : '', cancelingId === item.id ? 'swipeDelete--loading' : '']"
             @tap.stop="confirmCancelAccount(item)">
             {{ cancelingId === item.id ? '作废中' : '作废' }}
           </view>
@@ -65,7 +65,8 @@
                   <view class="rowTitle">{{ rowDisplayNo(item) }}</view>
                   <view class="rowSub">
                     <text v-if="platformLabel(item)" class="platformName">{{ platformLabel(item) }}</text>
-                    <text v-else>{{ channelLabel(item.channel) }}</text>
+                    <text v-else class="platformName">{{ channelLabel(item.channel) }}</text>
+                    <text v-for="tag in accountMemberTags(item)" :key="tag.key" class="memberTag" :style="memberTagStyle(tag)">{{ tag.name }}</text>
                   </view>
                 </view>
                 <view class="rowAside">
@@ -99,8 +100,14 @@
 
               <view class="rowBottom">
                 <view class="operatorInfo">
-                  <view class="operatorLine">操作人：{{ operatorLabel(item) }}</view>
-                  <view class="operatorTime">操作时间：{{ formatDateTime(item.created_at) }}</view>
+                  <view class="operatorMeta">
+                    <LucideIcon name="user-round" color="#8792a2" :size="15" :stroke-width="1.9" />
+                    <text>{{ operatorLabel(item) }}</text>
+                  </view>
+                  <view class="operatorMeta">
+                    <LucideIcon name="clock" color="#8792a2" :size="15" :stroke-width="1.9" />
+                    <text>{{ formatDateTime(item.created_at) }}</text>
+                  </view>
                 </view>
                 <view v-if="!isCanceledAccount(item) && !isReadOnlyAccount(item)" class="rowActions" @tap.stop>
                   <view v-if="canBindConsumables(item)" class="miniBtn" @tap="openConsumableSheet(item)">
