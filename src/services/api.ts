@@ -626,6 +626,16 @@ export function getUserProfile(authToken: string) {
   return request<UserProfile>('/users/profile', { method: 'GET', authToken })
 }
 
+export type UpdateUserProfilePayload = {
+  nickname?: string
+  username?: string
+  phone?: string
+}
+
+export function updateUserProfile(authToken: string, data: UpdateUserProfilePayload) {
+  return request<null>('/users/profile', { method: 'PUT', data, authToken })
+}
+
 export function getBusinessOverview(
   authToken: string,
   params: { start_date: string; end_date: string; store_id?: number }

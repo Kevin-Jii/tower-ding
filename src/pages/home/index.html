@@ -1,11 +1,58 @@
 <view class="page">
     <view class="home">
-      <view class="hero">
-        <view class="heroText">
+      <view class="hero" :style="heroStyle">
+        <view class="heroText" @tap.stop="toggleUserMenu">
+          <view class="brandRow">
+            <view class="brand">Tower 中台</view>
+            <view :class="['brandChevron', userMenuOpen ? 'brandChevron--open' : '']" />
+          </view>
           <view class="greeting">{{ greeting }}，{{ userName }}</view>
-          <view class="brand">Tower 中台</view>
         </view>
-        <view class="avatarBtn" @tap="go('/pages/mine/index')" @longpress.stop="onAvatarLongPress">{{ initials }}</view>
+        <view class="notificationBtn" :style="notificationStyle" @tap="openNotifications">
+          <LucideIcon name="bell-ring" color="#102039" :size="25" :stroke-width="1.8" />
+          <view v-if="hasNotification" class="notificationDot" />
+        </view>
+      </view>
+
+      <view v-if="userMenuOpen" class="userMenuDismiss" @tap="closeUserMenu" @touchmove.stop.prevent="noopTouchMove" />
+      <view v-if="userMenuOpen" class="userMenu" :style="userMenuStyle" @tap.stop @touchmove.stop>
+        <view class="userMenuIdentity">
+          <view class="userMenuAvatar">{{ initials }}</view>
+          <view class="userMenuMeta">
+            <view class="userMenuName">{{ userName }}</view>
+            <view class="userMenuPhone">{{ maskedCurrentPhone }}</view>
+          </view>
+        </view>
+        <view class="userMenuDivider" />
+        <view class="userMenuItem" @tap="openProfileEditor">
+          <view class="userMenuIcon userMenuIcon--blue">
+            <LucideIcon name="pencil" color="#2d72dc" :size="19" :stroke-width="2" />
+          </view>
+          <view class="userMenuItemText">
+            <view class="userMenuItemTitle">修改用户信息</view>
+            <view class="userMenuItemSub">昵称、用户名和手机号</view>
+          </view>
+          <view class="userMenuArrow">›</view>
+        </view>
+        <view class="userMenuItem" @tap="openAccountSheet">
+          <view class="userMenuIcon userMenuIcon--purple">
+            <LucideIcon name="users-round" color="#6658dc" :size="20" :stroke-width="2" />
+          </view>
+          <view class="userMenuItemText">
+            <view class="userMenuItemTitle">快捷切换账号</view>
+            <view class="userMenuItemSub">{{ rememberedAccountHint }}</view>
+          </view>
+          <view class="userMenuArrow">›</view>
+        </view>
+        <view class="userMenuItem" @tap="go('/pages/mine/index')">
+          <view class="userMenuIcon">
+            <LucideIcon name="user-round" color="#516176" :size="20" :stroke-width="2" />
+          </view>
+          <view class="userMenuItemText">
+            <view class="userMenuItemTitle">账号与设置</view>
+          </view>
+          <view class="userMenuArrow">›</view>
+        </view>
       </view>
 
       <view class="panel overviewPanel">
@@ -64,21 +111,23 @@
         </view>
       </view>
 
-      <view class="panel">
-        <view class="panelHead">
-          <view class="panelTitle">业务管理</view>
-          <view class="moreLink" @tap="go('/pages/home/more')">
-            查看更多
-            <text class="moreArrow">›</text>
-          </view>
-        </view>
-        <view class="actionGrid">
-          <view v-for="item in businessActions" :key="item.title" class="actionCard" @tap="go(item.url)">
-            <view :class="['actionIcon', `actionIcon--${item.tone}`]">
-              <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+      <view class="panel businessPanel">
+        <view class="panelTitle">业务管理</view>
+        <swiper class="businessSwiper" :style="businessSwiperStyle" :current="businessPageIndex" :duration="280" @change="onBusinessPageChange">
+          <swiper-item v-for="(pageItems, pageIndex) in businessPages" :key="pageIndex">
+            <view class="businessGrid">
+              <view v-for="item in pageItems" :key="item.title" class="actionCard businessActionCard" @tap="go(item.url)">
+                <view :class="['actionIcon', `actionIcon--${item.tone}`]">
+                  <LucideIcon :name="item.icon" :color="item.color" :size="30" :stroke-width="1.75" />
+                </view>
+                <view class="actionTitle">{{ item.title }}</view>
+              </view>
             </view>
-            <view class="actionTitle">{{ item.title }}</view>
-          </view>
+          </swiper-item>
+        </swiper>
+        <view v-if="businessPages.length > 1" class="businessDots">
+          <view v-for="(_, index) in businessPages" :key="index"
+            :class="['businessDot', businessPageIndex === index ? 'businessDot--active' : '']" />
         </view>
       </view>
 
@@ -91,6 +140,32 @@
             </view>
             <view class="todoText">{{ todo.text }}</view>
             <view class="chevron">›</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="profileEditorOpen" class="profileEditor">
+      <view class="profileEditorBackdrop" @tap="closeProfileEditor" @touchmove.stop.prevent="noopTouchMove" />
+      <view class="profileEditorPanel" @tap.stop @touchmove.stop>
+        <view class="profileEditorHandle" />
+        <view class="profileEditorHead">
+          <view>
+            <view class="profileEditorTitle">修改用户信息</view>
+            <view class="profileEditorSub">更新后将同步到当前账号</view>
+          </view>
+          <view class="profileEditorClose" @tap="closeProfileEditor">×</view>
+        </view>
+        <view class="profileEditorLabel">昵称</view>
+        <input class="profileEditorInput" maxlength="30" placeholder="请输入昵称" :value="profileForm.nickname" @input="onProfileInput('nickname', $event)" />
+        <view class="profileEditorLabel">用户名</view>
+        <input class="profileEditorInput" maxlength="30" placeholder="请输入用户名" :value="profileForm.username" @input="onProfileInput('username', $event)" />
+        <view class="profileEditorLabel">手机号</view>
+        <input class="profileEditorInput" type="number" maxlength="11" placeholder="请输入 11 位手机号" :value="profileForm.phone" @input="onProfileInput('phone', $event)" />
+        <view class="profileEditorActions">
+          <view class="profileEditorCancel" @tap="closeProfileEditor">取消</view>
+          <view :class="['profileEditorSave', savingProfile ? 'profileEditorSave--disabled' : '']" @tap="saveProfile">
+            {{ savingProfile ? '保存中...' : '保存修改' }}
           </view>
         </view>
       </view>

@@ -1,4 +1,5 @@
 export default {
+  navigationStyle: 'custom',
   navigationBarTitleText: '工作台',
   enablePullDownRefresh: true
 }
