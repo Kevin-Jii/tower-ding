@@ -31,6 +31,12 @@ import wechatIcon from '../../assets/platforms/wechat.png'
 import LucideIcon from '../../components/LucideIcon.vue'
 
 
+import AccountingRecordCard from './components/AccountingRecordCard.vue'
+import B2BRecordCard from './components/B2BRecordCard.vue'
+import CanceledRecordCard from './components/CanceledRecordCard.vue'
+import type { AccountCardViewModel } from './components/account-card-types'
+
+
 import {
   getStoreAccountStats,
   bindStoreAccountConsumables,
@@ -52,10 +58,10 @@ import {
 import { useAuthStore } from '../../stores/auth'
 
 
-import { formatDateTime } from '../../shared/format'
+import { formatDateTime, parseDateTime } from '../../shared/format'
 
 export default {
-  components: { LucideIcon },
+  components: { LucideIcon, AccountingRecordCard, B2BRecordCard, CanceledRecordCard },
   setup() {
     const auth = useAuthStore()
     
@@ -360,6 +366,7 @@ export default {
     
     
     function orderDisplayNo(item: StoreAccount) {
+      if (item.source_type === 'b2b_supply_order' && item.title) return item.title
       return item.order_no || item.account_no || `记账 #${item.id}`
     }
     
@@ -385,7 +392,7 @@ export default {
     
     function operatorLabel(item: StoreAccount) {
       const operator = item.operator
-      return operator?.nickname || operator?.username || operator?.phone || '-'
+      return operator?.nickname || operator?.username || operator?.phone || item.operator_name || '-'
     }
     
     
@@ -462,11 +469,7 @@ export default {
     
     
     function accountCreatedAt(item: StoreAccount) {
-      const s = String(item.created_at || '').trim()
-      if (!s) return null
-      const d = new Date(s)
-      if (Number.isNaN(d.getTime())) return false
-      return d
+      return parseDateTime(item.created_at)
     }
     
     
@@ -551,6 +554,34 @@ export default {
       return tags
         .map(normalizeMemberTag)
         .filter((tag): tag is { key: string; name: string; color: string } => Boolean(tag))
+    }
+
+
+
+    function accountCardView(item: StoreAccount): AccountCardViewModel {
+      return {
+        title: rowDisplayNo(item),
+        platformIcon: platformIcon(item),
+        channel: platformLabel(item) || channelLabel(item.channel),
+        amount: formatMoney(displayAccountAmount(item)),
+        paymentLabel: paymentStatusLabel(paymentStatusValue(item)),
+        unpaid: paymentStatusValue(item) === 2,
+        operator: operatorLabel(item),
+        createdAt: formatDateTime(item.created_at),
+        lines: accountItems(item).map((line) => ({
+          key: String(line.id || `${line.product_id}-${line.product_name}`),
+          name: line.product_name || `商品 #${line.product_id || ''}`,
+          meta: `（${formatQty(line.quantity)}${line.spec ? ` * ${line.spec}` : ''}）`
+        })),
+        tags: accountMemberTags(item).map((tag) => ({
+          key: tag.key,
+          name: tag.name,
+          style: memberTagStyle(tag)
+        })),
+        canBindConsumables: canBindConsumables(item),
+        canEdit: canEditAccount(item),
+        canConfigure: canOpenMetaSheet(item)
+      }
     }
 
 
@@ -695,7 +726,7 @@ export default {
           })
         ])
         const filledAccounts = await fillAccountItems(accounts)
-        list.value = reset ? filledAccounts : [...list.value, ...filledAccounts]
+        list.value = reset ? filledAccounts : mergeAccountPages(list.value, filledAccounts)
         hasMore.value = accounts.length >= pageSize
         if (hasMore.value) page.value = currentPage + 1
         stats.value = accountStats
@@ -708,6 +739,32 @@ export default {
     
     
     
+    function accountSortTime(item: StoreAccount) {
+      return parseDateTime(item.created_at || item.account_date)?.getTime() || 0
+    }
+
+
+
+    function accountIdentity(item: StoreAccount) {
+      if (item.source_type === 'b2b_supply_order') return `b2b:${Number(item.source_id || Math.abs(item.id))}`
+      return `account:${item.id}`
+    }
+
+
+
+    function mergeAccountPages(current: StoreAccount[], incoming: StoreAccount[]) {
+      const rows = [...current, ...incoming]
+      const seen = new Set<string>()
+      return rows.filter((item) => {
+        const key = accountIdentity(item)
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      }).sort((a, b) => accountSortTime(b) - accountSortTime(a))
+    }
+
+
+
     async function fillAccountItems(accounts: StoreAccount[]) {
       if (!auth.token) return accounts
       return Promise.all(accounts.map(async (item) => {
@@ -736,8 +793,13 @@ export default {
     
     
     
-    function openDetail(id: number) {
-      Taro.navigateTo({ url: `/pages/accounting/detail?id=${id}` })
+    function openDetail(item: StoreAccount) {
+      if (item.source_type === 'b2b_supply_order') {
+        const sourceID = Number(item.source_id || Math.abs(item.id))
+        if (sourceID) Taro.navigateTo({ url: `/pages/b2b/supply-order-detail?id=${sourceID}` })
+        return
+      }
+      Taro.navigateTo({ url: `/pages/accounting/detail?id=${item.id}` })
     }
 
 
@@ -821,7 +883,7 @@ export default {
         closeSwipe()
         return
       }
-      openDetail(item.id)
+      openDetail(item)
     }
 
 
@@ -1279,6 +1341,7 @@ export default {
       normalizeTagColor,
       normalizeMemberTag,
       accountMemberTags,
+      accountCardView,
       memberTagStyle,
       onMemberKeywordInput,
       onPaymentFilterChange,
@@ -1290,6 +1353,9 @@ export default {
       loadMembers,
       loadConsumableProducts,
       refresh,
+      accountSortTime,
+      accountIdentity,
+      mergeAccountPages,
       fillAccountItems,
       openDetail,
       pxToRpx,

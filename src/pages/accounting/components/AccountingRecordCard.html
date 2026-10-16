@@ -1,0 +1,37 @@
+<view class="recordCard recordCard--normal" @tap="onTap">
+  <view class="recordTop">
+    <image v-if="view.platformIcon" class="platformIcon" :src="view.platformIcon" mode="aspectFit" />
+    <view class="recordMain">
+      <view class="recordTitle">{{ view.title }}</view>
+      <view class="recordSub">
+        <text class="channelName">{{ view.channel }}</text>
+        <text v-for="tag in view.tags" :key="tag.key" class="memberTag" :style="tag.style">{{ tag.name }}</text>
+      </view>
+    </view>
+    <view class="recordAside">
+      <view class="amount amount--normal">¥ {{ view.amount }}</view>
+      <view :class="['paymentStatus', view.unpaid ? 'paymentStatus--unpaid' : 'paymentStatus--paid']">{{ view.paymentLabel }}</view>
+    </view>
+  </view>
+
+  <view class="itemDetails">
+    <view v-if="view.lines.length">
+      <view v-for="line in view.lines" :key="line.key" class="itemLine">
+        <text class="itemName">{{ line.name }}</text><text class="itemMeta">{{ line.meta }}</text>
+      </view>
+    </view>
+    <view v-else class="itemEmpty">暂无商品明细</view>
+  </view>
+
+  <view class="recordBottom">
+    <view class="operatorInfo">
+      <view class="operatorMeta"><LucideIcon name="user-round" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.operator }}</text></view>
+      <view class="operatorMeta"><LucideIcon name="clock" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.createdAt }}</text></view>
+    </view>
+    <view class="recordActions" @tap.stop>
+      <view v-if="view.canBindConsumables" class="miniBtn" @tap="onBindConsumables"><LucideIcon name="package-plus" :size="16" /><text>消耗品</text></view>
+      <view v-if="view.canEdit" class="iconBtn" @tap="onEdit"><LucideIcon name="pencil" color="#17202a" :size="17" :stroke-width="2.25" /></view>
+      <view v-if="view.canConfigure" class="iconBtn" @tap="onConfigure"><LucideIcon name="settings" color="#17202a" :size="17" :stroke-width="2.25" /></view>
+    </view>
+  </view>
+</view>

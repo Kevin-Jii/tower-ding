@@ -1,0 +1,24 @@
+<view class="recordCard recordCard--canceled" @tap="onTap">
+  <view class="recordTop">
+    <image v-if="view.platformIcon" class="platformIcon platformIcon--muted" :src="view.platformIcon" mode="aspectFit" />
+    <view v-else class="sourceMark sourceMark--canceled"><LucideIcon name="x" color="#7b8798" :size="17" :stroke-width="2.2" /></view>
+    <view class="recordMain">
+      <view class="recordTitle recordTitle--muted">{{ view.title }}</view>
+      <view class="recordSub"><text class="sourceBadge sourceBadge--canceled">已作废</text><text class="channelName channelName--muted">{{ view.channel }}</text></view>
+    </view>
+    <view class="recordAside"><view class="amount amount--canceled">¥ {{ view.amount }}</view></view>
+  </view>
+
+  <view class="itemDetails itemDetails--muted">
+    <view v-if="view.lines.length"><view v-for="line in view.lines" :key="line.key" class="itemLine"><text class="itemName">{{ line.name }}</text><text class="itemMeta">{{ line.meta }}</text></view></view>
+    <view v-else class="itemEmpty">暂无商品明细</view>
+  </view>
+
+  <view class="recordBottom recordBottom--canceled">
+    <view class="operatorInfo">
+      <view class="operatorMeta"><LucideIcon name="user-round" color="#94a3b8" :size="15" :stroke-width="1.9" /><text>{{ view.operator }}</text></view>
+      <view class="operatorMeta"><LucideIcon name="clock" color="#94a3b8" :size="15" :stroke-width="1.9" /><text>{{ view.createdAt }}</text></view>
+    </view>
+    <view class="lockedLabel">已锁定</view>
+  </view>
+</view>

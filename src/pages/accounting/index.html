@@ -1,135 +1,64 @@
 <view class="page">
     <view class="container">
-      <view class="card hero">
-        <view class="heroTop">
-          <view>
-            <view class="heroLabel">总销售额</view>
-            <view class="heroMoney">¥ {{ formatMoney(totalTurnoverAmount) }}</view>
-          </view>
-          <view class="heroBadge">{{ stats?.count ?? 0 }} 笔</view>
-        </view>
-        <view class="dateFilter">
+      <view class="businessCard">
+        <view class="businessHead">
+          <view class="businessTitle"><view class="businessTitleDot" />今日经营</view>
           <Picker mode="date" fields="day" :value="accountDate" :end="today" @change="onAccountDateChange">
-            <view class="dateBox dateBox--single">
-              <view class="dateLabel">日期</view>
-              <view class="dateValue">{{ accountDate || '选择日期' }}</view>
-              <text class="dateArrow">›</text>
+            <view class="dateButton">
+              <LucideIcon name="clock" color="#0f2447" :size="16" :stroke-width="2" />
+              <text>{{ accountDate || '选择日期' }}</text>
+              <text class="dateChevron">⌄</text>
             </view>
           </Picker>
         </view>
-      </view>
-      <view class="actionGrid">
-        <view class="card cta" @tap="goCreate('quick')">
-          <view>
-            <view class="ctaTitle">快速记账</view>
-            <view class="ctaSub">选择系统商品，后端自动算价并扣库存</view>
+        <view class="businessMetrics">
+          <view class="metricBlock">
+            <view class="metricAmountRow">
+              <view class="metricValue">¥ {{ formatMoney(totalTurnoverAmount) }}</view>
+            </view>
           </view>
-          <view class="ctaPlus">+</view>
+          <view class="quickSquare" @tap="goCreate('quick')">
+            <text class="quickSquareIcon">＋</text>
+            <text class="quickSquareLabel">快速记账</text>
+          </view>
         </view>
       </view>
 
       <view class="sectionHead">
-        <view class="section-title">最近记录</view>
+        <view class="sectionTitleWrap">
+          <view class="section-title">最近记录</view>
+          <view class="transactionBadge">{{ stats?.count ?? 0 }} 笔</view>
+        </view>
         <view class="filterBtn" @tap="openFilterSheet">
           筛选
           <text v-if="activeFilterCount" class="filterBadge">{{ activeFilterCount }}</text>
         </view>
       </view>
-      <view class="list">
-        <view v-if="!list.length" class="empty card">暂无记账数据</view>
-        <view v-for="item in list" :key="item.id"
-          :class="['swipeCell', isCanceledAccount(item) ? 'swipeCell--canceled' : '']">
-          <view v-if="canCancelAccount(item)"
-            :class="['swipeDelete', swipeMovingId === item.id || swipeOpenId === item.id ? 'swipeDelete--visible' : '', cancelingId === item.id ? 'swipeDelete--loading' : '']"
-            @tap.stop="confirmCancelAccount(item)">
-            {{ cancelingId === item.id ? '作废中' : '作废' }}
+      <scroll-view class="listScroll" scroll-y :show-scrollbar="false" :lower-threshold="100" @scrolltolower="refresh(false)">
+        <view class="list">
+          <view v-if="!list.length" class="empty card">暂无记账数据</view>
+          <view v-for="item in list" :key="accountIdentity(item)" :class="['swipeCell', isCanceledAccount(item) ? 'swipeCell--canceled' : '']">
+            <template v-if="isCanceledAccount(item)">
+              <CanceledRecordCard :view="accountCardView(item)" @tap="handleRowTap(item)" />
+            </template>
+            <template v-else-if="isReadOnlyAccount(item)">
+              <B2BRecordCard :view="accountCardView(item)" @tap="handleRowTap(item)" />
+            </template>
+            <template v-else>
+              <view v-if="canCancelAccount(item)"
+                :class="['swipeDelete', swipeMovingId === item.id || swipeOpenId === item.id ? 'swipeDelete--visible' : '', cancelingId === item.id ? 'swipeDelete--loading' : '']"
+                @tap.stop="confirmCancelAccount(item)">{{ cancelingId === item.id ? '作废中' : '作废' }}</view>
+              <view class="swipeContent" :style="rowTranslateX(item)" @touchstart="onRowTouchStart(item, $event)"
+                @touchmove="onRowTouchMove(item, $event)" @touchend="onRowTouchEnd(item)" @touchcancel="onRowTouchEnd(item)">
+                <AccountingRecordCard :view="accountCardView(item)" @tap="handleRowTap(item)"
+                  @bind-consumables="openConsumableSheet(item)" @edit="goEditAccountProducts(item)"
+                  @configure="openMetaSheet(item)" />
+              </view>
+            </template>
           </view>
-          <view class="swipeContent" :style="rowTranslateX(item)" @touchstart="onRowTouchStart(item, $event)"
-            @touchmove="onRowTouchMove(item, $event)" @touchend="onRowTouchEnd(item)"
-            @touchcancel="onRowTouchEnd(item)">
-            <view :class="['row', 'card', isCanceledAccount(item) ? 'row--canceled' : '', isReadOnlyAccount(item) ? 'row--readonly' : '']"
-              @tap="handleRowTap(item)">
-              <view v-if="isCanceledAccount(item)" class="canceledNotice">
-                <view class="canceledNoticeDot" />
-                <text>订单已作废</text>
-                <text class="canceledNoticeHint">不可编辑</text>
-              </view>
-              <view v-else-if="isReadOnlyAccount(item)" class="readOnlyNotice">
-                <view class="readOnlyNoticeDot" />
-                <text>B2B 供货账单</text>
-                <text class="readOnlyNoticeHint">仅供查看</text>
-              </view>
-              <view class="rowTop">
-                <image v-if="platformIcon(item)" class="platformIcon" :src="platformIcon(item)" mode="aspectFit" />
-                <view class="rowMain">
-                  <view class="rowTitle">{{ rowDisplayNo(item) }}</view>
-                  <view class="rowSub">
-                    <text v-if="platformLabel(item)" class="platformName">{{ platformLabel(item) }}</text>
-                    <text v-else class="platformName">{{ channelLabel(item.channel) }}</text>
-                    <text v-for="tag in accountMemberTags(item)" :key="tag.key" class="memberTag" :style="memberTagStyle(tag)">{{ tag.name }}</text>
-                  </view>
-                </view>
-                <view class="rowAside">
-                  <view :class="['amount', isCanceledAccount(item) ? 'amount--canceled' : 'amount--in']">¥ {{
-                    formatMoney(displayAccountAmount(item)) }}</view>
-                  <view
-                    v-if="!isCanceledAccount(item)"
-                    :class="['paymentStatus', paymentStatusValue(item) === 2 ? 'paymentStatus--unpaid' : 'paymentStatus--paid']">
-                    {{ paymentStatusLabel(paymentStatusValue(item)) }}
-                  </view>
-                </view>
-              </view>
-
-              <view class="itemDetails">
-                <view v-if="accountItems(item).length">
-                  <view v-for="line in accountItems(item)" :key="line.id || `${line.product_id}-${line.product_name}`"
-                    class="itemDetailLine">
-                    <view class="itemDetailMain">
-                      <view class="itemDetailName">{{ line.product_name || `商品 #${line.product_id || ''}` }}
-                        <text class="itemDetailMeta">（{{ formatQty(line.quantity) }}<text v-if="line.spec"> * {{
-                          line.spec
-                          }}</text>）
-                        </text>
-                      </view>
-
-                    </view>
-                  </view>
-                </view>
-                <view v-else class="itemDetailEmpty">暂无商品明细</view>
-              </view>
-
-              <view class="rowBottom">
-                <view class="operatorInfo">
-                  <view class="operatorMeta">
-                    <LucideIcon name="user-round" color="#8792a2" :size="15" :stroke-width="1.9" />
-                    <text>{{ operatorLabel(item) }}</text>
-                  </view>
-                  <view class="operatorMeta">
-                    <LucideIcon name="clock" color="#8792a2" :size="15" :stroke-width="1.9" />
-                    <text>{{ formatDateTime(item.created_at) }}</text>
-                  </view>
-                </view>
-                <view v-if="!isCanceledAccount(item) && !isReadOnlyAccount(item)" class="rowActions" @tap.stop>
-                  <view v-if="canBindConsumables(item)" class="miniBtn" @tap="openConsumableSheet(item)">
-                    <LucideIcon name="package-plus" :size="16" />
-                    <text>消耗品</text>
-                  </view>
-                  <view v-if="canEditAccount(item)" class="iconMiniBtn" @tap="goEditAccountProducts(item)">
-                    <LucideIcon name="pencil" color="#17202a" :size="17" :stroke-width="2.25" />
-                  </view>
-                  <template v-if="canOpenMetaSheet(item)">
-                    <view class="iconMiniBtn" @tap="openMetaSheet(item)">
-                      <LucideIcon name="settings" color="#17202a" :size="17" :stroke-width="2.25" />
-                    </view>
-                  </template>
-                </view>
-                <view v-else class="canceledLock">{{ isReadOnlyAccount(item) ? '仅供查看' : '已锁定' }}</view>
-              </view>
-            </view>
-          </view>
+          <view v-if="list.length" class="loadMore">{{ loadingMore ? '加载中...' : hasMore ? '上拉加载更多' : '没有更多了' }}</view>
         </view>
-        <view v-if="list.length" class="loadMore">{{ loadingMore ? '加载中...' : hasMore ? '上拉加载更多' : '没有更多了' }}</view>
-      </view>
+      </scroll-view>
     </view>
 
     <view v-if="filterSheetOpen" class="metaMask" @tap="closeFilterSheet">

@@ -1,0 +1,38 @@
+.recordCard {
+  width: 100%;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid #e3e8ef;
+  border-radius: 16px;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.recordTop { display: flex; align-items: flex-start; gap: 16px; }
+.platformIcon, .sourceMark { width: 46px; height: 46px; flex-shrink: 0; border-radius: 12px; }
+.sourceMark { display: flex; align-items: center; justify-content: center; }
+.recordMain { flex: 1; min-width: 0; padding-right: 8px; }
+.recordTitle { color: #17202a; font-size: 26px; font-weight: 900; line-height: 1.3; word-break: break-all; }
+.recordSub { min-width: 0; margin-top: 4px; display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; color: #687385; font-size: 22px; }
+.channelName { flex-shrink: 0; color: #17202a; font-weight: 800; }
+.recordAside { min-width: 122px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.amount { max-width: 188px; font-size: 26px; font-weight: 900; line-height: 1.25; text-align: right; word-break: break-all; }
+.amount--normal { color: #047857; }
+.paymentStatus { min-height: 34px; padding: 0 10px; border-radius: 999px; font-size: 19px; font-weight: 800; line-height: 34px; box-sizing: border-box; }
+.paymentStatus--paid { color: #047857; background: #ecfdf5; }
+.paymentStatus--unpaid { color: #b45309; background: #fff7e6; }
+.memberTag, .sourceBadge { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; font-size: 18px; font-weight: 800; line-height: 1.35; box-sizing: border-box; }
+.memberTag { max-width: 260px; border: 1px solid #bfdbfe; background: #eef4fb; color: #287fe5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itemDetails { margin-top: 16px; }
+.itemLine { padding: 11px 0; }
+.itemLine:first-child { padding-top: 0; }
+.itemName { color: #171e25; font-size: 24px; font-weight: 800; line-height: 1.32; word-break: break-all; }
+.itemMeta { color: #8792a2; font-size: 21px; line-height: 1.3; }
+.itemEmpty { padding: 10px 0 2px; color: #8792a2; font-size: 22px; font-weight: 700; }
+.recordBottom { margin-top: 0; padding: 8px 0; border-top: 1px solid #edf0f5; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-sizing: border-box; }
+.operatorInfo { min-width: 0; flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; }
+.operatorMeta { min-width: 0; color: #8792a2; font-size: 20px; font-weight: 700; line-height: 1.35; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.recordActions { display: flex; flex-wrap: nowrap; justify-content: flex-end; align-items: center; gap: 6px; flex-shrink: 0; max-width: 300px; }
+.miniBtn { min-height: 44px; padding: 0 12px; border-radius: 10px; background: #eef4fb; color: #334155; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.iconBtn { width: 44px; height: 44px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.readOnlyLabel, .lockedLabel { min-height: 38px; padding: 0 12px; border-radius: 10px; font-size: 19px; font-weight: 900; line-height: 38px; flex-shrink: 0; box-sizing: border-box; }
