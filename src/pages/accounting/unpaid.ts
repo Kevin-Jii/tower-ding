@@ -6,6 +6,7 @@ import {
   getMemberUnsettledAccounts,
   getStoreAccountStats,
   listB2BSupplyOrders,
+  listStoreAccounts,
   updateB2BSupplyOrderPaymentStatus,
   updateStoreAccount,
   type B2BSupplyOrder,
@@ -25,15 +26,19 @@ export default {
   setup() {
     const auth = useAuthStore()
     type UnpaidGroup = MemberUnsettledAccountGroup & {
-      customer_kind?: 'member' | 'b2b'
+      customer_kind?: 'member' | 'b2b' | 'other'
       customer_id?: number
+      order_no?: string
+      account_id?: number
     }
 
     const memberList = ref<UnpaidGroup[]>([])
     const b2bList = ref<UnpaidGroup[]>([])
-    const activeTab = ref<'member' | 'b2b'>('member')
+    const otherList = ref<UnpaidGroup[]>([])
+    const activeTab = ref<'member' | 'b2b' | 'other'>('member')
     const memberKeyword = ref('')
     const loading = ref(false)
+    let refreshSequence = 0
     const expandedMemberIds = ref<number[]>([])
     const stats = ref<Awaited<ReturnType<typeof getStoreAccountStats>>>({})
     const confirmOpen = ref(false)
@@ -41,7 +46,11 @@ export default {
     const confirmAccounts = ref<StoreAccount[]>([])
     const activeConfirmMemberName = ref('')
 
-    const list = computed(() => activeTab.value === 'b2b' ? b2bList.value : memberList.value)
+    const list = computed(() => {
+      if (activeTab.value === 'b2b') return b2bList.value
+      if (activeTab.value === 'other') return otherList.value
+      return memberList.value
+    })
 
     const pageAmount = computed(() => list.value.reduce((sum, member) => {
       return sum + Number(member.unsettled_amount || 0)
@@ -145,6 +154,38 @@ export default {
       return Array.from(groups.values())
     }
 
+    function normalizeOtherGroups(accounts: StoreAccount[]): UnpaidGroup[] {
+      const groups = new Map<string, UnpaidGroup>()
+      accounts
+        .filter((account) => {
+          return Number(account.payment_status) === 2 &&
+            !account.is_canceled &&
+            !Number(account.member_id || account.member?.id || 0) &&
+            account.source_type !== 'b2b_supply_order'
+        })
+        .forEach((account) => {
+          const orderNo = String(account.order_no || '').trim()
+          // 同一外部订单号归为一组；没有订单号时每笔记账单独成组。
+          const groupKey = orderNo ? `order:${orderNo}` : `account:${account.id}`
+          const existing = groups.get(groupKey)
+          if (existing) {
+            existing.unsettled_accounts = [...(existing.unsettled_accounts || []), account]
+            existing.unsettled_amount = Number(existing.unsettled_amount || 0) + Number(accountAmount(account) || 0)
+            return
+          }
+          groups.set(groupKey, {
+            id: -Number(account.id),
+            customer_kind: 'other',
+            order_no: orderNo || undefined,
+            account_id: orderNo ? undefined : Number(account.id),
+            name: orderNo ? `订单 ${orderNo}` : (account.account_no || `账单 #${account.id}`),
+            unsettled_amount: Number(accountAmount(account) || 0),
+            unsettled_accounts: [account]
+          })
+        })
+      return Array.from(groups.values())
+    }
+
     function isB2BAccount(account: StoreAccount) {
       return account.source_type === 'b2b_supply_order'
     }
@@ -186,7 +227,14 @@ export default {
       Taro.navigateTo({ url: `/pages/accounting/detail?id=${account.id}` })
     }
 
-    function openMemberUnpaidDetail(member: MemberUnsettledAccountGroup) {
+    function openUnpaidDetail(member: UnpaidGroup) {
+      if (member.customer_kind === 'other') {
+        const query = member.order_no
+          ? `order_no=${encodeURIComponent(member.order_no)}`
+          : `account_id=${Number(member.account_id || Math.abs(member.id))}`
+        Taro.navigateTo({ url: `/pages/accounting/unpaid-detail?customer_kind=other&${query}` })
+        return
+      }
       if (!member?.id) return
       Taro.navigateTo({ url: `/pages/accounting/unpaid-detail?member_id=${member.id}` })
     }
@@ -215,19 +263,41 @@ export default {
       void refresh()
     }
 
-    function selectTab(tab: 'member' | 'b2b') {
+    function selectTab(tab: 'member' | 'b2b' | 'other') {
       if (activeTab.value === tab) return
       activeTab.value = tab
+      // 三种客户使用不同的搜索字段，切换时不能沿用上一标签的关键词。
+      memberKeyword.value = ''
       expandedMemberIds.value = []
       void refresh()
     }
 
-    async function loadAccounts() {
+    async function loadOtherAccounts() {
+      if (!auth.token) return []
+      const accounts: StoreAccount[] = []
+      const pageSize = 100
+      let currentPage = 1
+      while (true) {
+        const rows = await listStoreAccounts(auth.token, {
+          store_id: auth.storeId || undefined,
+          payment_status: 2,
+          order_no: memberKeyword.value.trim() || undefined,
+          page: currentPage,
+          page_size: pageSize
+        })
+        accounts.push(...rows)
+        if (rows.length < pageSize) break
+        currentPage += 1
+      }
+      return accounts
+    }
+
+    async function loadAccounts(tab = activeTab.value) {
       if (!auth.token) return
       const summaryPromise = getStoreAccountStats(auth.token, {
         store_id: auth.storeId || undefined
       }).catch(() => ({}))
-      if (activeTab.value === 'b2b') {
+      if (tab === 'b2b') {
         const [orders, summary] = await Promise.all([
           listB2BSupplyOrders(auth.token, {
             store_id: auth.storeId || undefined,
@@ -239,6 +309,16 @@ export default {
         ])
         stats.value = summary
         b2bList.value = normalizeB2BGroups(orders)
+        expandFirst()
+        return
+      }
+      if (tab === 'other') {
+        const [accounts, summary] = await Promise.all([
+          loadOtherAccounts(),
+          summaryPromise
+        ])
+        stats.value = summary
+        otherList.value = normalizeOtherGroups(accounts)
         expandFirst()
         return
       }
@@ -259,15 +339,20 @@ export default {
         Taro.redirectTo({ url: '/pages/login/index' })
         return
       }
+      const sequence = ++refreshSequence
+      const requestedTab = activeTab.value
       loading.value = true
       try {
-        await loadAccounts()
+        await loadAccounts(requestedTab)
       } catch (err: any) {
-        memberList.value = []
-        b2bList.value = []
-        Taro.showToast({ title: err?.message || `加载待结账${activeTab.value === 'b2b' ? 'B2B客户' : '会员'}失败`, icon: 'none' })
+        if (sequence !== refreshSequence || requestedTab !== activeTab.value) return
+        if (requestedTab === 'member') memberList.value = []
+        if (requestedTab === 'b2b') b2bList.value = []
+        if (requestedTab === 'other') otherList.value = []
+        const tabLabel = requestedTab === 'b2b' ? 'B2B客户' : requestedTab === 'other' ? '其他客户' : '会员'
+        Taro.showToast({ title: err?.message || `加载待结账${tabLabel}失败`, icon: 'none' })
       } finally {
-        loading.value = false
+        if (sequence === refreshSequence) loading.value = false
       }
     }
 
@@ -318,6 +403,7 @@ export default {
       activeTab,
       memberList,
       b2bList,
+      otherList,
       memberKeyword,
       total: computed(() => list.value.length),
       loading,
@@ -343,7 +429,7 @@ export default {
       expandAll,
       collapseAll,
       openDetail,
-      openMemberUnpaidDetail,
+      openUnpaidDetail,
       openConfirm,
       closeConfirm,
       expandFirst,
@@ -351,6 +437,8 @@ export default {
       clearKeyword,
       selectTab,
       isB2BAccount,
+      normalizeOtherGroups,
+      loadOtherAccounts,
       loadAccounts,
       refresh,
       confirmPayment,

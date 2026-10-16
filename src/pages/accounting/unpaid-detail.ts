@@ -1,9 +1,10 @@
-import Taro, { useDidShow, useRouter, nextTick } from "@tarojs/taro";
+import Taro, { useDidShow, useRouter } from "@tarojs/taro";
 
 import { computed, ref } from "vue";
 
 import {
   getMemberUnsettledAccounts,
+  listStoreAccounts,
   type MemberUnsettledAccountGroup,
   type StoreAccount,
 } from "../../services/api";
@@ -21,6 +22,12 @@ export default {
     const router = useRouter();
 
     const memberId = Number(router.params?.member_id || 0);
+
+    const customerKind = String(router.params?.customer_kind || "member");
+
+    const otherOrderNo = decodeURIComponent(String(router.params?.order_no || "")).trim();
+
+    const otherAccountId = Number(router.params?.account_id || 0);
 
     // ==========================================
     // 状态
@@ -217,6 +224,41 @@ export default {
       loading.value = true;
 
       try {
+        if (customerKind === "other") {
+          const rows: StoreAccount[] = [];
+          const pageSize = 100;
+          let currentPage = 1;
+          while (true) {
+            const pageRows = await listStoreAccounts(auth.token, {
+              store_id: auth.storeId || undefined,
+              payment_status: 2,
+              page: currentPage,
+              page_size: pageSize,
+            });
+            rows.push(...pageRows);
+            if (pageRows.length < pageSize) break;
+            currentPage += 1;
+          }
+          const otherAccounts = rows.filter((account) => {
+            const baseMatch = !account.is_canceled &&
+              !Number(account.member_id || account.member?.id || 0) &&
+              account.source_type !== "b2b_supply_order";
+            if (!baseMatch) return false;
+            if (otherOrderNo) return String(account.order_no || "").trim() === otherOrderNo;
+            return otherAccountId > 0 && Number(account.id) === otherAccountId;
+          });
+          const groupName = otherOrderNo
+            ? `订单 ${otherOrderNo}`
+            : (otherAccounts[0]?.account_no || `账单 #${otherAccountId}`);
+          member.value = otherAccounts.length ? {
+            id: -Number(otherAccounts[0].id),
+            name: groupName,
+            unsettled_amount: otherAccounts.reduce((sum, account) => sum + accountAmount(account), 0),
+            unsettled_accounts: otherAccounts,
+          } : null;
+          return;
+        }
+
         if (!memberId) {
           member.value = null;
           return;
@@ -224,7 +266,6 @@ export default {
 
         const groups = await getMemberUnsettledAccounts(auth.token, {
           store_id: auth.storeId || undefined,
-
           member_id: memberId,
         });
 
@@ -757,6 +798,10 @@ export default {
       loading,
 
       sharing,
+
+      customerKind,
+
+      otherOrderNo,
 
       totalAmount,
 

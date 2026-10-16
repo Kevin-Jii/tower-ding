@@ -34,7 +34,7 @@
           <text v-if="activeFilterCount" class="filterBadge">{{ activeFilterCount }}</text>
         </view>
       </view>
-      <scroll-view class="listScroll" scroll-y :show-scrollbar="false" :lower-threshold="100" @scrolltolower="refresh(false)">
+      <scroll-view class="listScroll" :scroll-y="true" :enhanced="true" :show-scrollbar="false" :lower-threshold="100" @scrolltolower="refresh(false)">
         <view class="list">
           <view v-if="!list.length" class="empty card">暂无记账数据</view>
           <view v-for="item in list" :key="accountIdentity(item)" :class="['swipeCell', isCanceledAccount(item) ? 'swipeCell--canceled' : '']">

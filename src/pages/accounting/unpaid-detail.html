@@ -15,7 +15,7 @@
     <view v-else-if="!member" class="emptyState">
       <view class="emptyIcon">¥</view>
       <view class="emptyTitle">暂无未结账单</view>
-      <view class="emptyHint">当前会员没有待结算消费</view>
+      <view class="emptyHint">{{ customerKind === 'other' ? '当前没有其他客户待结算账单' : '当前会员没有待结算消费' }}</view>
     </view>
 
     <!-- =========================
@@ -33,14 +33,14 @@
           <view class="heroCustomer">
 
             <view class="heroLabel">
-              会员账单
+              {{ customerKind === 'other' ? '其他客户账单' : '会员账单' }}
             </view>
 
             <view class="heroName">
               {{
-              member.name ||
-              member.phone ||
-              `会员 #${member.id}`
+              customerKind === 'other'
+              ? member.name
+              : (member.name || member.phone || `会员 #${member.id}`)
               }}
             </view>
 

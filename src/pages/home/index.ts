@@ -329,7 +329,22 @@ export default {
     }
 
     function countUnpaid(rows: StoreAccount[]) {
-      return rows.filter((row) => Number(row.payment_status || 1) === 2).length;
+      const orders = new Set<string>();
+      rows.forEach((row) => {
+        if (Number(row.payment_status || 1) !== 2 || row.is_canceled) return;
+
+        const orderNo = String(row.order_no || "").trim();
+        if (orderNo) {
+          orders.add(`order:${orderNo}`);
+          return;
+        }
+        if (row.source_type === "b2b_supply_order" && Number(row.source_id || 0) > 0) {
+          orders.add(`b2b:${row.source_id}`);
+          return;
+        }
+        orders.add(`account:${row.id}`);
+      });
+      return orders.size;
     }
 
     async function refresh() {
