@@ -30,7 +30,7 @@
           </view>
           <view class="userMenuItemText">
             <view class="userMenuItemTitle">修改用户信息</view>
-            <view class="userMenuItemSub">昵称、用户名和手机号</view>
+            <view class="userMenuItemSub">昵称和登录密码</view>
           </view>
           <view class="userMenuArrow">›</view>
         </view>
@@ -152,16 +152,16 @@
         <view class="profileEditorHead">
           <view>
             <view class="profileEditorTitle">修改用户信息</view>
-            <view class="profileEditorSub">更新后将同步到当前账号</view>
+            <view class="profileEditorSub">仅支持修改昵称和登录密码</view>
           </view>
           <view class="profileEditorClose" @tap="closeProfileEditor">×</view>
         </view>
         <view class="profileEditorLabel">昵称</view>
         <input class="profileEditorInput" maxlength="30" placeholder="请输入昵称" :value="profileForm.nickname" @input="onProfileInput('nickname', $event)" />
-        <view class="profileEditorLabel">用户名</view>
-        <input class="profileEditorInput" maxlength="30" placeholder="请输入用户名" :value="profileForm.username" @input="onProfileInput('username', $event)" />
-        <view class="profileEditorLabel">手机号</view>
-        <input class="profileEditorInput" type="number" maxlength="11" placeholder="请输入 11 位手机号" :value="profileForm.phone" @input="onProfileInput('phone', $event)" />
+        <view class="profileEditorLabel">新密码</view>
+        <input class="profileEditorInput" password maxlength="32" placeholder="不修改密码请留空，至少 6 位" :value="profileForm.password" @input="onProfileInput('password', $event)" />
+        <view class="profileEditorLabel">确认新密码</view>
+        <input class="profileEditorInput" password maxlength="32" placeholder="请再次输入新密码" :value="profileForm.confirmPassword" @input="onProfileInput('confirmPassword', $event)" />
         <view class="profileEditorActions">
           <view class="profileEditorCancel" @tap="closeProfileEditor">取消</view>
           <view :class="['profileEditorSave', savingProfile ? 'profileEditorSave--disabled' : '']" @tap="saveProfile">

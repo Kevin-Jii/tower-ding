@@ -628,8 +628,7 @@ export function getUserProfile(authToken: string) {
 
 export type UpdateUserProfilePayload = {
   nickname?: string
-  username?: string
-  phone?: string
+  password?: string
 }
 
 export function updateUserProfile(authToken: string, data: UpdateUserProfilePayload) {

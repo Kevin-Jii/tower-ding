@@ -18,7 +18,6 @@ import {
 import { useAuthStore } from "../../stores/auth";
 import { formatMoney } from "../../shared/format";
 import {
-  forgetLogin,
   readRememberedLogins,
   rememberLogin,
   type RememberedLogin,
@@ -73,8 +72,8 @@ export default {
 
     const profileForm = reactive({
       nickname: "",
-      username: "",
-      phone: "",
+      password: "",
+      confirmPassword: "",
     });
 
     const menuButtonRect = (() => {
@@ -430,8 +429,8 @@ export default {
     function openProfileEditor() {
       userMenuOpen.value = false;
       profileForm.nickname = String(auth.user?.nickname || "");
-      profileForm.username = String(auth.user?.username || "");
-      profileForm.phone = String(auth.user?.phone || "");
+      profileForm.password = "";
+      profileForm.confirmPassword = "";
       profileEditorOpen.value = true;
     }
 
@@ -441,58 +440,55 @@ export default {
     }
 
     function onProfileInput(
-      field: "nickname" | "username" | "phone",
+      field: "nickname" | "password" | "confirmPassword",
       event: any,
     ) {
-      profileForm[field] = String(event?.detail?.value || "").trimStart();
+      const value = String(event?.detail?.value || "");
+      profileForm[field] = field === "nickname" ? value.trimStart() : value;
     }
 
     async function saveProfile() {
       if (!auth.token || savingProfile.value) return;
       const nickname = profileForm.nickname.trim();
-      const username = profileForm.username.trim();
-      const phone = profileForm.phone.trim();
+      const password = profileForm.password;
+      const confirmPassword = profileForm.confirmPassword;
       const oldNickname = String(auth.user?.nickname || "");
-      const oldUsername = String(auth.user?.username || "");
-      const oldPhone = String(auth.user?.phone || "");
-      if (!nickname && !username) {
-        Taro.showToast({ title: "昵称和用户名至少填写一项", icon: "none" });
+      const phone = String(auth.user?.phone || "");
+
+      if (!nickname) {
+        Taro.showToast({ title: "昵称不能为空", icon: "none" });
         return;
       }
-      if (
-        (oldNickname && !nickname) ||
-        (oldUsername && !username) ||
-        (oldPhone && !phone)
-      ) {
-        Taro.showToast({ title: "当前暂不支持清空已有信息", icon: "none" });
+      if (password && password.length < 6) {
+        Taro.showToast({ title: "新密码至少 6 位", icon: "none" });
         return;
       }
-      if (!/^\d{11}$/.test(phone)) {
-        Taro.showToast({ title: "请输入 11 位手机号", icon: "none" });
+      if (password !== confirmPassword) {
+        Taro.showToast({ title: "两次输入的密码不一致", icon: "none" });
+        return;
+      }
+      if (nickname === oldNickname && !password) {
+        Taro.showToast({ title: "用户信息没有变化", icon: "none" });
         return;
       }
 
       savingProfile.value = true;
       Taro.showLoading({ title: "保存中" });
       try {
-        await updateUserProfile(auth.token, { nickname, username, phone });
-        if (oldPhone && phone !== oldPhone) {
+        await updateUserProfile(auth.token, {
+          nickname,
+          ...(password ? { password } : {}),
+        });
+        if (password && phone) {
           const remembered = readRememberedLogins().find(
-            (item) => item.phone === oldPhone,
+            (item) => item.phone === phone,
           );
-          if (remembered) {
-            rememberLogin(phone, remembered.password);
-            forgetLogin(oldPhone);
-          }
+          if (remembered) rememberLogin(phone, password);
         }
         try {
           await auth.refreshProfile();
         } catch {
-          if (auth.user) {
-            auth.user.nickname = nickname;
-            auth.user.username = username;
-            auth.user.phone = phone;
-          }
+          if (auth.user) auth.user.nickname = nickname;
         }
         syncRememberedAccounts();
         profileEditorOpen.value = false;
