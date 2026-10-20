@@ -1,25 +1,35 @@
 <view class="recordCard recordCard--b2b" @tap="onTap">
   <view class="recordTop">
-    <view class="sourceMark sourceMark--b2b"><LucideIcon name="warehouse" color="#287fe5" :size="18" :stroke-width="2" /></view>
+    <view class="sourceMark sourceMark--b2b">
+      <LucideIcon name="warehouse" color="#287fe5" :size="18" :stroke-width="2" />
+    </view>
     <view class="recordMain">
       <view class="recordTitle">{{ view.title }}</view>
-      <view class="recordSub"><text class="sourceBadge sourceBadge--b2b">B2B 供货</text><text class="channelName">{{ view.channel }}</text></view>
+      <view class="recordSub"><text class="sourceBadge sourceBadge--b2b">{{ view.channel }}</text></view>
     </view>
     <view class="recordAside">
       <view class="amount amount--b2b">¥ {{ view.amount }}</view>
-      <view :class="['paymentStatus', view.unpaid ? 'paymentStatus--unpaid' : 'paymentStatus--paid']">{{ view.paymentLabel }}</view>
+      <view :class="['paymentStatus', view.unpaid ? 'paymentStatus--unpaid' : 'paymentStatus--paid']">{{
+        view.paymentLabel }}</view>
     </view>
   </view>
 
   <view class="itemDetails">
-    <view v-if="view.lines.length"><view v-for="line in view.lines" :key="line.key" class="itemLine"><text class="itemName">{{ line.name }}</text><text class="itemMeta">{{ line.meta }}</text></view></view>
+    <view v-if="view.lines.length">
+      <view v-for="line in view.lines" :key="line.key" class="itemLine"><text class="itemName">{{ line.name
+          }}</text><text class="itemMeta">{{ line.meta }}</text></view>
+    </view>
     <view v-else class="itemEmpty">暂无商品明细</view>
   </view>
 
   <view class="recordBottom">
     <view class="operatorInfo">
-      <view class="operatorMeta"><LucideIcon name="user-round" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.operator }}</text></view>
-      <view class="operatorMeta"><LucideIcon name="clock" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.createdAt }}</text></view>
+      <view class="operatorMeta">
+        <LucideIcon name="user-round" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.operator }}</text>
+      </view>
+      <view class="operatorMeta">
+        <LucideIcon name="clock" color="#8792a2" :size="15" :stroke-width="1.9" /><text>{{ view.createdAt }}</text>
+      </view>
     </view>
     <view class="readOnlyLabel">仅供查看</view>
   </view>
